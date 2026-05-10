@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SpaceGuo · 현장 지출</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--accent:#ff6b35;--accent2:#ffad33;--text:#f0f0f0;--muted:#888;--green:#4caf82;--red:#e05252;--blue:#5b8cf7}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto}
+#loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;gap:16px}
+.login-logo{font-size:40px;margin-bottom:8px}
+.login-title{font-size:22px;font-weight:900;letter-spacing:-0.5px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:8px}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:inherit;font-size:15px;padding:14px 16px;outline:none}
+.login-input:focus{border-color:var(--accent)}
+.login-btn{width:100%;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:16px;cursor:pointer}
+.login-btn.secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:700}
+.login-btn.google{background:#fff;border:1px solid #ddd;color:#333;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px}
+.login-divider{width:100%;text-align:center;font-size:12px;color:var(--muted)}
+.login-err{font-size:13px;color:var(--red);text-align:center;min-height:18px}
+.pw-wrap{position:relative;width:100%}
+.pw-wrap .login-input{padding-right:48px}
+.pw-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+.login-btn.forgot{background:none;border:none;color:var(--muted);font-size:13px;font-weight:500;text-decoration:underline;padding:4px;cursor:pointer;width:auto;align-self:flex-end}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px 10px;position:sticky;top:0;z-index:100}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.app-title{font-size:13px;color:var(--muted);letter-spacing:.08em;font-weight:500}
+.header-right{display:flex;align-items:center;gap:10px}
+.today-total{font-size:12px;color:var(--accent2);font-weight:700}
+.logout-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit}
+.tab-bar{display:flex;gap:4px}
+.tab{flex:1;padding:8px;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted)}
+.tab.active{background:var(--accent);color:#fff}
+.view{display:none;padding:16px 16px 100px}
+.view.active{display:block}
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.amount-display{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;text-align:center}
+.amount-label{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
+.amount-value{font-size:36px;font-weight:900;color:var(--accent);letter-spacing:-1px;min-height:44px}
+.amount-value.placeholder{color:var(--border)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.num-btn{background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:inherit;font-size:20px;font-weight:700;padding:16px;cursor:pointer;transition:all .1s;min-height:56px}
+.num-btn:active{background:var(--accent);border-color:var(--accent);transform:scale(.96)}
+.num-btn.del{font-size:16px;color:var(--muted)}
+.num-btn.zero{grid-column:span 2}
+.quick-label{font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.08em}
+.quick-amounts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.quick-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer}
+.quick-btn:active{background:var(--accent2);color:#000;border-color:var(--accent2)}
+.field-row{margin-bottom:10px}
+.field-label{font-size:11px;color:var(--muted);margin-bottom:5px;letter-spacing:.08em}
+.field-select,.field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:15px;padding:12px 14px;outline:none;-webkit-appearance:none}
+.field-select:focus,.field-input:focus{border-color:var(--accent)}
+.field-select option{background:#1a1a1a}
+.chips,.pay-chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip,.pay-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:7px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.chip.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.pay-chip.selected-card{background:#1a1f2e;border-color:var(--blue);color:var(--blue)}
+.pay-chip.selected-cash{background:#1a2a1a;border-color:var(--green);color:var(--green)}
+.vat-row-ui{display:flex;gap:6px;margin-bottom:6px}
+.vat-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:700;padding:10px 8px;cursor:pointer;text-align:center}
+.vat-btn.selected{background:var(--surface);border-color:var(--accent2);color:var(--accent2)}
+.vat-info{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:6px;font-size:12px;color:var(--muted);display:none}
+.vat-info.show{display:block}
+.vat-row-info{display:flex;justify-content:space-between;margin-bottom:4px}
+.vat-row-info:last-child{margin-bottom:0}
+.vat-val{color:var(--text);font-weight:700}
+.vat-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}
+.vat-badge.included{background:#1a2a1a;color:var(--green)}
+.vat-badge.excluded{background:#2a1a0a;color:var(--accent2)}
+.pay-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}
+.pay-badge.card{background:#1a1f2e;color:var(--blue)}
+.pay-badge.cash{background:#1a2a1a;color:var(--green)}
+.pay-group{margin-bottom:8px}
+.pay-group-label{font-size:10px;color:var(--muted);letter-spacing:.1em;font-weight:700;margin-bottom:5px;padding-left:2px}
+.items-area{margin-bottom:6px}
+.item-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.item-name-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none}
+.item-name-input:focus{border-color:var(--accent)}
+.item-del-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:16px;padding:8px 10px;cursor:pointer}
+.item-del-btn:active{color:var(--red);border-color:var(--red)}
+.add-item-btn{background:none;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;padding:10px;cursor:pointer;width:100%}
+.add-item-btn:active{border-color:var(--accent);color:var(--accent)}
+.submit-btn{width:100%;background:var(--accent);border:none;border-radius:14px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:16px;cursor:pointer;margin-top:14px}
+.submit-btn:active{transform:scale(.98);opacity:.9}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;font-size:14px;font-weight:700;padding:12px 24px;border-radius:100px;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;white-space:nowrap}
+.filter-chip.active{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.summary-card .s-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.summary-card .s-value{font-size:22px;font-weight:900;color:var(--accent)}
+.summary-card .s-count{font-size:12px;color:var(--muted);text-align:right}
+.section-header{font-size:11px;color:var(--muted);letter-spacing:.1em;font-weight:700;margin-bottom:8px;padding-left:4px}
+.record-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.record-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.record-info{flex:1;min-width:0}
+.record-site{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.record-cat{font-size:11px;color:var(--muted);margin-top:2px}
+.record-memo{font-size:11px;color:var(--muted);margin-top:2px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.record-right{text-align:right;flex-shrink:0}
+.record-amount{font-size:15px;font-weight:800}
+.record-date{font-size:11px;color:var(--muted);margin-top:2px}
+.record-delete{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;flex-shrink:0}
+.record-delete:active{color:var(--red)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .emoji{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:14px;line-height:1.6}
+.dash-period{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.dash-period::-webkit-scrollbar{display:none}
+.period-btn{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;white-space:nowrap}
+.period-btn.active{background:var(--surface);border-color:var(--blue);color:var(--blue)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.kpi-card.full{grid-column:span 2}
+.kpi-label{font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.06em}
+.kpi-value{font-size:20px;font-weight:900;letter-spacing:-0.5px}
+.kpi-value.income{color:var(--blue)}
+.kpi-value.expense{color:var(--red)}
+.kpi-value.profit.pos{color:var(--green)}
+.kpi-value.profit.neg{color:var(--red)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.site-pl-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.site-pl-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+.site-pl-name{font-size:13px;font-weight:700;margin-bottom:8px}
+.site-pl-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.site-pl-row:last-child{margin-bottom:0;padding-top:6px;border-top:1px solid var(--border);font-weight:700}
+.site-pl-row .lbl{color:var(--muted)}
+.bar-wrap{background:var(--surface2);border-radius:4px;height:6px;margin-top:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.cat-breakdown{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.cat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cat-row:last-child{border-bottom:none}
+.cat-name{display:flex;align-items:center;gap:8px}
+.cat-pct{font-size:11px;color:var(--muted)}
+.site-list{margin-bottom:8px}
+.site-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.site-name{font-size:14px;font-weight:600}
+.site-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
+.site-del:active{color:var(--red)}
+.add-site-row{display:flex;gap:8px}
+.add-site-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;padding:12px 14px;outline:none}
+.add-site-input:focus{border-color:var(--accent)}
+.add-site-btn{background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:12px 18px;cursor:pointer}
+.export-btn{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:inherit;font-size:14px;font-weight:700;padding:14px;cursor:pointer;margin-bottom:10px}
+.export-btn:active{border-color:var(--accent2);color:var(--accent2)}
+.section-divider{height:1px;background:var(--border);margin:20px 0}
+.settings-title{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:10px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center}
+.modal-inner{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:480px}
+.modal-title{font-size:15px;font-weight:800;margin-bottom:18px}
+.modal-btn-row{display:flex;gap:8px;margin-top:6px}
+.modal-cancel{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:inherit;font-size:14px;font-weight:700;padding:14px;cursor:pointer}
+.modal-save{flex:2;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:14px;cursor:pointer}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;background:var(--muted)}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.saving{background:var(--accent2);animation:pulse .8s ease-in-out infinite}
+.sync-dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-label{font-size:11px;color:var(--muted)}
+.income-fab{position:fixed;bottom:24px;right:50%;transform:translateX(calc(50% + 100px));background:var(--blue);border:none;border-radius:50px;color:#fff;font-family:inherit;font-size:13px;font-weight:800;padding:12px 20px;cursor:pointer;z-index:90;box-shadow:0 4px 20px rgba(91,140,247,.4)}
+
+/* 품목 체크박스 */
+.item-check-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.item-check-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.item-check-btn.checked{background:#1a2a1a;border-color:var(--green);color:var(--green)}
+.item-check-btn .unit{font-size:10px;color:inherit;opacity:.7}
+
+/* 공정 관리 */
+.process-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px}
+.process-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.process-name{font-size:14px;font-weight:700}
+.process-actions{display:flex;gap:6px}
+.proc-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:inherit;font-size:11px;padding:4px 8px;cursor:pointer}
+.proc-btn:active{border-color:var(--accent);color:var(--accent)}
+.proc-btn.del:active{border-color:var(--red);color:var(--red)}
+.proc-item-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.proc-item-tag{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:4px 10px;display:flex;align-items:center;gap:6px}
+.proc-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0}
+.proc-item-del:active{color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-logo">⚒</div>
+  <div class="login-title">SpaceGuo</div>
+  <div class="login-sub">현장 지출 · 손익 관리</div>
+  <input class="login-input" id="loginEmail" type="email" placeholder="이메일" autocomplete="email">
+  <div class="pw-wrap">
+    <input class="login-input" id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <button class="pw-eye" id="pwEyeBtn" onclick="togglePw()">👁</button>
+  </div>
+  <div class="login-err" id="loginErr"></div>
+  <button class="login-btn" onclick="doLogin()">로그인</button>
+  <button class="login-btn forgot" onclick="doResetPw()">비밀번호 찾기 (이메일 발송)</button>
+  <div class="login-divider">— 또는 —</div>
+  <button class="login-btn google" onclick="doGoogleLogin()">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Google로 로그인
+  </button>
+  <div class="login-divider">— 이메일로 직접 가입 —</div>
+  <button class="login-btn secondary" onclick="doSignup()">회원가입 (직원 초대용)</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+<div class="header">
+  <div class="header-top">
+    <span class="app-title">⚒ SpaceGuo</span>
+    <div class="header-right">
+      <span class="today-total" id="headerTotal"></span>
+      <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
+    <button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
+    <button class="tab" id="tab-dash" onclick="switchTab('dash')">손익</button>
+    <button class="tab" id="tab-settings" onclick="switchTab('settings')">설정</button>
+  </div>
+</div>
+
+<!-- INPUT -->
+<div class="view active" id="view-input">
+  <div class="amount-display">
+    <div class="amount-label">결제 금액 (원)</div>
+    <div class="amount-value placeholder" id="amountDisplay">0</div>
+  </div>
+  <div class="numpad">
+    <button class="num-btn" onclick="numInput('1')">1</button>
+    <button class="num-btn" onclick="numInput('2')">2</button>
+    <button class="num-btn" onclick="numInput('3')">3</button>
+    <button class="num-btn" onclick="numInput('4')">4</button>
+    <button class="num-btn" onclick="numInput('5')">5</button>
+    <button class="num-btn" onclick="numInput('6')">6</button>
+    <button class="num-btn" onclick="numInput('7')">7</button>
+    <button class="num-btn" onclick="numInput('8')">8</button>
+    <button class="num-btn" onclick="numInput('9')">9</button>
+    <button class="num-btn zero" onclick="numInput('0')">0</button>
+    <button class="num-btn del" onclick="numDelete()">⌫</button>
+  </div>
+  <div class="quick-label">빠른 금액</div>
+  <div class="quick-amounts">
+    <button class="quick-btn" onclick="addAmount(10000)">+1만</button>
+    <button class="quick-btn" onclick="addAmount(50000)">+5만</button>
+    <button class="quick-btn" onclick="addAmount(100000)">+10만</button>
+    <button class="quick-btn" onclick="addAmount(500000)">+50만</button>
+    <button class="quick-btn" onclick="addAmount(1000000)">+100만</button>
+  </div>
+  <div class="field-row">
+    <div class="field-label">현장명</div>
+    <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
+  </div>
+  <div class="field-row">
+    <div class="field-label">카테고리</div>
+    <div class="chips">
+      <button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
+      <button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
+      <button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
+      <button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
+      <button class="chip" onclick="selectCat(this,'식대')">식대</button>
+      <button class="chip" onclick="selectCat(this,'기타')">기타</button>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field-label">결제수단</div>
+    <div class="pay-group">
+      <div class="pay-group-label">💳 카드 <span style="color:var(--accent);font-size:10px;cursor:pointer" onclick="switchTab('settings')">설정에서 추가</span></div>
+      <div class="pay-chips" id="cardChips"></div>
+    </div>
+    <div class="pay-group" style="margin-top:8px">
+      <div class="pay-group-label">💵 현금/이체</div>
+      <div class="pay-chips">
+        <button class="pay-chip" onclick="selectPay(this,'현금 직접','cash')">현금 직접</button>
+        <button class="pay-chip" onclick="selectPay(this,'카카오페이','cash')">카카오페이</button>
+        <button class="pay-chip" onclick="selectPay(this,'토스','cash')">토스</button>
+      </div>
+    </div>
+    <div class="pay-group" style="margin-top:8px">
+      <div class="pay-group-label">🏦 계좌이체 <span style="color:var(--accent);font-size:10px;cursor:pointer" onclick="switchTab('settings')">설정에서 추가</span></div>
+      <div class="pay-chips" id="accountChips"></div>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field-label">부가세</div>
+    <div class="vat-row-ui">
+      <button class="vat-btn" id="vatNone" onclick="selectVat('none')">해당없음</button>
+      <button class="vat-btn selected" id="vatIncluded" onclick="selectVat('included')">포함</button>
+      <button class="vat-btn" id="vatExcluded" onclick="selectVat('excluded')">별도</button>
+    </div>
+    <div class="vat-info" id="vatInfo"></div>
+  </div>
+  <div class="field-row">
+    <div class="field-label">구매처 (선택)</div>
+    <input class="field-input" id="vendorInput" type="text" placeholder="예: 홈플러스, 철물왕...">
+  </div>
+  <div class="field-row">
+    <div class="field-label">구매 목록 (선택)</div>
+    <select class="field-select" id="processSelect" onchange="renderItemCheckboxes()" style="margin-bottom:8px">
+      <option value="">공정 선택</option>
+    </select>
+    <div id="itemCheckboxArea"></div>
+  </div>
+  <div class="field-row">
+    <div class="field-label">메모 (선택)</div>
+    <input class="field-input" id="memoInput" type="text" placeholder="특이사항...">
+  </div>
+  <button class="submit-btn" onclick="saveRecord()">💾 저장</button>
+</div>
+
+<!-- LIST -->
+<div class="view" id="view-list">
+  <div class="filter-bar" id="filterBar"><button class="filter-chip active" onclick="setFilter('전체',this)">전체</button></div>
+  <div class="summary-card">
+    <div><div class="s-label">필터 합계</div><div class="s-value" id="filteredTotal">₩0</div></div>
+    <div class="s-count" id="filteredCount"></div>
+  </div>
+  <div id="recordList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="view" id="view-dash">
+  <div class="dash-period" id="dashPeriod"></div>
+  <div id="dashContent"><div class="loading"><div class="spinner"></div>계산 중...</div></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="view" id="view-settings">
+  <div class="settings-title">현장 목록</div>
+  <div class="site-list" id="siteList"></div>
+  <div class="add-site-row">
+    <input class="add-site-input" id="newSiteInput" placeholder="새 현장명 입력">
+    <button class="add-site-btn" onclick="addSite()">추가</button>
+  </div>
+  <div class="section-divider"></div>
+  <div class="settings-title" id="cardSectionLabel">💳 내 카드 목록</div>
+  <div class="site-list" id="cardList"></div>
+  <button class="add-item-btn" onclick="openCardModal()" style="margin-bottom:10px">＋ 카드 추가</button>
+  <div class="section-divider"></div>
+  <div class="settings-title">🏦 계좌 목록</div>
+  <div class="site-list" id="accountList"></div>
+  <button class="add-item-btn" onclick="openAccountModal()" style="margin-bottom:10px">＋ 계좌 추가</button>
+  <div class="section-divider"></div>
+  <div class="settings-title">📦 공정별 품목 관리</div>
+  <div id="processList"></div>
+  <button class="add-item-btn" onclick="openProcessModal()" style="margin-bottom:10px">＋ 공정 추가</button>
+  <div class="section-divider"></div>
+  <div class="settings-title">내보내기</div>
+  <button class="export-btn" onclick="exportCSV()">📋 CSV 다운로드</button>
+  <button class="export-btn" onclick="copyForKakao()">💬 카카오톡 복사 (이번 달)</button>
+  <button class="export-btn" style="color:var(--red);border-color:var(--red)" onclick="clearAll()">🗑 전체 삭제</button>
+  <div class="section-divider"></div>
+  <div class="settings-title">계정</div>
+  <div id="userInfo" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+</div>
+
+<!-- INCOME MODAL -->
+<div class="modal-overlay" id="incomeModal">
+  <div class="modal-inner">
+    <div class="modal-title">💰 매출 입력</div>
+    <div class="field-row"><div class="field-label">현장명</div><select class="field-select" id="incSiteSelect"><option value="">현장 선택</option></select></div>
+    <div class="field-row"><div class="field-label">매출 금액 (원)</div><input class="field-input" id="incAmount" type="tel" inputmode="numeric" placeholder="예: 5000000" oninput="updateIncVatInfo()"></div>
+    <div class="field-row">
+      <div class="field-label">부가세</div>
+      <div class="vat-row-ui">
+        <button class="vat-btn" id="incVatNone" onclick="selectIncVat('none')">해당없음</button>
+        <button class="vat-btn selected" id="incVatIncluded" onclick="selectIncVat('included')">포함</button>
+        <button class="vat-btn" id="incVatExcluded" onclick="selectIncVat('excluded')">별도</button>
+      </div>
+      <div class="vat-info" id="incVatInfo"></div>
+    </div>
+    <div class="field-row"><div class="field-label">항목 (선택)</div><input class="field-input" id="incMemo" type="text" placeholder="예: 1차 기성금, 계약금..."></div>
+    <div class="field-row"><div class="field-label">날짜</div><input class="field-input" id="incDate" type="date"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeIncomeModal()">취소</button>
+      <button class="modal-save" onclick="saveIncome()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARD MODAL -->
+<div class="modal-overlay" id="cardModal">
+  <div class="modal-inner">
+    <div class="modal-title" id="cardModalTitle">카드 추가</div>
+    <div class="field-row"><div class="field-label">카드 별칭 (필수)</div><input class="field-input" id="cardNameInp" placeholder="예: 신한 체크, 법인카드"></div>
+    <div class="field-row">
+      <div class="field-label">카드사</div>
+      <select class="field-select" id="cardIssuerInp">
+        <option value="">선택 안 함</option>
+        <option>신한</option><option>삼성</option><option>현대</option><option>KB국민</option>
+        <option>롯데</option><option>하나</option><option>우리</option><option>BC</option>
+        <option>NH농협</option><option>IBK기업</option><option>카카오뱅크</option><option>토스뱅크</option><option>기타</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">카드 종류</div>
+      <div class="pay-chips">
+        <button class="pay-chip selected-card" id="ctCredit" onclick="selectCardType('신용')">신용</button>
+        <button class="pay-chip" id="ctDebit" onclick="selectCardType('체크')">체크</button>
+        <button class="pay-chip" id="ctCorp" onclick="selectCardType('법인')">법인</button>
+      </div>
+    </div>
+    <div class="field-row"><div class="field-label">카드번호 끝 4자리 (선택)</div><input class="field-input" id="cardNumInp" type="tel" maxlength="4" inputmode="numeric" placeholder="예: 1234"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeCardModal()">취소</button>
+      <button class="modal-save" onclick="saveCardModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT MODAL -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal-inner">
+    <div class="modal-title" id="accountModalTitle">계좌 추가</div>
+    <div class="field-row"><div class="field-label">계좌 별칭 (필수)</div><input class="field-input" id="accNameInp" placeholder="예: 사업자 계좌, 국민은행"></div>
+    <div class="field-row">
+      <div class="field-label">은행</div>
+      <select class="field-select" id="accBankInp">
+        <option value="">선택 안 함</option>
+        <option>국민</option><option>신한</option><option>우리</option><option>하나</option>
+        <option>농협</option><option>기업</option><option>카카오뱅크</option><option>토스뱅크</option>
+        <option>새마을금고</option><option>수협</option><option>SC제일</option><option>씨티</option><option>기타</option>
+      </select>
+    </div>
+    <div class="field-row"><div class="field-label">계좌번호 (선택)</div><input class="field-input" id="accNumInp" type="tel" inputmode="numeric" placeholder="예: 123-456-789012"></div>
+    <div class="field-row"><div class="field-label">예금주 (선택)</div><input class="field-input" id="accOwnerInp" type="text" placeholder="예: 홍길동"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeAccountModal()">취소</button>
+      <button class="modal-save" onclick="saveAccountModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS MODAL -->
+<div class="modal-overlay" id="processModal">
+  <div class="modal-inner">
+    <div class="modal-title" id="processModalTitle">공정 추가</div>
+    <div class="field-row"><div class="field-label">공정명 (필수)</div><input class="field-input" id="procNameInp" placeholder="예: 타일공사, 도배, 전기, 철거"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeProcessModal()">취소</button>
+      <button class="modal-save" onclick="saveProcessModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM MODAL -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal-inner">
+    <div class="modal-title" id="itemModalTitle">품목 추가</div>
+    <div class="field-row"><div class="field-label">품목명 (필수)</div><input class="field-input" id="itemNameInp" placeholder="예: 타일 300x300, 실크벽지, 전선"></div>
+    <div class="field-row"><div class="field-label">단위 (선택)</div><input class="field-input" id="itemUnitInp" placeholder="예: 장, m², EA, 롤"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeItemModal()">취소</button>
+      <button class="modal-save" onclick="saveItemModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<button class="income-fab" id="incomeFab" style="display:none" onclick="openIncomeModal()">＋ 매출 입력</button>
+</div><!-- /mainApp -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase compat (전역 방식) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyArI5BFxLdkPM8ZVkE7029tCa_00i5QyKM",
+  authDomain:"spaceguo-expense.firebaseapp.com",
+  projectId:"spaceguo-expense",
+  storageBucket:"spaceguo-expense.firebasestorage.app",
+  messagingSenderId:"1034533456811",
+  appId:"1:1034533456811:web:e770845fb45758ef6e60ee"
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── 상태 ──
+let records=[], incomes=[], sites=[], cards=[], accounts=[], processes=[];
+let unsubRec=null, unsubInc=null;
+let amountStr='', selectedCategory='자재비', selectedVat='included';
+let selectedPayMethod='', selectedPayType='';
+let selectedItems=[];
+let currentFilter='전체', dashPeriod='';
+let editingCardIdx=-1, selectedCardType='신용';
+let editingAccIdx=-1;
+let editingProcIdx=-1, editingItemIdx=-1, currentProcForItem=-1;
+
+const CAT_ICONS={'자재비':{icon:'🧱',bg:'#2a1f0f'},'인건비':{icon:'👷',bg:'#1a2a1a'},'공구/장비':{icon:'🔧',bg:'#1a1a2a'},'교통/주차':{icon:'🚗',bg:'#2a1a2a'},'식대':{icon:'🍱',bg:'#2a1a1a'},'기타':{icon:'📦',bg:'#222'}};
+
+// ── SYNC ──
+function setSyncStatus(s){
+  var dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
+  if(s==='ok'){dot.className='sync-dot ok';lbl.textContent='저장됨';}
+  if(s==='saving'){dot.className='sync-dot saving';lbl.textContent='저장 중';}
+  if(s==='err'){dot.className='sync-dot err';lbl.textContent='오류';}
+  if(s==='live'){dot.className='sync-dot ok';lbl.textContent='실시간';}
+}
+
+// ── AUTH ──
+function togglePw(){
+  var inp=document.getElementById('loginPw'),btn=document.getElementById('pwEyeBtn');
+  inp.type=inp.type==='password'?'text':'password';
+  btn.textContent=inp.type==='password'?'👁':'🙈';
+}
+function doLogin(){
+  var email=document.getElementById('loginEmail').value.trim();
+  var pw=document.getElementById('loginPw').value;
+  auth.signInWithEmailAndPassword(email,pw).catch(function(){
+    document.getElementById('loginErr').textContent='이메일 또는 비밀번호를 확인해주세요';
+  });
+}
+function doSignup(){
+  var email=document.getElementById('loginEmail').value.trim();
+  var pw=document.getElementById('loginPw').value;
+  if(!email||pw.length<6){document.getElementById('loginErr').textContent='이메일과 6자 이상 비밀번호를 입력하세요';return;}
+  auth.createUserWithEmailAndPassword(email,pw).catch(function(e){
+    document.getElementById('loginErr').textContent=e.message;
+  });
+}
+function doGoogleLogin(){
+  var errEl=document.getElementById('loginErr');
+  errEl.style.color='var(--muted)';errEl.textContent='구글 로그인 창 여는 중...';
+  var provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).then(function(){errEl.textContent='';}).catch(function(e){
+    errEl.style.color='var(--red)';
+    errEl.textContent=e.code==='auth/popup-closed-by-user'?'로그인 창이 닫혔어요':'구글 로그인 실패: '+e.message;
+  });
+}
+function doResetPw(){
+  var email=document.getElementById('loginEmail').value.trim();
+  var errEl=document.getElementById('loginErr');
+  if(!email){errEl.style.color='var(--accent2)';errEl.textContent='이메일을 먼저 입력해주세요';return;}
+  auth.sendPasswordResetEmail(email).then(function(){
+    errEl.style.color='var(--green)';errEl.textContent='✓ 재설정 이메일을 보냈어요';
+  }).catch(function(){errEl.style.color='var(--red)';errEl.textContent='이메일을 확인해주세요';});
+}
+function doLogout(){
+  if(unsubRec)unsubRec();if(unsubInc)unsubInc();
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(function(user){
+  if(user){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    document.getElementById('userInfo').textContent='로그인: '+user.email;
+    loadSettings();subscribeRecords();subscribeIncomes();setSyncStatus('live');
+  } else {
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('mainApp').style.display='none';
+    records=[];incomes=[];
+  }
+});
+
+// ── SETTINGS ──
+function loadSettings(){
+  db.collection('settings').doc('main').get().then(function(snap){
+    if(snap.exists){
+      var d=snap.data();
+      sites=d.sites||[];
+      cards=(d.cards||[]).map(function(c){return typeof c==='string'?{name:c,issuer:'',type:'신용',num:''}:c;});
+      accounts=d.accounts||[];
+      processes=d.processes||[];
+    } else {sites=[];cards=[];accounts=[];processes=[];}
+    renderSiteSelect();renderSiteList();renderCardChips();renderCardList();
+    renderAccountChips();renderAccountList();renderProcessSelect();renderProcessList();renderFilterBar();
+  });
+}
+function saveSettings(){
+  return db.collection('settings').doc('main').set({sites:sites,cards:cards,accounts:accounts,processes:processes});
+}
+
+// ── REALTIME ──
+function subscribeRecords(){
+  unsubRec=db.collection('expenses').orderBy('date','desc').onSnapshot(function(snap){
+    records=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    updateHeaderTotal();
+    if(document.getElementById('view-list').classList.contains('active'))renderList();
+    if(document.getElementById('view-dash').classList.contains('active'))renderDash();
+  });
+}
+function subscribeIncomes(){
+  unsubInc=db.collection('incomes').orderBy('date','desc').onSnapshot(function(snap){
+    incomes=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById('view-dash').classList.contains('active'))renderDash();
+  });
+}
+
+// ── NUMPAD ──
+function numInput(n){if(amountStr.length>=10)return;amountStr+=n;updateAmountDisplay();}
+function numDelete(){amountStr=amountStr.slice(0,-1);updateAmountDisplay();}
+function addAmount(n){amountStr=String(parseInt(amountStr||'0')+n);updateAmountDisplay();}
+function updateAmountDisplay(){
+  var el=document.getElementById('amountDisplay');
+  if(!amountStr||amountStr==='0'){el.textContent='0';el.classList.add('placeholder');}
+  else{el.textContent='₩'+Number(amountStr).toLocaleString('ko-KR');el.classList.remove('placeholder');}
+  updateVatInfo();
+}
+
+// ── VAT ──
+function selectVat(type){
+  selectedVat=type;
+  ['vatNone','vatIncluded','vatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
+  document.getElementById({none:'vatNone',included:'vatIncluded',excluded:'vatExcluded'}[type]).classList.add('selected');
+  updateVatInfo();
+}
+function updateVatInfo(){
+  var info=document.getElementById('vatInfo'),amount=parseInt(amountStr||'0');
+  if(!amount||selectedVat==='none'){info.classList.remove('show');return;}
+  info.classList.add('show');
+  if(selectedVat==='included'){var v=Math.round(amount/11),s=amount-v;info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+s.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>합계(VAT포함)</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div>';}
+  else{var v=Math.round(amount*.1),t=amount+v;info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>VAT포함 합계</span><span class="vat-val">₩'+t.toLocaleString('ko-KR')+'</span></div>';}
+}
+
+// ── CATEGORY ──
+function selectCat(btn,cat){
+  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('selected');});
+  btn.classList.add('selected');selectedCategory=cat;
+}
+
+// ── PAYMENT ──
+function selectPay(btn,method,type){
+  if(selectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');selectedPayMethod='';selectedPayType='';return;}
+  document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
+  btn.classList.add(type==='card'?'selected-card':'selected-cash');selectedPayMethod=method;selectedPayType=type;
+}
+
+// ── ITEMS ──
+function addItemRow(val){
+  val=val||'';
+  var area=document.getElementById('itemsArea'),row=document.createElement('div');
+  row.className='item-row';
+  row.innerHTML='<input class="item-name-input" type="text" placeholder="품목명" value="'+val+'"><button class="item-del-btn" onclick="this.parentElement.remove()">✕</button>';
+  area.appendChild(row);row.querySelector('input').focus();
+}
+
+// ── SAVE EXPENSE ──
+function saveRecord(){
+  var amount=parseInt(amountStr||'0');
+  if(!amount){showToast('금액을 입력해주세요');return;}
+  var site=document.getElementById('siteSelect').value;
+  if(!site){showToast('현장을 선택해주세요');return;}
+  var memo=document.getElementById('memoInput').value.trim();
+  var vendor=document.getElementById('vendorInput').value.trim();
+  var items=selectedItems.slice();
+  setSyncStatus('saving');
+  db.collection('expenses').add({
+    date:new Date().toISOString(),amount:amount,site:site,
+    category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
+    vat:selectedVat,vendor:vendor,items:items,memo:memo,
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    amountStr='';updateAmountDisplay();
+    document.getElementById('memoInput').value='';
+    document.getElementById('vendorInput').value='';
+    selectedItems=[];
+    document.getElementById('processSelect').value='';
+    document.getElementById('itemCheckboxArea').innerHTML='';
+    document.getElementById('vatInfo').classList.remove('show');
+    document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
+    selectedPayMethod='';selectedPayType='';
+    setSyncStatus('ok');showToast('✓ 저장됐어요');
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+
+// ── DELETE ──
+function deleteRecord(id){
+  setSyncStatus('saving');
+  db.collection('expenses').doc(id).delete().then(function(){setSyncStatus('ok');showToast('삭제됐어요');}).catch(function(){setSyncStatus('err');});
+}
+
+// ── INCOME ──
+var selectedIncVat='included';
+function selectIncVat(type){
+  selectedIncVat=type;
+  ['incVatNone','incVatIncluded','incVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
+  document.getElementById({none:'incVatNone',included:'incVatIncluded',excluded:'incVatExcluded'}[type]).classList.add('selected');
+  updateIncVatInfo();
+}
+function updateIncVatInfo(){
+  var info=document.getElementById('incVatInfo');
+  var amount=parseInt((document.getElementById('incAmount').value||'0').replace(/,/g,''));
+  if(!amount||selectedIncVat==='none'){info.classList.remove('show');return;}
+  info.classList.add('show');
+  if(selectedIncVat==='included'){
+    var v=Math.round(amount/11),s=amount-v;
+    info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+s.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>합계(VAT포함)</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div>';
+  } else {
+    var v=Math.round(amount*.1),t=amount+v;
+    info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>VAT포함 합계</span><span class="vat-val">₩'+t.toLocaleString('ko-KR')+'</span></div>';
+  }
+}
+function openIncomeModal(){
+  var sel=document.getElementById('incSiteSelect');
+  sel.innerHTML='<option value="">현장 선택</option>';
+  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  document.getElementById('incAmount').value='';
+  document.getElementById('incMemo').value='';
+  document.getElementById('incDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('incVatInfo').classList.remove('show');
+  selectIncVat('included');
+  document.getElementById('incomeModal').style.display='flex';
+}
+function closeIncomeModal(){document.getElementById('incomeModal').style.display='none';}
+function saveIncome(){
+  var site=document.getElementById('incSiteSelect').value;
+  var amount=parseInt(document.getElementById('incAmount').value.replace(/,/g,'')||'0');
+  if(!site||!amount){showToast('현장과 금액을 입력해주세요');return;}
+  var memo=document.getElementById('incMemo').value.trim();
+  var date=document.getElementById('incDate').value;
+  var vat=selectedIncVat;
+  var supply='',vatAmt='';
+  if(vat==='included'){vatAmt=Math.round(amount/11);supply=amount-vatAmt;}
+  else if(vat==='excluded'){supply=amount;vatAmt=Math.round(amount*.1);}
+  setSyncStatus('saving');
+  db.collection('incomes').add({site:site,amount:amount,vat:vat,supply:supply,vatAmt:vatAmt,memo:memo,date:date,ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    closeIncomeModal();setSyncStatus('ok');showToast('매출 저장됐어요');
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+
+// ── SITES ──
+function renderSiteSelect(){
+  var sel=document.getElementById('siteSelect'),cur=sel.value;
+  sel.innerHTML='<option value="">현장 선택</option>';
+  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===cur)o.selected=true;sel.appendChild(o);});
+}
+function renderSiteList(){
+  var el=document.getElementById('siteList');
+  el.innerHTML=sites.length?sites.map(function(s,i){return '<div class="site-item"><span class="site-name">'+s+'</span><button class="site-del" onclick="deleteSite('+i+')">✕</button></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';
+}
+function addSite(){
+  var inp=document.getElementById('newSiteInput'),name=inp.value.trim();
+  if(!name)return;
+  if(sites.includes(name)){showToast('이미 있는 현장이에요');return;}
+  sites.push(name);saveSettings().then(function(){inp.value='';renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 추가됐어요');});
+}
+function deleteSite(i){sites.splice(i,1);saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});}
+
+// ── FILTER ──
+function renderFilterBar(){
+  var bar=document.getElementById('filterBar');
+  bar.innerHTML='<button class="filter-chip '+(currentFilter==='전체'?'active':'')+'" onclick="setFilter(\'전체\',this)">전체</button>';
+  sites.forEach(function(s){bar.innerHTML+='<button class="filter-chip '+(currentFilter===s?'active':'')+'" onclick="setFilter(\''+s+'\',this)">'+s+'</button>';});
+}
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');renderList();
+}
+
+// ── LIST ──
+function renderList(){
+  var filtered=currentFilter==='전체'?records:records.filter(function(r){return r.site===currentFilter;});
+  var total=filtered.reduce(function(a,r){return a+r.amount;},0);
+  document.getElementById('filteredTotal').textContent='₩'+total.toLocaleString('ko-KR');
+  document.getElementById('filteredCount').textContent=filtered.length+'건';
+  var el=document.getElementById('recordList');
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="emoji">📋</div><p>기록이 없어요</p></div>';return;}
+  var groups={};
+  filtered.forEach(function(r){
+    var d=new Date(r.date),key=d.getFullYear()+'.'+(d.getMonth()+1+'').padStart(2,'0')+'.'+(''+d.getDate()).padStart(2,'0');
+    if(!groups[key])groups[key]=[];groups[key].push(r);
+  });
+  el.innerHTML=Object.entries(groups).map(function(e){
+    var date=e[0],recs=e[1];
+    var dayTotal=recs.reduce(function(a,r){return a+r.amount;},0);
+    return '<div class="section-header">'+date+' · ₩'+dayTotal.toLocaleString('ko-KR')+'</div>'+recs.map(function(r){
+      var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
+      var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
+      var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
+      var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
+      return '<div class="record-item"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
+    }).join('');
+  }).join('');
+}
+
+// ── HEADER TOTAL ──
+function updateHeaderTotal(){
+  var today=new Date().toDateString();
+  var t=records.filter(function(r){return new Date(r.date).toDateString()===today;}).reduce(function(a,r){return a+r.amount;},0);
+  document.getElementById('headerTotal').textContent=t?'오늘 ₩'+t.toLocaleString('ko-KR'):'';
+}
+
+// ── DASHBOARD ──
+function buildPeriods(){
+  var set={};
+  records.concat(incomes).forEach(function(r){
+    var d=new Date(r.date||'');
+    if(!isNaN(d)){set[d.getFullYear()]=1;set[d.getFullYear()+'-'+(''+( d.getMonth()+1)).padStart(2,'0')]=1;}
+  });
+  return Object.keys(set).sort().reverse();
+}
+function filterByPeriod(arr){
+  return arr.filter(function(r){
+    var d=new Date(r.date||'');if(isNaN(d))return false;
+    if(dashPeriod.includes('-')){var p=dashPeriod.split('-');return d.getFullYear()===parseInt(p[0])&&d.getMonth()+1===parseInt(p[1]);}
+    return d.getFullYear()===parseInt(dashPeriod);
+  });
+}
+function selectDashPeriod(p){dashPeriod=p;renderDash();}
+function renderDash(){
+  var periods=buildPeriods();
+  if(!periods.length){document.getElementById('dashPeriod').innerHTML='';document.getElementById('dashContent').innerHTML='<div class="empty-state"><div class="emoji">📊</div><p>기록을 먼저 입력해주세요</p></div>';return;}
+  if(!dashPeriod||!periods.includes(dashPeriod))dashPeriod=periods[0];
+  document.getElementById('dashPeriod').innerHTML=periods.map(function(p){return '<button class="period-btn '+(dashPeriod===p?'active':'')+'" onclick="selectDashPeriod(\''+p+'\')">'+p+'</button>';}).join('');
+  var fRec=filterByPeriod(records),fInc=filterByPeriod(incomes);
+  var totalInc=fInc.reduce(function(a,r){return a+r.amount;},0);
+  var totalExp=fRec.reduce(function(a,r){return a+r.amount;},0);
+  var profit=totalInc-totalExp,margin=totalInc?Math.round(profit/totalInc*100):0;
+  var byCat={};fRec.forEach(function(r){byCat[r.category]=(byCat[r.category]||0)+r.amount;});
+  var catEntries=Object.entries(byCat).sort(function(a,b){return b[1]-a[1];});
+  var bySite={};
+  fRec.forEach(function(r){if(!bySite[r.site])bySite[r.site]={exp:0,inc:0};bySite[r.site].exp+=r.amount;});
+  fInc.forEach(function(r){if(!bySite[r.site])bySite[r.site]={exp:0,inc:0};bySite[r.site].inc+=r.amount;});
+  var siteEntries=Object.entries(bySite).sort(function(a,b){return(b[1].inc-b[1].exp)-(a[1].inc-a[1].exp);});
+  function fmt(n){return '₩'+Math.abs(n).toLocaleString('ko-KR');}
+  document.getElementById('dashContent').innerHTML=
+    '<div class="kpi-grid">'
+    +'<div class="kpi-card"><div class="kpi-label">📥 총 매출</div><div class="kpi-value income">'+fmt(totalInc)+'</div><div class="kpi-sub">'+fInc.length+'건</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">📤 총 매입</div><div class="kpi-value expense">'+fmt(totalExp)+'</div><div class="kpi-sub">'+fRec.length+'건</div></div>'
+    +'<div class="kpi-card full"><div class="kpi-label">💰 손익 (매출 - 매입)</div><div class="kpi-value profit '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'-')+fmt(profit)+'</div><div class="kpi-sub">이익률 '+margin+'%'+(totalInc?'':' · 매출 입력 필요')+'</div></div>'
+    +'</div>'
+    +'<div class="section-header" style="margin-bottom:10px">현장별 손익</div>'
+    +'<div class="site-pl-list">'+(siteEntries.length?siteEntries.map(function(e){var s=e[0],v=e[1],pl=v.inc-v.exp,plc=pl>=0?'var(--green)':'var(--red)',pct=v.inc?Math.round(v.exp/v.inc*100):100;return '<div class="site-pl-item"><div class="site-pl-name">📍 '+s+'</div><div class="site-pl-row"><span class="lbl">매출</span><span style="color:var(--blue)">'+fmt(v.inc)+'</span></div><div class="site-pl-row"><span class="lbl">매입</span><span style="color:var(--red)">'+fmt(v.exp)+'</span></div><div class="site-pl-row"><span class="lbl">손익</span><span style="color:'+plc+'">'+(pl>=0?'+':'-')+fmt(pl)+'</span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+plc+'"></div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">데이터 없음</div>')+'</div>'
+    +'<div class="section-header" style="margin-bottom:10px">카테고리별 매입</div>'
+    +'<div class="cat-breakdown">'+(catEntries.length?catEntries.map(function(e){var cat=e[0],amt=e[1],ci=CAT_ICONS[cat]||CAT_ICONS['기타'],pct=totalExp?Math.round(amt/totalExp*100):0;return '<div class="cat-row"><div class="cat-name">'+ci.icon+' '+cat+'</div><div style="display:flex;align-items:center;gap:8px"><span class="cat-pct">'+pct+'%</span><span style="font-weight:700">'+fmt(amt)+'</span></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:4px">데이터 없음</div>')+'</div>';
+}
+
+// ── CARDS ──
+function renderCardChips(){
+  var el=document.getElementById('cardChips');
+  if(!cards.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">카드 없음 · 설정에서 추가</span>';return;}
+  el.innerHTML=cards.map(function(c){var label=c.num?c.name+' ('+c.num+')':c.name;return '<button class="pay-chip'+(selectedPayMethod===c.name?' selected-card':'')+'" onclick="selectPay(this,\''+c.name+'\',\'card\')">'+label+'</button>';}).join('');
+}
+function renderCardList(){
+  var el=document.getElementById('cardList');
+  if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
+  el.innerHTML=cards.map(function(c,i){return '<div class="site-item" onclick="openCardModal('+i+')"><div style="flex:1"><div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div></div><button class="site-del" onclick="event.stopPropagation();deleteCard('+i+')">✕</button></div>';}).join('');
+}
+function selectCardType(type){
+  selectedCardType=type;
+  [{id:'ctCredit',t:'신용'},{id:'ctDebit',t:'체크'},{id:'ctCorp',t:'법인'}].forEach(function(x){var el=document.getElementById(x.id);if(el)el.classList.toggle('selected-card',x.t===type);});
+}
+function openCardModal(idx){
+  editingCardIdx=idx===undefined?-1:idx;
+  document.getElementById('cardModalTitle').textContent=editingCardIdx>=0?'카드 수정':'카드 추가';
+  if(editingCardIdx>=0){var c=cards[editingCardIdx];document.getElementById('cardNameInp').value=c.name||'';document.getElementById('cardIssuerInp').value=c.issuer||'';document.getElementById('cardNumInp').value=c.num||'';selectCardType(c.type||'신용');}
+  else{document.getElementById('cardNameInp').value='';document.getElementById('cardIssuerInp').value='';document.getElementById('cardNumInp').value='';selectCardType('신용');}
+  document.getElementById('cardModal').style.display='flex';
+}
+function closeCardModal(){document.getElementById('cardModal').style.display='none';}
+function saveCardModal(){
+  var name=document.getElementById('cardNameInp').value.trim();
+  if(!name){showToast('카드 별칭을 입력해주세요');return;}
+  var card={name:name,issuer:document.getElementById('cardIssuerInp').value,type:selectedCardType,num:document.getElementById('cardNumInp').value.trim()};
+  if(editingCardIdx>=0)cards[editingCardIdx]=card;else cards.push(card);
+  saveSettings().then(function(){closeCardModal();renderCardList();renderCardChips();showToast(editingCardIdx>=0?'카드 수정됐어요':'카드 추가됐어요');});
+}
+function deleteCard(i){
+  if(selectedPayMethod===cards[i].name){selectedPayMethod='';selectedPayType='';}
+  cards.splice(i,1);saveSettings().then(function(){renderCardList();renderCardChips();});
+}
+
+// ── ACCOUNTS ──
+function renderAccountChips(){
+  var el=document.getElementById('accountChips');
+  if(!el)return;
+  if(!accounts.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">계좌 없음 · 설정에서 추가</span>';return;}
+  el.innerHTML=accounts.map(function(a){
+    var label=a.num?a.name+' ('+a.num.slice(-4)+')':a.name;
+    return '<button class="pay-chip'+(selectedPayMethod===a.name?' selected-cash':'')+'" onclick="selectPay(this,\''+a.name+'\',\'cash\')">🏦 '+label+'</button>';
+  }).join('');
+}
+function renderAccountList(){
+  var el=document.getElementById('accountList');
+  if(!el)return;
+  if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
+  el.innerHTML=accounts.map(function(a,i){
+    return '<div class="site-item" onclick="openAccountModal('+i+')">'
+      +'<div style="flex:1">'
+      +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
+      +'</div>'
+      +'<button class="site-del" onclick="event.stopPropagation();deleteAccount('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+}
+function openAccountModal(idx){
+  editingAccIdx=idx===undefined?-1:idx;
+  document.getElementById('accountModalTitle').textContent=editingAccIdx>=0?'계좌 수정':'계좌 추가';
+  if(editingAccIdx>=0){
+    var a=accounts[editingAccIdx];
+    document.getElementById('accNameInp').value=a.name||'';
+    document.getElementById('accBankInp').value=a.bank||'';
+    document.getElementById('accNumInp').value=a.num||'';
+    document.getElementById('accOwnerInp').value=a.owner||'';
+  } else {
+    document.getElementById('accNameInp').value='';
+    document.getElementById('accBankInp').value='';
+    document.getElementById('accNumInp').value='';
+    document.getElementById('accOwnerInp').value='';
+  }
+  document.getElementById('accountModal').style.display='flex';
+  setTimeout(function(){document.getElementById('accNameInp').focus();},100);
+}
+function closeAccountModal(){document.getElementById('accountModal').style.display='none';}
+function saveAccountModal(){
+  var name=document.getElementById('accNameInp').value.trim();
+  if(!name){showToast('계좌 별칭을 입력해주세요');return;}
+  var acc={name:name,bank:document.getElementById('accBankInp').value,num:document.getElementById('accNumInp').value.trim(),owner:document.getElementById('accOwnerInp').value.trim()};
+  if(editingAccIdx>=0)accounts[editingAccIdx]=acc;else accounts.push(acc);
+  saveSettings().then(function(){closeAccountModal();renderAccountList();renderAccountChips();showToast(editingAccIdx>=0?'계좌 수정됐어요':'계좌 추가됐어요');});
+}
+function deleteAccount(i){
+  if(selectedPayMethod===accounts[i].name){selectedPayMethod='';selectedPayType='';}
+  accounts.splice(i,1);saveSettings().then(function(){renderAccountList();renderAccountChips();});
+}
+
+// ── PROCESSES ──
+function renderProcessSelect(){
+  var sel=document.getElementById('processSelect');
+  if(!sel)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">공정 선택</option>';
+  processes.forEach(function(p,i){
+    var o=document.createElement('option');o.value=i;o.textContent=p.name;
+    if(String(i)===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+function renderItemCheckboxes(){
+  var sel=document.getElementById('processSelect');
+  var area=document.getElementById('itemCheckboxArea');
+  selectedItems=[];
+  if(!sel.value&&sel.value!=='0'){area.innerHTML='';return;}
+  var proc=processes[parseInt(sel.value)];
+  if(!proc||!proc.items||!proc.items.length){
+    area.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">품목이 없어요 · 설정에서 추가하세요</div>';return;
+  }
+  area.innerHTML='<div class="item-check-grid">'+proc.items.map(function(item,i){
+    return '<button class="item-check-btn" onclick="toggleItem(this,\''+item.name+(item.unit?' ('+item.unit+')':'')+'\')">'
+      +'<span>'+item.name+'</span>'
+      +(item.unit?'<span class="unit">'+item.unit+'</span>':'')
+      +'</button>';
+  }).join('')+'</div>';
+}
+function toggleItem(btn,label){
+  if(btn.classList.contains('checked')){
+    btn.classList.remove('checked');
+    selectedItems=selectedItems.filter(function(i){return i!==label;});
+  } else {
+    btn.classList.add('checked');
+    selectedItems.push(label);
+  }
+}
+function renderProcessList(){
+  var el=document.getElementById('processList');
+  if(!el)return;
+  if(!processes.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';return;}
+  el.innerHTML=processes.map(function(p,pi){
+    var itemTags=(p.items||[]).map(function(item,ii){
+      return '<span class="proc-item-tag">'+item.name+(item.unit?' <span style="opacity:.6;font-size:10px">'+item.unit+'</span>':'')
+        +'<button class="proc-item-del" onclick="deleteProcessItem('+pi+','+ii+')">✕</button></span>';
+    }).join('');
+    return '<div class="process-block">'
+      +'<div class="process-header">'
+      +'<span class="process-name">'+p.name+'</span>'
+      +'<div class="process-actions">'
+      +'<button class="proc-btn" onclick="openItemModal('+pi+')">＋ 품목</button>'
+      +'<button class="proc-btn del" onclick="deleteProcess('+pi+')">삭제</button>'
+      +'</div></div>'
+      +'<div class="proc-item-list">'+(itemTags||'<span style="font-size:12px;color:var(--muted)">품목 없음</span>')+'</div>'
+      +'</div>';
+  }).join('');
+}
+function openProcessModal(idx){
+  editingProcIdx=idx===undefined?-1:idx;
+  document.getElementById('processModalTitle').textContent=editingProcIdx>=0?'공정 수정':'공정 추가';
+  document.getElementById('procNameInp').value=editingProcIdx>=0?(processes[editingProcIdx].name||''):'';
+  document.getElementById('processModal').style.display='flex';
+  setTimeout(function(){document.getElementById('procNameInp').focus();},100);
+}
+function closeProcessModal(){document.getElementById('processModal').style.display='none';}
+function saveProcessModal(){
+  var name=document.getElementById('procNameInp').value.trim();
+  if(!name){showToast('공정명을 입력해주세요');return;}
+  if(editingProcIdx>=0){processes[editingProcIdx].name=name;}
+  else{processes.push({name:name,items:[]});}
+  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
+}
+function deleteProcess(pi){
+  if(!confirm('"'+processes[pi].name+'" 공정을 삭제할까요?'))return;
+  processes.splice(pi,1);
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();});
+}
+function openItemModal(pi){
+  currentProcForItem=pi;editingItemIdx=-1;
+  document.getElementById('itemModalTitle').textContent=processes[pi].name+' · 품목 추가';
+  document.getElementById('itemNameInp').value='';
+  document.getElementById('itemUnitInp').value='';
+  document.getElementById('itemModal').style.display='flex';
+  setTimeout(function(){document.getElementById('itemNameInp').focus();},100);
+}
+function closeItemModal(){document.getElementById('itemModal').style.display='none';}
+function saveItemModal(){
+  var name=document.getElementById('itemNameInp').value.trim();
+  if(!name){showToast('품목명을 입력해주세요');return;}
+  var unit=document.getElementById('itemUnitInp').value.trim();
+  if(!processes[currentProcForItem].items)processes[currentProcForItem].items=[];
+  processes[currentProcForItem].items.push({name:name,unit:unit});
+  saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
+}
+function deleteProcessItem(pi,ii){
+  processes[pi].items.splice(ii,1);
+  saveSettings().then(function(){renderProcessList();});
+}
+
+// ── EXPORT ──
+function exportCSV(){
+  if(!records.length){showToast('기록이 없어요');return;}
+  var header='날짜,시간,현장명,카테고리,결제수단,부가세,구매처,구매목록,금액,공급가액,부가세액,메모';
+  var rows=records.map(function(r){
+    var d=new Date(r.date),date=d.getFullYear()+'-'+(''+( d.getMonth()+1)).padStart(2,'0')+'-'+(''+d.getDate()).padStart(2,'0');
+    var time=(''+d.getHours()).padStart(2,'0')+':'+(''+d.getMinutes()).padStart(2,'0');
+    var items=r.items?r.items.join(' / '):'';
+    var vatLabel=r.vat==='included'?'VAT포함':r.vat==='excluded'?'VAT별도':'해당없음';
+    var supply='',vatAmt='';
+    if(r.vat==='included'){vatAmt=Math.round(r.amount/11);supply=r.amount-vatAmt;}
+    else if(r.vat==='excluded'){supply=r.amount;vatAmt=Math.round(r.amount*.1);}
+    return [date,time,r.site,r.category,r.payMethod||'',vatLabel,r.vendor||'',items,r.amount,supply,vatAmt,r.memo||''].join(',');
+  });
+  var csv='\uFEFF'+[header].concat(rows).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='현장지출내역.csv';a.click();showToast('CSV 다운로드됐어요');
+}
+function copyForKakao(){
+  var now=new Date();
+  var thisMonth=records.filter(function(r){var d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  if(!thisMonth.length){showToast('이번 달 기록이 없어요');return;}
+  var total=thisMonth.reduce(function(a,r){return a+r.amount;},0);
+  var bySite={};thisMonth.forEach(function(r){bySite[r.site]=(bySite[r.site]||0)+r.amount;});
+  var text='📊 '+(now.getMonth()+1)+'월 현장 지출 내역\n─────────────────\n';
+  Object.entries(bySite).forEach(function(e){text+='• '+e[0]+': ₩'+e[1].toLocaleString('ko-KR')+'\n';});
+  text+='─────────────────\n합계: ₩'+total.toLocaleString('ko-KR')+' ('+thisMonth.length+'건)';
+  navigator.clipboard.writeText(text).then(function(){showToast('카카오톡에 붙여넣기 하세요');}).catch(function(){prompt('복사하세요:',text);});
+}
+function clearAll(){
+  if(!confirm('정말 전체 삭제할까요?'))return;
+  db.collection('expenses').get().then(function(snap){
+    var batch=db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});return batch.commit();
+  }).then(function(){showToast('전체 삭제됐어요');});
+}
+
+// ── TABS ──
+function switchTab(tab){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('view-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
+  if(tab==='list'){renderFilterBar();renderList();}
+  if(tab==='dash'){renderDash();}
+  if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();}
+}
+
+// ── TOAST ──
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2200);
+}
+</script>
+</body>
+</html>
