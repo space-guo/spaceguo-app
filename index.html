@@ -166,6 +166,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .sync-label{font-size:11px;color:var(--muted)}
 .income-fab{position:fixed;bottom:24px;right:50%;transform:translateX(calc(50% + 100px));background:var(--blue);border:none;border-radius:50px;color:#fff;font-family:inherit;font-size:13px;font-weight:800;padding:12px 20px;cursor:pointer;z-index:90;box-shadow:0 4px 20px rgba(91,140,247,.4)}
 
+/* ── SMS PASTE ── */
+.sms-paste-bar{margin-bottom:10px}
+.sms-paste-btn{width:100%;background:var(--surface);border:1px dashed var(--accent2);border-radius:12px;color:var(--accent2);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;transition:all .15s;letter-spacing:0.02em}
+.sms-paste-btn:active{background:var(--surface2)}
+
 /* ── CALENDAR ── */
 .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .cal-nav-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;padding:6px 16px;cursor:pointer}
@@ -192,6 +197,40 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .item-check-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
 .item-check-btn.checked{background:#1a2a1a;border-color:var(--green);color:var(--green)}
 .item-check-btn .unit{font-size:10px;color:inherit;opacity:.7}
+
+/* ── PENDING NOTIFICATIONS ── */
+.pending-section{margin-bottom:14px}
+.pending-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pending-title{font-size:11px;color:var(--accent2);letter-spacing:.1em;font-weight:700}
+.pending-count{font-size:11px;color:var(--accent2);font-weight:700;background:#2a1f00;border:1px solid var(--accent2);border-radius:10px;padding:2px 8px}
+.pending-card{background:var(--surface);border:1px solid var(--accent2);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.pending-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent2)}
+.pending-card:active{transform:scale(.98);opacity:.85}
+.pending-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pending-card-amount{font-size:18px;font-weight:900;color:var(--accent)}
+.pending-card-date{font-size:11px;color:var(--muted)}
+.pending-card-vendor{font-size:13px;font-weight:600;color:var(--text)}
+.pending-card-hint{font-size:11px;color:var(--accent2);margin-top:4px}
+.pending-empty{font-size:13px;color:var(--muted);text-align:center;padding:12px;background:var(--surface);border:1px dashed var(--border);border-radius:10px}
+
+/* ── NOTIFICATIONS TAB ── */
+.notif-filter{display:flex;gap:6px;margin-bottom:12px}
+.notif-filter-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:8px;cursor:pointer}
+.notif-filter-btn.active{background:var(--surface);border-color:var(--accent2);color:var(--accent2)}
+.notif-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.notif-card.pending{border-color:var(--accent2)}
+.notif-card.done{opacity:.6}
+.notif-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.notif-status.pending{background:var(--accent2)}
+.notif-status.done{background:var(--green)}
+.notif-info{flex:1;min-width:0}
+.notif-vendor{font-size:13px;font-weight:700}
+.notif-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.notif-amount{font-size:15px;font-weight:800;color:var(--accent);text-align:right;flex-shrink:0}
+.notif-actions{display:flex;gap:6px;margin-top:8px}
+.notif-apply-btn{flex:1;background:var(--accent2);border:none;border-radius:8px;color:#000;font-family:inherit;font-size:12px;font-weight:800;padding:8px;cursor:pointer}
+.notif-del-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:8px 12px;cursor:pointer}
+.notif-done-badge{font-size:10px;font-weight:700;background:#1a2a1a;color:var(--green);border-radius:4px;padding:2px 6px;margin-left:6px}
 
 /* 공정 관리 */
 .process-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px}
@@ -244,6 +283,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
   <div class="tab-bar">
     <button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
+    <button class="tab" id="tab-notif" onclick="switchTab('notif')">알림<span id="notifBadge" style="display:none;background:var(--accent2);color:#000;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;margin-left:3px"></span></button>
     <button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
     <button class="tab" id="tab-cal" onclick="switchTab('cal')">달력</button>
     <button class="tab" id="tab-dash" onclick="switchTab('dash')">손익</button>
@@ -253,6 +293,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <!-- INPUT -->
 <div class="view active" id="view-input">
+
+  <!-- 대기 중인 카드 알림 -->
+  <div class="pending-section" id="pendingSection">
+    <div class="pending-header">
+      <span class="pending-title">🔔 카드 알림 대기</span>
+      <span class="pending-count" id="pendingCount">0건</span>
+    </div>
+    <div id="pendingList"><div class="pending-empty">대기 중인 알림이 없어요</div></div>
+  </div>
+
+  <!-- SMS 자동파싱 -->
+  <div class="sms-paste-bar">
+    <button class="sms-paste-btn" onclick="openSmsModal()">📱 결제 문자 붙여넣기</button>
+  </div>
+
   <div class="amount-display">
     <div class="amount-label">결제 금액 (원)</div>
     <div class="amount-value placeholder" id="amountDisplay">0</div>
@@ -337,6 +392,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <input class="field-input" id="memoInput" type="text" placeholder="특이사항...">
   </div>
   <button class="submit-btn" onclick="saveRecord()">💾 저장</button>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="view" id="view-notif">
+  <div class="notif-filter">
+    <button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
+    <button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
+    <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
+  </div>
+  <div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
 </div>
 
 <!-- LIST -->
@@ -498,6 +563,28 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
+<!-- SMS PARSE MODAL -->
+<div class="modal-overlay" id="smsModal">
+  <div class="modal-inner">
+    <div class="modal-title">📱 결제 문자 붙여넣기</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">결제 알림 문자를 그대로 붙여넣으면 금액과 가맹점을 자동으로 읽어요</div>
+    <div class="field-row">
+      <textarea class="field-input" id="smsPasteInput" rows="5" placeholder="예시:
+[신한은행] 출금 87,000원 (잔액 1,234,567원) 타일나라 05/28 14:30
+
+[국민은행] 홍길동님 34,000원 출금 (잔액 890,000원) 철물왕 2026-05-28" style="resize:none;font-size:13px;line-height:1.6"></textarea>
+    </div>
+    <div id="smsParseResult" style="display:none;background:var(--surface2);border:1px solid var(--green);border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px">
+      <div style="color:var(--green);font-weight:700;margin-bottom:6px">✓ 파싱 결과</div>
+      <div id="smsResultContent"></div>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeSmsModal()">취소</button>
+      <button class="modal-save" id="smsParseBtn" onclick="parseSms()">자동 읽기</button>
+    </div>
+  </div>
+</div>
+
 <button class="income-fab" id="incomeFab" style="display:none" onclick="openIncomeModal()">＋ 매출 입력</button>
 
 <!-- SITE EDIT MODAL -->
@@ -566,6 +653,7 @@ let currentFilter='전체', dashPeriod='';
 let editingCardIdx=-1, selectedCardType='신용';
 let editingAccIdx=-1;
 let editingProcIdx=-1, editingItemIdx=-1, currentProcForItem=-1;
+let pendingNotifs=[], unsubPending=null, notifFilter='pending';
 
 const CAT_ICONS={'자재비':{icon:'🧱',bg:'#2a1f0f'},'인건비':{icon:'👷',bg:'#1a2a1a'},'공구/장비':{icon:'🔧',bg:'#1a1a2a'},'교통/주차':{icon:'🚗',bg:'#2a1a2a'},'식대':{icon:'🍱',bg:'#2a1a1a'},'기타':{icon:'📦',bg:'#222'}};
 
@@ -617,7 +705,7 @@ function doResetPw(){
   }).catch(function(){errEl.style.color='var(--red)';errEl.textContent='이메일을 확인해주세요';});
 }
 function doLogout(){
-  if(unsubRec)unsubRec();if(unsubInc)unsubInc();
+  if(unsubRec)unsubRec();if(unsubInc)unsubInc();if(unsubPending)unsubPending();
   auth.signOut();
 }
 
@@ -626,7 +714,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();subscribeRecords();subscribeIncomes();setSyncStatus('live');
+    loadSettings();subscribeRecords();subscribeIncomes();subscribePending();setSyncStatus('live');
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -666,6 +754,113 @@ function subscribeIncomes(){
     incomes=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     if(document.getElementById('view-dash').classList.contains('active'))renderDash();
   });
+}
+
+// ── PENDING NOTIFICATIONS ──
+function subscribePending(){
+  unsubPending=db.collection('sms_pending').orderBy('date','desc').onSnapshot(function(snap){
+    pendingNotifs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    renderPendingSection();
+    updateNotifBadge();
+    if(document.getElementById('view-notif').classList.contains('active'))renderNotifTab();
+  });
+}
+
+function updateNotifBadge(){
+  var pending=pendingNotifs.filter(function(n){return n.status==='pending';});
+  var badge=document.getElementById('notifBadge');
+  if(pending.length>0){badge.style.display='inline';badge.textContent=pending.length;}
+  else{badge.style.display='none';}
+}
+
+function renderPendingSection(){
+  var pending=pendingNotifs.filter(function(n){return n.status==='pending';});
+  var countEl=document.getElementById('pendingCount');
+  var listEl=document.getElementById('pendingList');
+  countEl.textContent=pending.length+'건';
+  if(!pending.length){
+    listEl.innerHTML='<div class="pending-empty">대기 중인 알림이 없어요</div>';
+    return;
+  }
+  listEl.innerHTML=pending.map(function(n){
+    var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
+    var dateStr=n.date?n.date.slice(0,16):'';
+    var vendor=n.vendor||'';
+    return '<div class="pending-card" onclick="applyPending(\''+n.id+'\','+amount+',\''+vendor.replace(/'/g,"\\'")+'\')">'
+      +'<div class="pending-card-top">'
+      +'<span class="pending-card-amount">₩'+amount.toLocaleString('ko-KR')+'</span>'
+      +'<span class="pending-card-date">'+dateStr+'</span>'
+      +'</div>'
+      +(vendor?'<div class="pending-card-vendor">🏪 '+vendor+'</div>':'')
+      +'<div class="pending-card-hint">탭하면 자동 입력돼요 →</div>'
+      +'</div>';
+  }).join('');
+}
+
+function applyPending(id, amount, vendor){
+  // 금액 자동 입력
+  amountStr=String(amount);
+  updateAmountDisplay();
+  // 구매처 자동 입력
+  if(vendor) document.getElementById('vendorInput').value=vendor;
+  // 카드 자동 매칭 시도
+  if(vendor){
+    var matched=cards.find(function(c){
+      return c.issuer&&vendor.indexOf(c.issuer.replace('카드',''))>=0;
+    });
+    if(matched){selectedPayMethod=matched.name;selectedPayType='card';renderCardChips();}
+  }
+  // 입력 탭으로 이동
+  switchTab('input');
+  // pending 상태 업데이트
+  db.collection('sms_pending').doc(id).update({status:'done',appliedAt:new Date().toISOString()});
+  showToast('✓ 자동 입력됐어요! 현장·카테고리 선택 후 저장하세요');
+  // 페이지 상단으로 스크롤
+  setTimeout(function(){
+    document.getElementById('view-input').scrollTop=0;
+    window.scrollTo(0,0);
+  },100);
+}
+
+// ── NOTIF TAB ──
+function setNotifFilter(filter, btn){
+  notifFilter=filter;
+  document.querySelectorAll('.notif-filter-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderNotifTab();
+}
+
+function renderNotifTab(){
+  var filtered=pendingNotifs;
+  if(notifFilter==='pending') filtered=pendingNotifs.filter(function(n){return n.status==='pending';});
+  if(notifFilter==='done') filtered=pendingNotifs.filter(function(n){return n.status==='done';});
+  var el=document.getElementById('notifList');
+  if(!filtered.length){
+    el.innerHTML='<div class="empty-state"><div class="emoji">🔔</div><p>'+(notifFilter==='pending'?'대기 중인 알림이 없어요':notifFilter==='done'?'처리된 알림이 없어요':'알림이 없어요')+'</p></div>';
+    return;
+  }
+  el.innerHTML=filtered.map(function(n){
+    var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
+    var dateStr=n.date?n.date.slice(0,16):'';
+    var vendor=n.vendor||'';
+    var isPending=n.status==='pending';
+    return '<div class="notif-card '+(isPending?'pending':'done')+'">'
+      +'<div class="notif-status '+(isPending?'pending':'done')+'"></div>'
+      +'<div class="notif-info">'
+      +'<div class="notif-vendor">'+(vendor||'가맹점 미확인')+(isPending?'':'<span class="notif-done-badge">처리됨</span>')+'</div>'
+      +'<div class="notif-meta">'+dateStr+(n.appliedAt?' · 적용: '+n.appliedAt.slice(0,16):'')+'</div>'
+      +(isPending?'<div class="notif-actions">'
+        +'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+vendor.replace(/'/g,"\\'")+'\')">입력에 적용</button>'
+        +'<button class="notif-del-btn" onclick="deletePending(\''+n.id+'\')">삭제</button>'
+        +'</div>':'')
+      +'</div>'
+      +'<div class="notif-amount">₩'+amount.toLocaleString('ko-KR')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function deletePending(id){
+  db.collection('sms_pending').doc(id).delete().then(function(){showToast('알림 삭제됐어요');});
 }
 
 // ── NUMPAD ──
@@ -1210,6 +1405,97 @@ function clearAll(){
   }).then(function(){showToast('전체 삭제됐어요');});
 }
 
+// ── SMS PARSE ──
+function openSmsModal(){
+  document.getElementById('smsPasteInput').value='';
+  document.getElementById('smsParseResult').style.display='none';
+  document.getElementById('smsParseBtn').textContent='자동 읽기';
+  document.getElementById('smsModal').style.display='flex';
+  setTimeout(function(){document.getElementById('smsPasteInput').focus();},100);
+}
+function closeSmsModal(){document.getElementById('smsModal').style.display='none';}
+
+function parseSms(){
+  var text=document.getElementById('smsPasteInput').value.trim();
+  if(!text){showToast('문자를 붙여넣어주세요');return;}
+
+  var amount=0, vendor='', bank='';
+
+  // ── 금액 파싱 (여러 패턴) ──
+  var amtPatterns=[
+    /출금\s*([\d,]+)원/,
+    /결제\s*([\d,]+)원/,
+    /이체\s*([\d,]+)원/,
+    /([\d,]+)원\s*출금/,
+    /([\d,]+)원\s*결제/,
+    /금액[:\s]*([\d,]+)원/,
+    /승인금액[:\s]*([\d,]+)/,
+    /([\d,]+)원/,
+  ];
+  for(var i=0;i<amtPatterns.length;i++){
+    var m=text.match(amtPatterns[i]);
+    if(m){amount=parseInt(m[1].replace(/,/g,''));break;}
+  }
+
+  // ── 은행/카드사 파싱 ──
+  var bankPatterns=['신한은행','국민은행','하나은행','우리은행','농협','기업은행','카카오뱅크','토스','신한카드','국민카드','삼성카드','현대카드','롯데카드','하나카드'];
+  for(var i=0;i<bankPatterns.length;i++){
+    if(text.indexOf(bankPatterns[i])>=0){bank=bankPatterns[i];break;}
+  }
+
+  // ── 가맹점/출처 파싱 ──
+  // 패턴: 금액 뒤에 오는 가게명
+  var vendorPatterns=[
+    /원\s*[(\s]*잔액[^\)]*[)\s]*([가-힣a-zA-Z0-9\s]+?)(?:\s*\d{2}\/\d{2}|\s*\d{4}-\d{2}|$)/,
+    /([가-힣a-zA-Z0-9]+(?:마트|몰|스토어|상회|철물|타일|자재|페인트|전기|설비|도배|목공|인테리어|건자재|철강|유통|산업|상사|씨앤))/,
+    /가맹점[:\s]*([^\s\n]+)/,
+    /\)\s*([가-힣a-zA-Z0-9]+)\s+\d{2}\/\d{2}/,
+  ];
+  for(var i=0;i<vendorPatterns.length;i++){
+    var m=text.match(vendorPatterns[i]);
+    if(m&&m[1]&&m[1].trim().length>1){vendor=m[1].trim();break;}
+  }
+
+  // ── 결과 표시 ──
+  var resultEl=document.getElementById('smsParseResult');
+  var contentEl=document.getElementById('smsResultContent');
+
+  if(!amount){
+    showToast('금액을 찾지 못했어요. 문자를 확인해주세요');
+    return;
+  }
+
+  resultEl.style.display='block';
+  contentEl.innerHTML=
+    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">금액</span><span style="font-weight:800;color:var(--accent)">₩'+amount.toLocaleString('ko-KR')+'</span></div>'
+    +(vendor?'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">가맹점</span><span style="font-weight:700">'+vendor+'</span></div>':'')
+    +(bank?'<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">은행/카드</span><span style="font-weight:700">'+bank+'</span></div>':'');
+
+  document.getElementById('smsParseBtn').textContent='이 정보로 입력하기';
+  document.getElementById('smsParseBtn').onclick=function(){applySmsResult(amount,vendor,bank);};
+}
+
+function applySmsResult(amount, vendor, bank){
+  // 금액 적용
+  amountStr=String(amount);
+  updateAmountDisplay();
+
+  // 가맹점 적용
+  if(vendor) document.getElementById('vendorInput').value=vendor;
+
+  // 카드 자동 선택 (등록된 카드 중 매칭)
+  if(bank){
+    var matched=cards.find(function(c){return c.issuer&&c.issuer.indexOf(bank.replace('은행','').replace('카드',''))>=0;});
+    if(matched){
+      selectedPayMethod=matched.name;selectedPayType='card';
+      renderCardChips();
+    }
+  }
+
+  closeSmsModal();
+  showToast('✓ 자동 입력됐어요! 현장 선택 후 저장하세요');
+}
+
 // ── CALENDAR ──
 var calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDate='';
 function calMove(dir){
@@ -1283,6 +1569,7 @@ function switchTab(tab){
   if(tabEl)tabEl.classList.add('active');
   document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
   if(tab==='list'){renderFilterBar();renderList();}
+  if(tab==='notif'){renderNotifTab();}
   if(tab==='cal'){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
   if(tab==='dash'){renderDash();}
   if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();}
