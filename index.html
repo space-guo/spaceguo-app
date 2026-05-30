@@ -843,18 +843,6 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
   // 구매처 자동 입력
   if(vendor) document.getElementById('vendorInput').value=vendor;
 
-  // 카드 자동 매칭: 카드번호 끝 4자리 우선, 없으면 카드사명으로 매칭
-  var matched=null;
-  if(cardnum){
-    matched=cards.find(function(c){return c.num&&c.num===cardnum;});
-  }
-  if(!matched&&vendor){
-    matched=cards.find(function(c){
-      return c.issuer&&vendor.indexOf(c.issuer.replace('카드',''))>=0;
-    });
-  }
-  if(matched){selectedPayMethod=matched.name;selectedPayType='card';renderCardChips();}
-
   // 활성 배너 표시
   var banner=document.getElementById('activeInputBanner');
   document.getElementById('aibAmount').textContent='₩'+amount.toLocaleString('ko-KR');
@@ -862,8 +850,24 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
   document.getElementById('aibDate').textContent=dateStr?'📅 '+dateStr:'';
   banner.classList.add('show');
 
-  // 입력 탭으로 이동
+  // 입력 탭으로 먼저 이동
   switchTab('input');
+
+  // 탭 이동 후 카드 매칭 (renderCardChips가 탭 전환 시 초기화되므로 이후 실행)
+  var matched=null;
+  if(cardnum){
+    matched=cards.find(function(c){return c.num&&c.num===String(cardnum);});
+  }
+  if(!matched&&vendor){
+    matched=cards.find(function(c){
+      return c.issuer&&vendor.indexOf(c.issuer.replace('카드',''))>=0;
+    });
+  }
+  if(matched){
+    selectedPayMethod=matched.name;
+    selectedPayType='card';
+    renderCardChips();
+  }
 
   // pending → processing 상태로 변경
   db.collection('sms_pending').doc(id).update({status:'processing'});
