@@ -198,6 +198,22 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .item-check-btn.checked{background:#1a2a1a;border-color:var(--green);color:var(--green)}
 .item-check-btn .unit{font-size:10px;color:inherit;opacity:.7}
 
+/* ── ACTIVE INPUT BANNER ── */
+.active-input-banner{display:none;background:linear-gradient(135deg,#2a1f00,#1a1200);border:1px solid var(--accent2);border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+.active-input-banner.show{display:block;animation:bannerIn .25s ease}
+@keyframes bannerIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.active-input-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.aib-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.aib-label{font-size:10px;color:var(--accent2);letter-spacing:.12em;font-weight:800}
+.aib-close{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.aib-close:active{color:var(--red)}
+.aib-amount{font-size:24px;font-weight:900;color:var(--accent);letter-spacing:-0.5px;margin-bottom:4px}
+.aib-vendor{font-size:13px;color:var(--text);font-weight:600}
+.aib-date{font-size:11px;color:var(--muted);margin-top:2px}
+.aib-hint{font-size:11px;color:var(--accent2);margin-top:8px;display:flex;align-items:center;gap:4px}
+.aib-arrow{animation:arrowBounce 1s ease-in-out infinite}
+@keyframes arrowBounce{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+
 /* ── PENDING NOTIFICATIONS ── */
 .pending-section{margin-bottom:14px}
 .pending-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -306,6 +322,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <!-- SMS 자동파싱 -->
   <div class="sms-paste-bar">
     <button class="sms-paste-btn" onclick="openSmsModal()">📱 결제 문자 붙여넣기</button>
+  </div>
+
+  <!-- 활성 입력 배너 -->
+  <div class="active-input-banner" id="activeInputBanner">
+    <div class="aib-top">
+      <span class="aib-label">🔔 카드 알림 입력 중</span>
+      <button class="aib-close" onclick="clearActivePending()">✕</button>
+    </div>
+    <div class="aib-amount" id="aibAmount"></div>
+    <div class="aib-vendor" id="aibVendor"></div>
+    <div class="aib-date" id="aibDate"></div>
+    <div class="aib-hint"><span class="aib-arrow">→</span> 현장·카테고리 선택 후 저장하세요</div>
   </div>
 
   <div class="amount-display">
@@ -786,7 +814,9 @@ function renderPendingSection(){
     var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
     var dateStr=n.date?n.date.slice(0,16):'';
     var vendor=n.vendor||'';
-    return '<div class="pending-card" onclick="applyPending(\''+n.id+'\','+amount+',\''+vendor.replace(/'/g,"\\'")+'\')">'
+    var safeVendor=vendor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var safeDateStr=dateStr.replace(/'/g,"\\'");
+    return '<div class="pending-card" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\')">'
       +'<div class="pending-card-top">'
       +'<span class="pending-card-amount">₩'+amount.toLocaleString('ko-KR')+'</span>'
       +'<span class="pending-card-date">'+dateStr+'</span>'
@@ -797,29 +827,54 @@ function renderPendingSection(){
   }).join('');
 }
 
-function applyPending(id, amount, vendor){
+// ── ACTIVE PENDING STATE ──
+var activePendingId='', activePendingDate='';
+
+function applyPending(id, amount, vendor, dateStr){
+  activePendingId=id;
+  activePendingDate=dateStr||'';
+
   // 금액 자동 입력
   amountStr=String(amount);
   updateAmountDisplay();
+
   // 구매처 자동 입력
   if(vendor) document.getElementById('vendorInput').value=vendor;
-  // 카드 자동 매칭 시도
+
+  // 카드 자동 매칭
   if(vendor){
     var matched=cards.find(function(c){
       return c.issuer&&vendor.indexOf(c.issuer.replace('카드',''))>=0;
     });
     if(matched){selectedPayMethod=matched.name;selectedPayType='card';renderCardChips();}
   }
+
+  // 활성 배너 표시
+  var banner=document.getElementById('activeInputBanner');
+  document.getElementById('aibAmount').textContent='₩'+amount.toLocaleString('ko-KR');
+  document.getElementById('aibVendor').textContent=vendor?'🏪 '+vendor:'';
+  document.getElementById('aibDate').textContent=dateStr?'📅 '+dateStr:'';
+  banner.classList.add('show');
+
   // 입력 탭으로 이동
   switchTab('input');
-  // pending 상태 업데이트
-  db.collection('sms_pending').doc(id).update({status:'done',appliedAt:new Date().toISOString()});
-  showToast('✓ 자동 입력됐어요! 현장·카테고리 선택 후 저장하세요');
-  // 페이지 상단으로 스크롤
-  setTimeout(function(){
-    document.getElementById('view-input').scrollTop=0;
-    window.scrollTo(0,0);
-  },100);
+
+  // pending → processing 상태로 변경 (다른 기기에서 중복 방지)
+  db.collection('sms_pending').doc(id).update({status:'processing'});
+
+  showToast('✓ 자동 입력됐어요!');
+  setTimeout(function(){window.scrollTo(0,0);},100);
+}
+
+function clearActivePending(){
+  document.getElementById('activeInputBanner').classList.remove('show');
+  if(activePendingId){
+    db.collection('sms_pending').doc(activePendingId).update({status:'pending'});
+  }
+  activePendingId='';
+  activePendingDate='';
+  amountStr='';updateAmountDisplay();
+  document.getElementById('vendorInput').value='';
 }
 
 // ── NOTIF TAB ──
@@ -844,13 +899,15 @@ function renderNotifTab(){
     var dateStr=n.date?n.date.slice(0,16):'';
     var vendor=n.vendor||'';
     var isPending=n.status==='pending';
+    var safeVendor=vendor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var safeDateStr=dateStr.replace(/'/g,"\\'");
     return '<div class="notif-card '+(isPending?'pending':'done')+'">'
       +'<div class="notif-status '+(isPending?'pending':'done')+'"></div>'
       +'<div class="notif-info">'
       +'<div class="notif-vendor">'+(vendor||'가맹점 미확인')+(isPending?'':'<span class="notif-done-badge">처리됨</span>')+'</div>'
       +'<div class="notif-meta">'+dateStr+(n.appliedAt?' · 적용: '+n.appliedAt.slice(0,16):'')+'</div>'
       +(isPending?'<div class="notif-actions">'
-        +'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+vendor.replace(/'/g,"\\'")+'\')">입력에 적용</button>'
+        +'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\')">입력에 적용</button>'
         +'<button class="notif-del-btn" onclick="deletePending(\''+n.id+'\')">삭제</button>'
         +'</div>':'')
       +'</div>'
@@ -920,13 +977,29 @@ function saveRecord(){
   var memo=document.getElementById('memoInput').value.trim();
   var vendor=document.getElementById('vendorInput').value.trim();
   var items=selectedItems.slice();
+
+  // 날짜: MacroDroid에서 온 날짜 우선, 없으면 현재시간
+  var saveDate=new Date().toISOString();
+  if(activePendingDate){
+    // "2026-05-31 02:56" 형식을 ISO로 변환
+    var parsed=new Date(activePendingDate.replace(' ','T'));
+    if(!isNaN(parsed.getTime())) saveDate=parsed.toISOString();
+  }
+
   setSyncStatus('saving');
   db.collection('expenses').add({
-    date:new Date().toISOString(),amount:amount,site:site,
+    date:saveDate,amount:amount,site:site,
     category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
     vat:selectedVat,vendor:vendor,items:items,memo:memo,
     ts:firebase.firestore.FieldValue.serverTimestamp()
   }).then(function(){
+    // pending 완료 처리
+    if(activePendingId){
+      db.collection('sms_pending').doc(activePendingId).update({status:'done',appliedAt:new Date().toISOString()});
+      activePendingId='';
+      activePendingDate='';
+      document.getElementById('activeInputBanner').classList.remove('show');
+    }
     amountStr='';updateAmountDisplay();
     document.getElementById('memoInput').value='';
     document.getElementById('vendorInput').value='';
