@@ -1002,9 +1002,18 @@ function saveRecord(){
   // 날짜: MacroDroid에서 온 날짜 우선, 없으면 현재시간
   var saveDate=new Date().toISOString();
   if(activePendingDate){
-    // "2026-05-31 02:56" 형식을 ISO로 변환
-    var parsed=new Date(activePendingDate.replace(' ','T'));
-    if(!isNaN(parsed.getTime())) saveDate=parsed.toISOString();
+    // "2026-05-31 02:57" 형식 → 로컬 시간 기준 ISO 변환 (UTC 변환 방지)
+    var parts=activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if(parts){
+      var localDate=new Date(
+        parseInt(parts[1]),
+        parseInt(parts[2])-1,
+        parseInt(parts[3]),
+        parseInt(parts[4]),
+        parseInt(parts[5])
+      );
+      if(!isNaN(localDate.getTime())) saveDate=localDate.toISOString();
+    }
   }
 
   setSyncStatus('saving');
@@ -1608,6 +1617,7 @@ function renderCal(){
   var dayTotals={};
   records.forEach(function(r){
     var d=new Date(r.date);
+    // 로컬 시간 기준으로 날짜 비교
     if(d.getFullYear()===calYear&&d.getMonth()===calMonth){
       var key=d.getDate();
       dayTotals[key]=(dayTotals[key]||0)+r.amount;
@@ -1637,7 +1647,13 @@ function selectCalDay(dateStr){
 }
 function renderCalDetail(dateStr){
   var detail=document.getElementById('calDayDetail');
-  var dayRecs=records.filter(function(r){return r.date&&r.date.slice(0,10)===dateStr;});
+  var dayRecs=records.filter(function(r){
+    if(!r.date) return false;
+    // ISO 날짜를 로컬 시간 기준으로 비교
+    var d=new Date(r.date);
+    var localStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return localStr===dateStr;
+  });
   if(!dayRecs.length){detail.classList.remove('show');return;}
   var total=dayRecs.reduce(function(a,r){return a+r.amount;},0);
   var d=new Date(dateStr);
