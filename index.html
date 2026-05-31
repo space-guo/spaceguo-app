@@ -775,6 +775,7 @@ function subscribeRecords(){
     updateHeaderTotal();
     if(document.getElementById('view-list').classList.contains('active'))renderList();
     if(document.getElementById('view-dash').classList.contains('active'))renderDash();
+    if(document.getElementById('view-cal').classList.contains('active'))renderCal();
   });
 }
 function subscribeIncomes(){
@@ -1005,14 +1006,12 @@ function saveRecord(){
     // "2026-05-31 02:57" 형식 → 로컬 시간 기준 ISO 변환 (UTC 변환 방지)
     var parts=activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
     if(parts){
-      var localDate=new Date(
-        parseInt(parts[1]),
-        parseInt(parts[2])-1,
-        parseInt(parts[3]),
-        parseInt(parts[4]),
-        parseInt(parts[5])
-      );
-      if(!isNaN(localDate.getTime())) saveDate=localDate.toISOString();
+      // toISOString()은 UTC 변환되므로 KST(+09:00) 형식으로 직접 조립
+      saveDate=parts[1]+'-'
+        +String(parseInt(parts[2])).padStart(2,'0')+'-'
+        +String(parseInt(parts[3])).padStart(2,'0')+'T'
+        +String(parseInt(parts[4])).padStart(2,'0')+':'
+        +String(parseInt(parts[5])).padStart(2,'0')+':00.000+09:00';
     }
   }
 
