@@ -263,21 +263,30 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* ── DATE PICKER ── */
 .date-field-row{margin-bottom:10px}
-.date-quick-btns{display:flex;gap:6px;margin-bottom:8px}
-.date-quick-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:700;padding:10px 6px;cursor:pointer;text-align:center;transition:all .15s}
-.date-quick-btn:active{background:var(--accent);border-color:var(--accent);color:#fff}
-.date-quick-btn.selected{background:var(--surface);border-color:var(--accent);color:var(--accent)}
-.date-direct-btn{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;padding:11px 14px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center}
-.date-direct-btn.selected{border-color:var(--accent);color:var(--text)}
-.date-picker-wrap{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-top:6px;overflow:hidden}
-.date-picker-wrap.show{display:block}
-.date-picker-inner{padding:12px}
-.date-picker-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px}
-.date-scroll-col{display:flex;flex-direction:column;align-items:center;gap:4px}
-.date-scroll-label{font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:700;margin-bottom:2px}
-.date-scroll-sel{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:8px 10px;outline:none;-webkit-appearance:none;text-align:center;min-width:56px}
+.date-picker-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.date-picker-box.has-date{border-color:var(--accent)}
+.date-scroll-row{display:flex;gap:6px;align-items:flex-end;justify-content:center;padding:12px 10px 10px}
+.date-scroll-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.date-scroll-label{font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:700}
+.date-scroll-sep{font-size:18px;font-weight:900;color:var(--border);padding-bottom:10px;flex:0}
+.date-scroll-sel{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:9px 4px;outline:none;-webkit-appearance:none;text-align:center}
 .date-scroll-sel:focus{border-color:var(--accent)}
-.date-confirm-btn{width:100%;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer}
+.date-mini-cal{padding:0 10px 10px}
+.date-mini-cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.date-mini-cal-btn{background:none;border:none;color:var(--muted);font-size:18px;padding:4px 10px;cursor:pointer}
+.date-mini-cal-label{font-size:13px;font-weight:800;color:var(--text)}
+.date-mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.date-mini-dow{font-size:9px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0}
+.date-mini-cell{font-size:11px;font-weight:600;text-align:center;padding:6px 2px;border-radius:6px;cursor:pointer;color:var(--text);border:1px solid transparent}
+.date-mini-cell:active{background:var(--accent2);color:#000}
+.date-mini-cell.today{border-color:var(--accent);color:var(--accent)}
+.date-mini-cell.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.date-mini-cell.other{color:var(--border)}
+.date-mini-cell.sun{color:var(--red)}
+.date-mini-cell.selected.sun{color:#fff}
+.date-mini-cell.sat{color:var(--blue)}
+.date-mini-cell.selected.sat{color:#fff}
+.date-confirm-btn{width:100%;background:var(--accent);border:none;border-top:1px solid var(--border);color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:13px;cursor:pointer}
 .date-display-badge{display:inline-block;background:#1a1f2e;border:1px solid var(--blue);border-radius:8px;color:var(--blue);font-size:12px;font-weight:700;padding:4px 10px;margin-top:6px}
 </style>
 </head>
@@ -382,41 +391,44 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
   <div class="date-field-row">
     <div class="field-label">날짜 <span id="dateBadge" style="display:none" class="date-display-badge"></span></div>
-    <div class="date-quick-btns">
-      <button class="date-quick-btn" id="dqToday" onclick="selectDateQuick('today',this)">오늘</button>
-      <button class="date-quick-btn" id="dqYesterday" onclick="selectDateQuick('yesterday',this)">어제</button>
-      <button class="date-quick-btn" id="dqDayBefore" onclick="selectDateQuick('dayBefore',this)">그제</button>
-    </div>
-    <button class="date-direct-btn" id="dateDirectBtn" onclick="toggleDatePicker()">
-      <span id="dateDirectLabel">📅 날짜 직접 선택</span>
-      <span id="datePickerArrow">▾</span>
-    </button>
-    <div class="date-picker-wrap" id="datePickerWrap">
-      <div class="date-picker-inner">
-        <div class="date-picker-row">
-          <div class="date-scroll-col">
-            <div class="date-scroll-label">년</div>
-            <select class="date-scroll-sel" id="dpYear"></select>
-          </div>
-          <div class="date-scroll-col">
-            <div class="date-scroll-label">월</div>
-            <select class="date-scroll-sel" id="dpMonth"></select>
-          </div>
-          <div class="date-scroll-col">
-            <div class="date-scroll-label">일</div>
-            <select class="date-scroll-sel" id="dpDay"></select>
-          </div>
-          <div class="date-scroll-col">
-            <div class="date-scroll-label">시</div>
-            <select class="date-scroll-sel" id="dpHour"></select>
-          </div>
-          <div class="date-scroll-col">
-            <div class="date-scroll-label">분</div>
-            <select class="date-scroll-sel" id="dpMin"></select>
-          </div>
+    <div class="date-picker-box" id="datePickerBox">
+      <!-- 년/월/일/시/분 드롭다운 -->
+      <div class="date-scroll-row">
+        <div class="date-scroll-col">
+          <div class="date-scroll-label">년</div>
+          <select class="date-scroll-sel" id="dpYear" onchange="dpYearMonthChange()"></select>
         </div>
-        <button class="date-confirm-btn" onclick="confirmDatePicker()">✓ 날짜 선택</button>
+        <div class="date-scroll-sep">.</div>
+        <div class="date-scroll-col">
+          <div class="date-scroll-label">월</div>
+          <select class="date-scroll-sel" id="dpMonth" onchange="dpYearMonthChange()"></select>
+        </div>
+        <div class="date-scroll-sep">.</div>
+        <div class="date-scroll-col">
+          <div class="date-scroll-label">일</div>
+          <select class="date-scroll-sel" id="dpDay"></select>
+        </div>
+        <div class="date-scroll-sep" style="padding-bottom:10px;color:var(--muted);font-size:13px">  </div>
+        <div class="date-scroll-col">
+          <div class="date-scroll-label">시</div>
+          <select class="date-scroll-sel" id="dpHour"></select>
+        </div>
+        <div class="date-scroll-sep" style="font-size:14px">:</div>
+        <div class="date-scroll-col">
+          <div class="date-scroll-label">분</div>
+          <select class="date-scroll-sel" id="dpMin"></select>
+        </div>
       </div>
+      <!-- 미니 달력 -->
+      <div class="date-mini-cal">
+        <div class="date-mini-cal-nav">
+          <button class="date-mini-cal-btn" onclick="miniCalMove(-1)">‹</button>
+          <span class="date-mini-cal-label" id="miniCalLabel"></span>
+          <button class="date-mini-cal-btn" onclick="miniCalMove(1)">›</button>
+        </div>
+        <div class="date-mini-grid" id="miniCalGrid"></div>
+      </div>
+      <button class="date-confirm-btn" onclick="confirmDatePicker()">✓ 날짜 확정</button>
     </div>
   </div>
   <div class="field-row">
@@ -1670,118 +1682,124 @@ function applySmsResult(amount, vendor, bank){
 // ── DATE INPUT ──
 var selectedManualDate='';
 
-function buildDatePickerOptions(){
+// 미니달력 상태
+var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
+var miniCalSelectedDay=0; // 선택된 일(1~31), 0이면 미선택
+
+function initDatePicker(){
   var now=new Date();
   var yEl=document.getElementById('dpYear');
   var mEl=document.getElementById('dpMonth');
-  var dEl=document.getElementById('dpDay');
   var hEl=document.getElementById('dpHour');
   var minEl=document.getElementById('dpMin');
-  if(!yEl.options.length){
-    // 년
-    for(var y=now.getFullYear();y>=now.getFullYear()-2;y--){
-      var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);
-    }
-    // 월
-    for(var m=1;m<=12;m++){
-      var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);
-    }
-    // 시
-    for(var h=0;h<24;h++){
-      var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);
-    }
-    // 분
-    for(var mn=0;mn<60;mn++){
-      var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);
-    }
-    // 월 변경 시 일 갱신
-    mEl.onchange=function(){buildDayOptions();};
-    yEl.onchange=function(){buildDayOptions();};
+  if(yEl.options.length) return; // 이미 초기화됨
+  for(var y=now.getFullYear();y>=now.getFullYear()-2;y--){
+    var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);
   }
-  // 기본값: 현재 시각
-  yEl.value=now.getFullYear();
-  mEl.value=now.getMonth()+1;
-  buildDayOptions(now.getDate());
-  hEl.value=now.getHours();
-  minEl.value=now.getMinutes();
+  for(var m=1;m<=12;m++){
+    var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);
+  }
+  for(var h=0;h<24;h++){
+    var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);
+  }
+  for(var mn=0;mn<60;mn++){
+    var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);
+  }
+  resetToNow();
+}
+function resetToNow(){
+  var now=new Date();
+  document.getElementById('dpYear').value=now.getFullYear();
+  document.getElementById('dpMonth').value=now.getMonth()+1;
+  buildDayOptions(0); // 미선택
+  document.getElementById('dpHour').value=now.getHours();
+  document.getElementById('dpMin').value=now.getMinutes();
+  miniCalYear=now.getFullYear();
+  miniCalMonth=now.getMonth();
+  miniCalSelectedDay=0;
+  renderMiniCal();
 }
 function buildDayOptions(selectDay){
   var y=parseInt(document.getElementById('dpYear').value);
   var m=parseInt(document.getElementById('dpMonth').value);
   var lastDay=new Date(y,m,0).getDate();
   var dEl=document.getElementById('dpDay');
-  var cur=selectDay||parseInt(dEl.value)||1;
-  dEl.innerHTML='';
+  var cur=selectDay||parseInt(dEl.value)||0;
+  dEl.innerHTML='<option value="0">일</option>';
   for(var d=1;d<=lastDay;d++){
     var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);
   }
   dEl.value=Math.min(cur,lastDay);
 }
-function toggleDatePicker(){
-  var wrap=document.getElementById('datePickerWrap');
-  var arrow=document.getElementById('datePickerArrow');
-  var isOpen=wrap.classList.contains('show');
-  if(!isOpen){
-    buildDatePickerOptions();
-    wrap.classList.add('show');
-    arrow.textContent='▴';
-  } else {
-    wrap.classList.remove('show');
-    arrow.textContent='▾';
+function dpYearMonthChange(){
+  // 드롭다운 년/월 변경 시 달력도 동기화
+  miniCalYear=parseInt(document.getElementById('dpYear').value);
+  miniCalMonth=parseInt(document.getElementById('dpMonth').value)-1;
+  miniCalSelectedDay=parseInt(document.getElementById('dpDay').value)||0;
+  buildDayOptions(miniCalSelectedDay);
+  renderMiniCal();
+}
+function renderMiniCal(){
+  var label=miniCalYear+'년 '+(miniCalMonth+1)+'월';
+  document.getElementById('miniCalLabel').textContent=label;
+  var firstDay=new Date(miniCalYear,miniCalMonth,1).getDay();
+  var lastDate=new Date(miniCalYear,miniCalMonth+1,0).getDate();
+  var today=new Date();
+  var isThisMonth=today.getFullYear()===miniCalYear&&today.getMonth()===miniCalMonth;
+  var dows=['일','월','화','수','목','금','토'];
+  var html=dows.map(function(d,i){
+    return '<div class="date-mini-dow'+(i===0?' style="color:var(--red)"':'')+'">'+d+'</div>';
+  }).join('');
+  for(var i=0;i<firstDay;i++) html+='<div class="date-mini-cell other"></div>';
+  for(var d=1;d<=lastDate;d++){
+    var dow=new Date(miniCalYear,miniCalMonth,d).getDay();
+    var cls='date-mini-cell';
+    if(isThisMonth&&d===today.getDate()) cls+=' today';
+    if(miniCalSelectedDay===d) cls+=' selected';
+    if(dow===0) cls+=' sun';
+    if(dow===6) cls+=' sat';
+    html+='<div class="'+cls+'" onclick="miniCalSelectDay('+d+')">'+d+'</div>';
   }
+  document.getElementById('miniCalGrid').innerHTML=html;
+}
+function miniCalMove(dir){
+  miniCalMonth+=dir;
+  if(miniCalMonth>11){miniCalMonth=0;miniCalYear++;}
+  if(miniCalMonth<0){miniCalMonth=11;miniCalYear--;}
+  miniCalSelectedDay=0;
+  // 드롭다운 동기화
+  document.getElementById('dpYear').value=miniCalYear;
+  document.getElementById('dpMonth').value=miniCalMonth+1;
+  buildDayOptions(0);
+  renderMiniCal();
+}
+function miniCalSelectDay(d){
+  miniCalSelectedDay=d;
+  // 드롭다운 동기화
+  document.getElementById('dpYear').value=miniCalYear;
+  document.getElementById('dpMonth').value=miniCalMonth+1;
+  buildDayOptions(d);
+  document.getElementById('dpDay').value=d;
+  renderMiniCal();
 }
 function confirmDatePicker(){
   var y=document.getElementById('dpYear').value;
   var m=String(parseInt(document.getElementById('dpMonth').value)).padStart(2,'0');
-  var d=String(parseInt(document.getElementById('dpDay').value)).padStart(2,'0');
+  var d=String(parseInt(document.getElementById('dpDay').value)||1).padStart(2,'0');
   var h=String(parseInt(document.getElementById('dpHour').value)).padStart(2,'0');
   var mn=String(parseInt(document.getElementById('dpMin').value)).padStart(2,'0');
   selectedManualDate=y+'-'+m+'-'+d+'T'+h+':'+mn+':00.000+09:00';
-  // 빠른 버튼 선택 해제
-  document.querySelectorAll('.date-quick-btn').forEach(function(b){b.classList.remove('selected');});
-  // 직접 버튼 스타일
   var label=y+'년 '+parseInt(m)+'월 '+parseInt(d)+'일 '+h+':'+mn;
-  document.getElementById('dateDirectLabel').textContent='📅 '+label;
-  document.getElementById('dateDirectBtn').classList.add('selected');
   document.getElementById('dateBadge').style.display='inline-block';
   document.getElementById('dateBadge').textContent=label;
-  document.getElementById('datePickerWrap').classList.remove('show');
-  document.getElementById('datePickerArrow').textContent='▾';
-}
-function selectDateQuick(type,btn){
-  var now=new Date();
-  var target=new Date();
-  if(type==='yesterday') target.setDate(now.getDate()-1);
-  if(type==='dayBefore') target.setDate(now.getDate()-2);
-  var y=target.getFullYear();
-  var m=String(target.getMonth()+1).padStart(2,'0');
-  var d=String(target.getDate()).padStart(2,'0');
-  // 오늘은 현재 시각, 어제/그제는 23:59
-  var h,mn;
-  if(type==='today'){h=String(now.getHours()).padStart(2,'0');mn=String(now.getMinutes()).padStart(2,'0');}
-  else{h='23';mn='59';}
-  selectedManualDate=y+'-'+m+'-'+d+'T'+h+':'+mn+':00.000+09:00';
-  // 버튼 스타일
-  document.querySelectorAll('.date-quick-btn').forEach(function(b){b.classList.remove('selected');});
-  btn.classList.add('selected');
-  // 직접선택 버튼 초기화
-  document.getElementById('dateDirectLabel').textContent='📅 날짜 직접 선택';
-  document.getElementById('dateDirectBtn').classList.remove('selected');
-  document.getElementById('datePickerWrap').classList.remove('show');
-  document.getElementById('datePickerArrow').textContent='▾';
-  // 배지
-  var label=y+'년 '+parseInt(m)+'월 '+parseInt(d)+'일';
-  document.getElementById('dateBadge').style.display='inline-block';
-  document.getElementById('dateBadge').textContent=label;
+  document.getElementById('datePickerBox').classList.add('has-date');
+  showToast('📅 '+label+' 선택됨');
 }
 function resetManualDate(){
   selectedManualDate='';
-  document.querySelectorAll('.date-quick-btn').forEach(function(b){b.classList.remove('selected');});
-  document.getElementById('dateDirectLabel').textContent='📅 날짜 직접 선택';
-  document.getElementById('dateDirectBtn').classList.remove('selected');
-  document.getElementById('datePickerWrap').classList.remove('show');
-  document.getElementById('datePickerArrow').textContent='▾';
   document.getElementById('dateBadge').style.display='none';
+  document.getElementById('datePickerBox').classList.remove('has-date');
+  if(document.getElementById('dpYear').options.length) resetToNow();
 }
 
 // ── CALENDAR ──
@@ -1863,6 +1881,7 @@ function switchTab(tab){
   var tabEl=document.getElementById('tab-'+tab);
   if(tabEl)tabEl.classList.add('active');
   document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
+  if(tab==='input'){initDatePicker();}
   if(tab==='list'){renderFilterBar();renderList();}
   if(tab==='notif'){renderNotifTab();}
   if(tab==='cal'){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
