@@ -260,6 +260,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .proc-item-tag{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:4px 10px;display:flex;align-items:center;gap:6px}
 .proc-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0}
 .proc-item-del:active{color:var(--red)}
+
+/* ── DATE PICKER ── */
+.date-field-row{margin-bottom:10px}
+.date-quick-btns{display:flex;gap:6px;margin-bottom:8px}
+.date-quick-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:700;padding:10px 6px;cursor:pointer;text-align:center;transition:all .15s}
+.date-quick-btn:active{background:var(--accent);border-color:var(--accent);color:#fff}
+.date-quick-btn.selected{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+.date-direct-btn{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;padding:11px 14px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.date-direct-btn.selected{border-color:var(--accent);color:var(--text)}
+.date-picker-wrap{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-top:6px;overflow:hidden}
+.date-picker-wrap.show{display:block}
+.date-picker-inner{padding:12px}
+.date-picker-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px}
+.date-scroll-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.date-scroll-label{font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:700;margin-bottom:2px}
+.date-scroll-sel{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:8px 10px;outline:none;-webkit-appearance:none;text-align:center;min-width:56px}
+.date-scroll-sel:focus{border-color:var(--accent)}
+.date-confirm-btn{width:100%;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer}
+.date-display-badge{display:inline-block;background:#1a1f2e;border:1px solid var(--blue);border-radius:8px;color:var(--blue);font-size:12px;font-weight:700;padding:4px 10px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -360,6 +379,45 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <button class="quick-btn" onclick="addAmount(100000)">+10만</button>
     <button class="quick-btn" onclick="addAmount(500000)">+50만</button>
     <button class="quick-btn" onclick="addAmount(1000000)">+100만</button>
+  </div>
+  <div class="date-field-row">
+    <div class="field-label">날짜 <span id="dateBadge" style="display:none" class="date-display-badge"></span></div>
+    <div class="date-quick-btns">
+      <button class="date-quick-btn" id="dqToday" onclick="selectDateQuick('today',this)">오늘</button>
+      <button class="date-quick-btn" id="dqYesterday" onclick="selectDateQuick('yesterday',this)">어제</button>
+      <button class="date-quick-btn" id="dqDayBefore" onclick="selectDateQuick('dayBefore',this)">그제</button>
+    </div>
+    <button class="date-direct-btn" id="dateDirectBtn" onclick="toggleDatePicker()">
+      <span id="dateDirectLabel">📅 날짜 직접 선택</span>
+      <span id="datePickerArrow">▾</span>
+    </button>
+    <div class="date-picker-wrap" id="datePickerWrap">
+      <div class="date-picker-inner">
+        <div class="date-picker-row">
+          <div class="date-scroll-col">
+            <div class="date-scroll-label">년</div>
+            <select class="date-scroll-sel" id="dpYear"></select>
+          </div>
+          <div class="date-scroll-col">
+            <div class="date-scroll-label">월</div>
+            <select class="date-scroll-sel" id="dpMonth"></select>
+          </div>
+          <div class="date-scroll-col">
+            <div class="date-scroll-label">일</div>
+            <select class="date-scroll-sel" id="dpDay"></select>
+          </div>
+          <div class="date-scroll-col">
+            <div class="date-scroll-label">시</div>
+            <select class="date-scroll-sel" id="dpHour"></select>
+          </div>
+          <div class="date-scroll-col">
+            <div class="date-scroll-label">분</div>
+            <select class="date-scroll-sel" id="dpMin"></select>
+          </div>
+        </div>
+        <button class="date-confirm-btn" onclick="confirmDatePicker()">✓ 날짜 선택</button>
+      </div>
+    </div>
   </div>
   <div class="field-row">
     <div class="field-label">현장명</div>
@@ -1000,19 +1058,29 @@ function saveRecord(){
   var vendor=document.getElementById('vendorInput').value.trim();
   var items=selectedItems.slice();
 
-  // 날짜: MacroDroid에서 온 날짜 우선, 없으면 현재시간
-  var saveDate=new Date().toISOString();
+  // 날짜 결정: 카드알림 > 수동선택 > 오늘
+  var saveDate;
   if(activePendingDate){
-    // "2026-05-31 02:57" 형식 → 로컬 시간 기준 ISO 변환 (UTC 변환 방지)
     var parts=activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
     if(parts){
-      // toISOString()은 UTC 변환되므로 KST(+09:00) 형식으로 직접 조립
       saveDate=parts[1]+'-'
         +String(parseInt(parts[2])).padStart(2,'0')+'-'
         +String(parseInt(parts[3])).padStart(2,'0')+'T'
         +String(parseInt(parts[4])).padStart(2,'0')+':'
         +String(parseInt(parts[5])).padStart(2,'0')+':00.000+09:00';
     }
+  }
+  if(!saveDate && selectedManualDate){
+    saveDate=selectedManualDate;
+  }
+  if(!saveDate){
+    // 날짜 미선택 시 오늘 현재시간
+    var now=new Date();
+    saveDate=now.getFullYear()+'-'
+      +String(now.getMonth()+1).padStart(2,'0')+'-'
+      +String(now.getDate()).padStart(2,'0')+'T'
+      +String(now.getHours()).padStart(2,'0')+':'
+      +String(now.getMinutes()).padStart(2,'0')+':00.000+09:00';
   }
 
   setSyncStatus('saving');
@@ -1030,6 +1098,7 @@ function saveRecord(){
       document.getElementById('activeInputBanner').classList.remove('show');
     }
     amountStr='';updateAmountDisplay();
+    resetManualDate();
     document.getElementById('memoInput').value='';
     document.getElementById('vendorInput').value='';
     selectedItems=[];
@@ -1596,6 +1665,123 @@ function applySmsResult(amount, vendor, bank){
 
   closeSmsModal();
   showToast('✓ 자동 입력됐어요! 현장 선택 후 저장하세요');
+}
+
+// ── DATE INPUT ──
+var selectedManualDate='';
+
+function buildDatePickerOptions(){
+  var now=new Date();
+  var yEl=document.getElementById('dpYear');
+  var mEl=document.getElementById('dpMonth');
+  var dEl=document.getElementById('dpDay');
+  var hEl=document.getElementById('dpHour');
+  var minEl=document.getElementById('dpMin');
+  if(!yEl.options.length){
+    // 년
+    for(var y=now.getFullYear();y>=now.getFullYear()-2;y--){
+      var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);
+    }
+    // 월
+    for(var m=1;m<=12;m++){
+      var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);
+    }
+    // 시
+    for(var h=0;h<24;h++){
+      var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);
+    }
+    // 분
+    for(var mn=0;mn<60;mn++){
+      var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);
+    }
+    // 월 변경 시 일 갱신
+    mEl.onchange=function(){buildDayOptions();};
+    yEl.onchange=function(){buildDayOptions();};
+  }
+  // 기본값: 현재 시각
+  yEl.value=now.getFullYear();
+  mEl.value=now.getMonth()+1;
+  buildDayOptions(now.getDate());
+  hEl.value=now.getHours();
+  minEl.value=now.getMinutes();
+}
+function buildDayOptions(selectDay){
+  var y=parseInt(document.getElementById('dpYear').value);
+  var m=parseInt(document.getElementById('dpMonth').value);
+  var lastDay=new Date(y,m,0).getDate();
+  var dEl=document.getElementById('dpDay');
+  var cur=selectDay||parseInt(dEl.value)||1;
+  dEl.innerHTML='';
+  for(var d=1;d<=lastDay;d++){
+    var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);
+  }
+  dEl.value=Math.min(cur,lastDay);
+}
+function toggleDatePicker(){
+  var wrap=document.getElementById('datePickerWrap');
+  var arrow=document.getElementById('datePickerArrow');
+  var isOpen=wrap.classList.contains('show');
+  if(!isOpen){
+    buildDatePickerOptions();
+    wrap.classList.add('show');
+    arrow.textContent='▴';
+  } else {
+    wrap.classList.remove('show');
+    arrow.textContent='▾';
+  }
+}
+function confirmDatePicker(){
+  var y=document.getElementById('dpYear').value;
+  var m=String(parseInt(document.getElementById('dpMonth').value)).padStart(2,'0');
+  var d=String(parseInt(document.getElementById('dpDay').value)).padStart(2,'0');
+  var h=String(parseInt(document.getElementById('dpHour').value)).padStart(2,'0');
+  var mn=String(parseInt(document.getElementById('dpMin').value)).padStart(2,'0');
+  selectedManualDate=y+'-'+m+'-'+d+'T'+h+':'+mn+':00.000+09:00';
+  // 빠른 버튼 선택 해제
+  document.querySelectorAll('.date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  // 직접 버튼 스타일
+  var label=y+'년 '+parseInt(m)+'월 '+parseInt(d)+'일 '+h+':'+mn;
+  document.getElementById('dateDirectLabel').textContent='📅 '+label;
+  document.getElementById('dateDirectBtn').classList.add('selected');
+  document.getElementById('dateBadge').style.display='inline-block';
+  document.getElementById('dateBadge').textContent=label;
+  document.getElementById('datePickerWrap').classList.remove('show');
+  document.getElementById('datePickerArrow').textContent='▾';
+}
+function selectDateQuick(type,btn){
+  var now=new Date();
+  var target=new Date();
+  if(type==='yesterday') target.setDate(now.getDate()-1);
+  if(type==='dayBefore') target.setDate(now.getDate()-2);
+  var y=target.getFullYear();
+  var m=String(target.getMonth()+1).padStart(2,'0');
+  var d=String(target.getDate()).padStart(2,'0');
+  // 오늘은 현재 시각, 어제/그제는 23:59
+  var h,mn;
+  if(type==='today'){h=String(now.getHours()).padStart(2,'0');mn=String(now.getMinutes()).padStart(2,'0');}
+  else{h='23';mn='59';}
+  selectedManualDate=y+'-'+m+'-'+d+'T'+h+':'+mn+':00.000+09:00';
+  // 버튼 스타일
+  document.querySelectorAll('.date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
+  // 직접선택 버튼 초기화
+  document.getElementById('dateDirectLabel').textContent='📅 날짜 직접 선택';
+  document.getElementById('dateDirectBtn').classList.remove('selected');
+  document.getElementById('datePickerWrap').classList.remove('show');
+  document.getElementById('datePickerArrow').textContent='▾';
+  // 배지
+  var label=y+'년 '+parseInt(m)+'월 '+parseInt(d)+'일';
+  document.getElementById('dateBadge').style.display='inline-block';
+  document.getElementById('dateBadge').textContent=label;
+}
+function resetManualDate(){
+  selectedManualDate='';
+  document.querySelectorAll('.date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  document.getElementById('dateDirectLabel').textContent='📅 날짜 직접 선택';
+  document.getElementById('dateDirectBtn').classList.remove('selected');
+  document.getElementById('datePickerWrap').classList.remove('show');
+  document.getElementById('datePickerArrow').textContent='▾';
+  document.getElementById('dateBadge').style.display='none';
 }
 
 // ── CALENDAR ──
