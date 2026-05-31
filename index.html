@@ -1713,59 +1713,57 @@ var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
 var miniCalSelectedDay=new Date().getDate();
 
 function initDatePicker(){
+  // 카드 알림 처리 중이면 건드리지 않음
+  if(activePendingId) return;
+  var now=new Date();
+  var ny=now.getFullYear(), nm=now.getMonth()+1, nd=now.getDate();
+  var nh=now.getHours(), nmn=now.getMinutes();
   var yEl=document.getElementById('dpYear');
   var mEl=document.getElementById('dpMonth');
+  var dEl=document.getElementById('dpDay');
   var hEl=document.getElementById('dpHour');
   var minEl=document.getElementById('dpMin');
-  // 옵션이 없으면 처음 한 번만 생성
+  // 옵션 생성 (최초 1회)
   if(!yEl.options.length){
-    var cur=new Date().getFullYear();
-    for(var y=cur;y>=cur-2;y--){
-      var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);
-    }
-    for(var m=1;m<=12;m++){
-      var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);
-    }
-    for(var h=0;h<24;h++){
-      var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);
-    }
-    for(var mn=0;mn<60;mn++){
-      var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);
-    }
+    for(var y=ny;y>=ny-2;y--){var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);}
+    for(var m=1;m<=12;m++){var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);}
+    for(var h=0;h<24;h++){var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);}
+    for(var mn=0;mn<60;mn++){var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);}
   }
-  // 탭 전환 시 항상 현재 시각으로 리셋 (카드 알림 적용 중이 아닐 때만)
-  if(!activePendingId) resetToNow();
-}
-function resetToNow(){
-  var now=new Date();
-  document.getElementById('dpYear').value=now.getFullYear();
-  document.getElementById('dpMonth').value=now.getMonth()+1;
-  buildDayOptions(now.getDate()); // 오늘 날짜 기본 선택
-  document.getElementById('dpHour').value=now.getHours();
-  document.getElementById('dpMin').value=now.getMinutes();
-  miniCalYear=now.getFullYear();
-  miniCalMonth=now.getMonth();
-  miniCalSelectedDay=now.getDate();
+  // 값 세팅 (옵션 생성 후 바로)
+  yEl.value=ny;
+  mEl.value=nm;
+  hEl.value=nh;
+  minEl.value=nmn;
+  // 일 옵션은 년/월 값이 확정된 후 생성
+  var lastDay=new Date(ny,nm,0).getDate();
+  dEl.innerHTML='';
+  for(var d=1;d<=lastDay;d++){var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);}
+  dEl.value=nd;
+  // 미니달력
+  miniCalYear=ny; miniCalMonth=nm-1; miniCalSelectedDay=nd;
   renderMiniCal();
 }
-function buildDayOptions(selectDay){
-  var y=parseInt(document.getElementById('dpYear').value);
-  var m=parseInt(document.getElementById('dpMonth').value);
+function resetToNow(){
+  initDatePicker();
+}
+function buildDayOptions(selectDay, yr, mo){
+  // yr, mo를 인자로 받거나 드롭다운에서 읽음
+  var y=yr||parseInt(document.getElementById('dpYear').value)||new Date().getFullYear();
+  var m=mo||parseInt(document.getElementById('dpMonth').value)||new Date().getMonth()+1;
   var lastDay=new Date(y,m,0).getDate();
   var dEl=document.getElementById('dpDay');
-  var cur=selectDay||parseInt(dEl.value)||0;
   dEl.innerHTML='';
-  for(var d=1;d<=lastDay;d++){
-    var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);
-  }
-  dEl.value=Math.min(cur,lastDay);
+  for(var d=1;d<=lastDay;d++){var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);}
+  var target=selectDay||1;
+  dEl.value=Math.min(target,lastDay);
 }
 function dpYearMonthChange(){
-  // 드롭다운 년/월 변경 시 달력도 동기화
-  miniCalYear=parseInt(document.getElementById('dpYear').value);
-  miniCalMonth=parseInt(document.getElementById('dpMonth').value)-1;
-  miniCalSelectedDay=parseInt(document.getElementById('dpDay').value)||0;
-  buildDayOptions(miniCalSelectedDay);
+  var y=parseInt(document.getElementById('dpYear').value);
+  var m=parseInt(document.getElementById('dpMonth').value);
+  miniCalYear=y; miniCalMonth=m-1;
+  miniCalSelectedDay=0;
+  buildDayOptions(0,y,m);
   renderMiniCal();
 }
 function renderMiniCal(){
