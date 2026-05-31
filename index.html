@@ -921,8 +921,33 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
   document.getElementById('aibDate').textContent=dateStr?'📅 '+dateStr:'';
   banner.classList.add('show');
 
-  // 입력 탭으로 먼저 이동
+  // 입력 탭으로 이동
   switchTab('input');
+
+  // 날짜 피커에 카드 알림 날짜 자동 반영
+  // dateStr 형식: "2026-05-31 13:56"
+  if(dateStr){
+    var parts=dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if(parts){
+      var py=parseInt(parts[1]),pm=parseInt(parts[2]),pd=parseInt(parts[3]);
+      var ph=parseInt(parts[4]),pmn=parseInt(parts[5]);
+      // 드롭다운 반영
+      document.getElementById('dpYear').value=py;
+      document.getElementById('dpMonth').value=pm;
+      buildDayOptions(pd);
+      document.getElementById('dpDay').value=pd;
+      document.getElementById('dpHour').value=ph;
+      document.getElementById('dpMin').value=pmn;
+      // 미니달력 반영
+      miniCalYear=py; miniCalMonth=pm-1; miniCalSelectedDay=pd;
+      renderMiniCal();
+      // 배지 표시
+      var label=py+'년 '+pm+'월 '+pd+'일 '+String(ph).padStart(2,'0')+':'+String(pmn).padStart(2,'0');
+      document.getElementById('dateBadge').style.display='inline-block';
+      document.getElementById('dateBadge').textContent='🔔 '+label;
+      document.getElementById('datePickerBox').classList.add('has-date');
+    }
+  }
 
   // 탭 이동 후 카드 매칭 (renderCardChips가 탭 전환 시 초기화되므로 이후 실행)
   var matched=null;
@@ -1687,36 +1712,39 @@ var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
 var miniCalSelectedDay=0; // 선택된 일(1~31), 0이면 미선택
 
 function initDatePicker(){
-  var now=new Date();
   var yEl=document.getElementById('dpYear');
   var mEl=document.getElementById('dpMonth');
   var hEl=document.getElementById('dpHour');
   var minEl=document.getElementById('dpMin');
-  if(yEl.options.length) return; // 이미 초기화됨
-  for(var y=now.getFullYear();y>=now.getFullYear()-2;y--){
-    var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);
+  // 옵션이 없으면 처음 한 번만 생성
+  if(!yEl.options.length){
+    var cur=new Date().getFullYear();
+    for(var y=cur;y>=cur-2;y--){
+      var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);
+    }
+    for(var m=1;m<=12;m++){
+      var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);
+    }
+    for(var h=0;h<24;h++){
+      var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);
+    }
+    for(var mn=0;mn<60;mn++){
+      var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);
+    }
   }
-  for(var m=1;m<=12;m++){
-    var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);
-  }
-  for(var h=0;h<24;h++){
-    var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);
-  }
-  for(var mn=0;mn<60;mn++){
-    var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);
-  }
-  resetToNow();
+  // 탭 전환 시 항상 현재 시각으로 리셋 (카드 알림 적용 중이 아닐 때만)
+  if(!activePendingId) resetToNow();
 }
 function resetToNow(){
   var now=new Date();
   document.getElementById('dpYear').value=now.getFullYear();
   document.getElementById('dpMonth').value=now.getMonth()+1;
-  buildDayOptions(0); // 미선택
+  buildDayOptions(now.getDate()); // 오늘 날짜 기본 선택
   document.getElementById('dpHour').value=now.getHours();
   document.getElementById('dpMin').value=now.getMinutes();
   miniCalYear=now.getFullYear();
   miniCalMonth=now.getMonth();
-  miniCalSelectedDay=0;
+  miniCalSelectedDay=now.getDate();
   renderMiniCal();
 }
 function buildDayOptions(selectDay){
@@ -1725,7 +1753,7 @@ function buildDayOptions(selectDay){
   var lastDay=new Date(y,m,0).getDate();
   var dEl=document.getElementById('dpDay');
   var cur=selectDay||parseInt(dEl.value)||0;
-  dEl.innerHTML='<option value="0">일</option>';
+  dEl.innerHTML='';
   for(var d=1;d<=lastDay;d++){
     var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);
   }
