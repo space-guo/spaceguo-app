@@ -269,8 +269,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .date-scroll-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
 .date-scroll-label{font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:700}
 .date-scroll-sep{font-size:18px;font-weight:900;color:var(--border);padding-bottom:10px;flex:0}
-.date-scroll-sel{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:9px 4px;outline:none;-webkit-appearance:none;text-align:center}
-.date-scroll-sel:focus{border-color:var(--accent)}
+.date-scroll-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:9px 4px;outline:none;text-align:center;-webkit-appearance:none}
+.date-scroll-inp:focus{border-color:var(--accent);background:var(--surface2)}
 .date-mini-cal{padding:0 10px 10px}
 .date-mini-cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .date-mini-cal-btn{background:none;border:none;color:var(--muted);font-size:18px;padding:4px 10px;cursor:pointer}
@@ -392,31 +392,31 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div class="date-field-row">
     <div class="field-label">날짜 <span id="dateBadge" style="display:none" class="date-display-badge"></span></div>
     <div class="date-picker-box" id="datePickerBox">
-      <!-- 년/월/일/시/분 드롭다운 -->
+      <!-- 년/월/일/시/분 텍스트 입력 -->
       <div class="date-scroll-row">
         <div class="date-scroll-col">
           <div class="date-scroll-label">년</div>
-          <select class="date-scroll-sel" id="dpYear" onchange="dpYearMonthChange()"></select>
+          <input class="date-scroll-inp" id="dpYear" type="tel" inputmode="numeric" maxlength="4" placeholder="2026" onchange="dpYearMonthChange()" oninput="dpYearMonthChange()">
         </div>
         <div class="date-scroll-sep">.</div>
         <div class="date-scroll-col">
           <div class="date-scroll-label">월</div>
-          <select class="date-scroll-sel" id="dpMonth" onchange="dpYearMonthChange()"></select>
+          <input class="date-scroll-inp" id="dpMonth" type="tel" inputmode="numeric" maxlength="2" placeholder="01" onchange="dpYearMonthChange()" oninput="dpYearMonthChange()">
         </div>
         <div class="date-scroll-sep">.</div>
         <div class="date-scroll-col">
           <div class="date-scroll-label">일</div>
-          <select class="date-scroll-sel" id="dpDay"></select>
+          <input class="date-scroll-inp" id="dpDay" type="tel" inputmode="numeric" maxlength="2" placeholder="01">
         </div>
         <div class="date-scroll-sep" style="padding-bottom:10px;color:var(--muted);font-size:13px">  </div>
         <div class="date-scroll-col">
           <div class="date-scroll-label">시</div>
-          <select class="date-scroll-sel" id="dpHour"></select>
+          <input class="date-scroll-inp" id="dpHour" type="tel" inputmode="numeric" maxlength="2" placeholder="00">
         </div>
         <div class="date-scroll-sep" style="font-size:14px">:</div>
         <div class="date-scroll-col">
           <div class="date-scroll-label">분</div>
-          <select class="date-scroll-sel" id="dpMin"></select>
+          <input class="date-scroll-inp" id="dpMin" type="tel" inputmode="numeric" maxlength="2" placeholder="00">
         </div>
       </div>
       <!-- 미니 달력 -->
@@ -934,11 +934,10 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
       var ph=parseInt(parts[4]),pmn=parseInt(parts[5]);
       // 드롭다운 반영
       document.getElementById('dpYear').value=py;
-      document.getElementById('dpMonth').value=pm;
-      buildDayOptions(pd);
-      document.getElementById('dpDay').value=pd;
-      document.getElementById('dpHour').value=ph;
-      document.getElementById('dpMin').value=pmn;
+      document.getElementById('dpMonth').value=String(pm).padStart(2,'0');
+      document.getElementById('dpDay').value=String(pd).padStart(2,'0');
+      document.getElementById('dpHour').value=String(ph).padStart(2,'0');
+      document.getElementById('dpMin').value=String(pmn).padStart(2,'0');
       // 미니달력 반영
       miniCalYear=py; miniCalMonth=pm-1; miniCalSelectedDay=pd;
       renderMiniCal();
@@ -1713,57 +1712,31 @@ var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
 var miniCalSelectedDay=new Date().getDate();
 
 function initDatePicker(){
-  // 카드 알림 처리 중이면 건드리지 않음
   if(activePendingId) return;
   var now=new Date();
   var ny=now.getFullYear(), nm=now.getMonth()+1, nd=now.getDate();
   var nh=now.getHours(), nmn=now.getMinutes();
-  var yEl=document.getElementById('dpYear');
-  var mEl=document.getElementById('dpMonth');
-  var dEl=document.getElementById('dpDay');
-  var hEl=document.getElementById('dpHour');
-  var minEl=document.getElementById('dpMin');
-  // 옵션 생성 (최초 1회)
-  if(!yEl.options.length){
-    for(var y=ny;y>=ny-2;y--){var o=document.createElement('option');o.value=y;o.textContent=y;yEl.appendChild(o);}
-    for(var m=1;m<=12;m++){var o=document.createElement('option');o.value=m;o.textContent=String(m).padStart(2,'0');mEl.appendChild(o);}
-    for(var h=0;h<24;h++){var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0');hEl.appendChild(o);}
-    for(var mn=0;mn<60;mn++){var o=document.createElement('option');o.value=mn;o.textContent=String(mn).padStart(2,'0');minEl.appendChild(o);}
-  }
-  // 값 세팅 (옵션 생성 후 바로)
-  yEl.value=ny;
-  mEl.value=nm;
-  hEl.value=nh;
-  minEl.value=nmn;
-  // 일 옵션은 년/월 값이 확정된 후 생성
-  var lastDay=new Date(ny,nm,0).getDate();
-  dEl.innerHTML='';
-  for(var d=1;d<=lastDay;d++){var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);}
-  dEl.value=nd;
-  // 미니달력
+  document.getElementById('dpYear').value=ny;
+  document.getElementById('dpMonth').value=String(nm).padStart(2,'0');
+  document.getElementById('dpDay').value=String(nd).padStart(2,'0');
+  document.getElementById('dpHour').value=String(nh).padStart(2,'0');
+  document.getElementById('dpMin').value=String(nmn).padStart(2,'0');
   miniCalYear=ny; miniCalMonth=nm-1; miniCalSelectedDay=nd;
   renderMiniCal();
 }
 function resetToNow(){
   initDatePicker();
 }
-function buildDayOptions(selectDay, yr, mo){
-  // yr, mo를 인자로 받거나 드롭다운에서 읽음
-  var y=yr||parseInt(document.getElementById('dpYear').value)||new Date().getFullYear();
-  var m=mo||parseInt(document.getElementById('dpMonth').value)||new Date().getMonth()+1;
-  var lastDay=new Date(y,m,0).getDate();
-  var dEl=document.getElementById('dpDay');
-  dEl.innerHTML='';
-  for(var d=1;d<=lastDay;d++){var o=document.createElement('option');o.value=d;o.textContent=String(d).padStart(2,'0');dEl.appendChild(o);}
-  var target=selectDay||1;
-  dEl.value=Math.min(target,lastDay);
+function buildDayOptions(selectDay,yr,mo){
+  // input 방식에서는 일 값만 업데이트
+  if(selectDay) document.getElementById('dpDay').value=String(selectDay).padStart(2,'0');
 }
 function dpYearMonthChange(){
   var y=parseInt(document.getElementById('dpYear').value);
   var m=parseInt(document.getElementById('dpMonth').value);
+  if(!y||!m||m<1||m>12) return;
   miniCalYear=y; miniCalMonth=m-1;
-  miniCalSelectedDay=0;
-  buildDayOptions(0,y,m);
+  miniCalSelectedDay=parseInt(document.getElementById('dpDay').value)||0;
   renderMiniCal();
 }
 function renderMiniCal(){
@@ -1794,27 +1767,24 @@ function miniCalMove(dir){
   if(miniCalMonth>11){miniCalMonth=0;miniCalYear++;}
   if(miniCalMonth<0){miniCalMonth=11;miniCalYear--;}
   miniCalSelectedDay=0;
-  // 드롭다운 동기화
   document.getElementById('dpYear').value=miniCalYear;
-  document.getElementById('dpMonth').value=miniCalMonth+1;
-  buildDayOptions(0);
+  document.getElementById('dpMonth').value=String(miniCalMonth+1).padStart(2,'0');
+  document.getElementById('dpDay').value='';
   renderMiniCal();
 }
 function miniCalSelectDay(d){
   miniCalSelectedDay=d;
-  // 드롭다운 동기화
   document.getElementById('dpYear').value=miniCalYear;
-  document.getElementById('dpMonth').value=miniCalMonth+1;
-  buildDayOptions(d);
-  document.getElementById('dpDay').value=d;
+  document.getElementById('dpMonth').value=String(miniCalMonth+1).padStart(2,'0');
+  document.getElementById('dpDay').value=String(d).padStart(2,'0');
   renderMiniCal();
 }
 function confirmDatePicker(){
-  var y=document.getElementById('dpYear').value;
-  var m=String(parseInt(document.getElementById('dpMonth').value)).padStart(2,'0');
-  var d=String(parseInt(document.getElementById('dpDay').value)||1).padStart(2,'0');
-  var h=String(parseInt(document.getElementById('dpHour').value)).padStart(2,'0');
-  var mn=String(parseInt(document.getElementById('dpMin').value)).padStart(2,'0');
+  var y=document.getElementById('dpYear').value||new Date().getFullYear();
+  var m=String(parseInt(document.getElementById('dpMonth').value)||new Date().getMonth()+1).padStart(2,'0');
+  var d=String(parseInt(document.getElementById('dpDay').value)||new Date().getDate()).padStart(2,'0');
+  var h=String(parseInt(document.getElementById('dpHour').value)||0).padStart(2,'0');
+  var mn=String(parseInt(document.getElementById('dpMin').value)||0).padStart(2,'0');
   selectedManualDate=y+'-'+m+'-'+d+'T'+h+':'+mn+':00.000+09:00';
   var label=y+'년 '+parseInt(m)+'월 '+parseInt(d)+'일 '+h+':'+mn;
   document.getElementById('dateBadge').style.display='inline-block';
