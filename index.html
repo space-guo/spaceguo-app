@@ -813,6 +813,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
     loadSettings();subscribeRecords();subscribeIncomes();subscribePending();setSyncStatus('live');
+    setTimeout(initDatePicker, 0);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -1709,7 +1710,7 @@ var selectedManualDate='';
 
 // 미니달력 상태
 var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
-var miniCalSelectedDay=0; // 선택된 일(1~31), 0이면 미선택
+var miniCalSelectedDay=new Date().getDate();
 
 function initDatePicker(){
   var yEl=document.getElementById('dpYear');
