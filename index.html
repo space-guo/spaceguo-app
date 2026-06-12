@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SpaceGuo · 현장 지출</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SpaceGuo">
+<meta name="theme-color" content="#0f0f0f">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 :root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--accent:#ff6b35;--accent2:#ffad33;--text:#f0f0f0;--muted:#888;--green:#4caf82;--red:#e05252;--blue:#5b8cf7}
@@ -1890,6 +1897,15 @@ function switchTab(tab){
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2200);
+}
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js')
+      .then(function(reg){ console.log('SW registered'); })
+      .catch(function(err){ console.log('SW error:', err); });
+  });
 }
 </script>
 </body>
