@@ -4,13 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SpaceGuo · 현장 지출</title>
-<link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SpaceGuo">
-<meta name="theme-color" content="#0f0f0f">
-<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 :root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--accent:#ff6b35;--accent2:#ffad33;--text:#f0f0f0;--muted:#888;--green:#4caf82;--red:#e05252;--blue:#5b8cf7}
@@ -268,33 +261,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .proc-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0}
 .proc-item-del:active{color:var(--red)}
 
-/* ── DATE PICKER ── */
-.date-field-row{margin-bottom:10px}
-.date-picker-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.date-picker-box.has-date{border-color:var(--accent)}
-.date-scroll-row{display:flex;gap:6px;align-items:flex-end;justify-content:center;padding:12px 10px 10px}
-.date-scroll-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
-.date-scroll-label{font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:700}
-.date-scroll-sep{font-size:18px;font-weight:900;color:var(--border);padding-bottom:10px;flex:0}
-.date-scroll-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:9px 4px;outline:none;text-align:center;-webkit-appearance:none}
-.date-scroll-inp:focus{border-color:var(--accent);background:var(--surface2)}
-.date-mini-cal{padding:0 10px 10px}
-.date-mini-cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.date-mini-cal-btn{background:none;border:none;color:var(--muted);font-size:18px;padding:4px 10px;cursor:pointer}
-.date-mini-cal-label{font-size:13px;font-weight:800;color:var(--text)}
-.date-mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.date-mini-dow{font-size:9px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0}
-.date-mini-cell{font-size:11px;font-weight:600;text-align:center;padding:6px 2px;border-radius:6px;cursor:pointer;color:var(--text);border:1px solid transparent}
-.date-mini-cell:active{background:var(--accent2);color:#000}
-.date-mini-cell.today{border-color:var(--accent);color:var(--accent)}
-.date-mini-cell.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
-.date-mini-cell.other{color:var(--border)}
-.date-mini-cell.sun{color:var(--red)}
-.date-mini-cell.selected.sun{color:#fff}
-.date-mini-cell.sat{color:var(--blue)}
-.date-mini-cell.selected.sat{color:#fff}
-.date-confirm-btn{width:100%;background:var(--accent);border:none;border-top:1px solid var(--border);color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:13px;cursor:pointer}
-.date-display-badge{display:inline-block;background:#1a1f2e;border:1px solid var(--blue);border-radius:8px;color:var(--blue);font-size:12px;font-weight:700;padding:4px 10px;margin-top:6px}
+/* ── EDIT RECORD MODAL ── */
+.edit-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:flex-end;justify-content:center}
+.edit-modal-overlay.show{display:flex}
+.edit-modal-inner{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
+.edit-modal-title{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.edit-modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px}
+.edit-amount-display{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;font-size:28px;font-weight:900;color:var(--accent);cursor:pointer}
+.edit-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px;display:none}
+.edit-numpad.show{display:grid}
+.edit-num-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:18px;font-weight:700;padding:13px;cursor:pointer}
+.edit-num-btn:active{background:var(--accent);border-color:var(--accent)}
+.edit-num-btn.del{font-size:14px;color:var(--muted)}
+.edit-num-btn.zero{grid-column:span 2}
+.edit-save-btn{width:100%;background:var(--accent);border:none;border-radius:14px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:16px;cursor:pointer;margin-top:10px}
+.edit-del-btn{width:100%;background:none;border:1px solid var(--red);border-radius:14px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px}
 </style>
 </head>
 <body>
@@ -395,48 +376,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <button class="quick-btn" onclick="addAmount(100000)">+10만</button>
     <button class="quick-btn" onclick="addAmount(500000)">+50만</button>
     <button class="quick-btn" onclick="addAmount(1000000)">+100만</button>
-  </div>
-  <div class="date-field-row">
-    <div class="field-label">날짜 <span id="dateBadge" style="display:none" class="date-display-badge"></span></div>
-    <div class="date-picker-box" id="datePickerBox">
-      <!-- 년/월/일/시/분 텍스트 입력 -->
-      <div class="date-scroll-row">
-        <div class="date-scroll-col">
-          <div class="date-scroll-label">년</div>
-          <input class="date-scroll-inp" id="dpYear" type="tel" inputmode="numeric" maxlength="4" placeholder="2026" onchange="dpYearMonthChange()" oninput="dpYearMonthChange()">
-        </div>
-        <div class="date-scroll-sep">.</div>
-        <div class="date-scroll-col">
-          <div class="date-scroll-label">월</div>
-          <input class="date-scroll-inp" id="dpMonth" type="tel" inputmode="numeric" maxlength="2" placeholder="01" onchange="dpYearMonthChange()" oninput="dpYearMonthChange()">
-        </div>
-        <div class="date-scroll-sep">.</div>
-        <div class="date-scroll-col">
-          <div class="date-scroll-label">일</div>
-          <input class="date-scroll-inp" id="dpDay" type="tel" inputmode="numeric" maxlength="2" placeholder="01">
-        </div>
-        <div class="date-scroll-sep" style="padding-bottom:10px;color:var(--muted);font-size:13px">  </div>
-        <div class="date-scroll-col">
-          <div class="date-scroll-label">시</div>
-          <input class="date-scroll-inp" id="dpHour" type="tel" inputmode="numeric" maxlength="2" placeholder="00">
-        </div>
-        <div class="date-scroll-sep" style="font-size:14px">:</div>
-        <div class="date-scroll-col">
-          <div class="date-scroll-label">분</div>
-          <input class="date-scroll-inp" id="dpMin" type="tel" inputmode="numeric" maxlength="2" placeholder="00">
-        </div>
-      </div>
-      <!-- 미니 달력 -->
-      <div class="date-mini-cal">
-        <div class="date-mini-cal-nav">
-          <button class="date-mini-cal-btn" onclick="miniCalMove(-1)">‹</button>
-          <span class="date-mini-cal-label" id="miniCalLabel"></span>
-          <button class="date-mini-cal-btn" onclick="miniCalMove(1)">›</button>
-        </div>
-        <div class="date-mini-grid" id="miniCalGrid"></div>
-      </div>
-      <button class="date-confirm-btn" onclick="confirmDatePicker()">✓ 날짜 확정</button>
-    </div>
   </div>
   <div class="field-row">
     <div class="field-label">현장명</div>
@@ -820,7 +759,6 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
     loadSettings();subscribeRecords();subscribeIncomes();subscribePending();setSyncStatus('live');
-    setTimeout(initDatePicker, 0);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -853,7 +791,6 @@ function subscribeRecords(){
     updateHeaderTotal();
     if(document.getElementById('view-list').classList.contains('active'))renderList();
     if(document.getElementById('view-dash').classList.contains('active'))renderDash();
-    if(document.getElementById('view-cal').classList.contains('active'))renderCal();
   });
 }
 function subscribeIncomes(){
@@ -929,32 +866,8 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
   document.getElementById('aibDate').textContent=dateStr?'📅 '+dateStr:'';
   banner.classList.add('show');
 
-  // 입력 탭으로 이동
+  // 입력 탭으로 먼저 이동
   switchTab('input');
-
-  // 날짜 피커에 카드 알림 날짜 자동 반영
-  // dateStr 형식: "2026-05-31 13:56"
-  if(dateStr){
-    var parts=dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
-    if(parts){
-      var py=parseInt(parts[1]),pm=parseInt(parts[2]),pd=parseInt(parts[3]);
-      var ph=parseInt(parts[4]),pmn=parseInt(parts[5]);
-      // 드롭다운 반영
-      document.getElementById('dpYear').value=py;
-      document.getElementById('dpMonth').value=String(pm).padStart(2,'0');
-      document.getElementById('dpDay').value=String(pd).padStart(2,'0');
-      document.getElementById('dpHour').value=String(ph).padStart(2,'0');
-      document.getElementById('dpMin').value=String(pmn).padStart(2,'0');
-      // 미니달력 반영
-      miniCalYear=py; miniCalMonth=pm-1; miniCalSelectedDay=pd;
-      renderMiniCal();
-      // 배지 표시
-      var label=py+'년 '+pm+'월 '+pd+'일 '+String(ph).padStart(2,'0')+':'+String(pmn).padStart(2,'0');
-      document.getElementById('dateBadge').style.display='inline-block';
-      document.getElementById('dateBadge').textContent='🔔 '+label;
-      document.getElementById('datePickerBox').classList.add('has-date');
-    }
-  }
 
   // 탭 이동 후 카드 매칭 (renderCardChips가 탭 전환 시 초기화되므로 이후 실행)
   var matched=null;
@@ -1102,29 +1015,21 @@ function saveRecord(){
   var vendor=document.getElementById('vendorInput').value.trim();
   var items=selectedItems.slice();
 
-  // 날짜 결정: 카드알림 > 수동선택 > 오늘
-  var saveDate;
+  // 날짜: MacroDroid에서 온 날짜 우선, 없으면 현재시간
+  var saveDate=new Date().toISOString();
   if(activePendingDate){
+    // "2026-05-31 02:57" 형식 → 로컬 시간 기준 ISO 변환 (UTC 변환 방지)
     var parts=activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
     if(parts){
-      saveDate=parts[1]+'-'
-        +String(parseInt(parts[2])).padStart(2,'0')+'-'
-        +String(parseInt(parts[3])).padStart(2,'0')+'T'
-        +String(parseInt(parts[4])).padStart(2,'0')+':'
-        +String(parseInt(parts[5])).padStart(2,'0')+':00.000+09:00';
+      var localDate=new Date(
+        parseInt(parts[1]),
+        parseInt(parts[2])-1,
+        parseInt(parts[3]),
+        parseInt(parts[4]),
+        parseInt(parts[5])
+      );
+      if(!isNaN(localDate.getTime())) saveDate=localDate.toISOString();
     }
-  }
-  if(!saveDate && selectedManualDate){
-    saveDate=selectedManualDate;
-  }
-  if(!saveDate){
-    // 날짜 미선택 시 오늘 현재시간
-    var now=new Date();
-    saveDate=now.getFullYear()+'-'
-      +String(now.getMonth()+1).padStart(2,'0')+'-'
-      +String(now.getDate()).padStart(2,'0')+'T'
-      +String(now.getHours()).padStart(2,'0')+':'
-      +String(now.getMinutes()).padStart(2,'0')+':00.000+09:00';
   }
 
   setSyncStatus('saving');
@@ -1142,7 +1047,6 @@ function saveRecord(){
       document.getElementById('activeInputBanner').classList.remove('show');
     }
     amountStr='';updateAmountDisplay();
-    resetManualDate();
     document.getElementById('memoInput').value='';
     document.getElementById('vendorInput').value='';
     selectedItems=[];
@@ -1329,7 +1233,7 @@ function renderList(){
       var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
       var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
       var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
-      return '<div class="record-item"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
+      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
     }).join('');
   }).join('');
 }
@@ -1711,99 +1615,147 @@ function applySmsResult(amount, vendor, bank){
   showToast('✓ 자동 입력됐어요! 현장 선택 후 저장하세요');
 }
 
-// ── DATE INPUT ──
-var selectedManualDate='';
 
-// 미니달력 상태
-var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
-var miniCalSelectedDay=new Date().getDate();
+// ── EDIT RECORD MODAL ──
+var editingRecordId='', editAmountStr='', editSelectedCat='', editSelectedVat='none';
+var editSelectedPayMethod='', editSelectedPayType='';
 
-function initDatePicker(){
-  if(activePendingId) return;
-  var now=new Date();
-  var ny=now.getFullYear(), nm=now.getMonth()+1, nd=now.getDate();
-  var nh=now.getHours(), nmn=now.getMinutes();
-  document.getElementById('dpYear').value=ny;
-  document.getElementById('dpMonth').value=String(nm).padStart(2,'0');
-  document.getElementById('dpDay').value=String(nd).padStart(2,'0');
-  document.getElementById('dpHour').value=String(nh).padStart(2,'0');
-  document.getElementById('dpMin').value=String(nmn).padStart(2,'0');
-  miniCalYear=ny; miniCalMonth=nm-1; miniCalSelectedDay=nd;
-  renderMiniCal();
+function openEditModal(id){
+  var r=records.find(function(x){return x.id===id;});
+  if(!r) return;
+  editingRecordId=id;
+
+  // 금액
+  editAmountStr=String(r.amount||0);
+  updateEditAmountDisplay();
+  document.getElementById('editNumpad').classList.remove('show');
+
+  // 날짜 (datetime-local 포맷: YYYY-MM-DDTHH:mm)
+  var d=new Date(r.date);
+  var localDt=d.getFullYear()+'-'
+    +String(d.getMonth()+1).padStart(2,'0')+'-'
+    +String(d.getDate()).padStart(2,'0')+'T'
+    +String(d.getHours()).padStart(2,'0')+':'
+    +String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('editDate').value=localDt;
+
+  // 현장
+  var sel=document.getElementById('editSite');
+  sel.innerHTML='';
+  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===r.site)o.selected=true;sel.appendChild(o);});
+
+  // 카테고리
+  editSelectedCat=r.category||'자재비';
+  document.querySelectorAll('#editCatChips .chip').forEach(function(b){
+    b.classList.toggle('selected', b.textContent===editSelectedCat);
+  });
+
+  // 결제수단
+  editSelectedPayMethod=r.payMethod||'';
+  editSelectedPayType=r.payType||'';
+  renderEditPayChips();
+
+  // 부가세
+  selectEditVat(r.vat||'none');
+
+  // 구매처/품목/메모
+  document.getElementById('editVendor').value=r.vendor||'';
+  document.getElementById('editItems').value=(r.items&&r.items.length)?r.items.join(', '):'';
+  document.getElementById('editMemo').value=r.memo||'';
+
+  document.getElementById('editRecordModal').classList.add('show');
 }
-function resetToNow(){
-  initDatePicker();
+
+function closeEditModal(){
+  document.getElementById('editRecordModal').classList.remove('show');
 }
-function buildDayOptions(selectDay,yr,mo){
-  // input 방식에서는 일 값만 업데이트
-  if(selectDay) document.getElementById('dpDay').value=String(selectDay).padStart(2,'0');
+
+function toggleEditNumpad(){
+  document.getElementById('editNumpad').classList.toggle('show');
 }
-function dpYearMonthChange(){
-  var y=parseInt(document.getElementById('dpYear').value);
-  var m=parseInt(document.getElementById('dpMonth').value);
-  if(!y||!m||m<1||m>12) return;
-  miniCalYear=y; miniCalMonth=m-1;
-  miniCalSelectedDay=parseInt(document.getElementById('dpDay').value)||0;
-  renderMiniCal();
+function editNumInput(n){if(editAmountStr.length>=10)return;editAmountStr+=n;updateEditAmountDisplay();}
+function editNumDelete(){editAmountStr=editAmountStr.slice(0,-1);updateEditAmountDisplay();}
+function updateEditAmountDisplay(){
+  var el=document.getElementById('editAmountDisplay');
+  el.textContent=editAmountStr?'₩'+Number(editAmountStr).toLocaleString('ko-KR'):'₩0';
 }
-function renderMiniCal(){
-  var label=miniCalYear+'년 '+(miniCalMonth+1)+'월';
-  document.getElementById('miniCalLabel').textContent=label;
-  var firstDay=new Date(miniCalYear,miniCalMonth,1).getDay();
-  var lastDate=new Date(miniCalYear,miniCalMonth+1,0).getDate();
-  var today=new Date();
-  var isThisMonth=today.getFullYear()===miniCalYear&&today.getMonth()===miniCalMonth;
-  var dows=['일','월','화','수','목','금','토'];
-  var html=dows.map(function(d,i){
-    return '<div class="date-mini-dow'+(i===0?' style="color:var(--red)"':'')+'">'+d+'</div>';
-  }).join('');
-  for(var i=0;i<firstDay;i++) html+='<div class="date-mini-cell other"></div>';
-  for(var d=1;d<=lastDate;d++){
-    var dow=new Date(miniCalYear,miniCalMonth,d).getDay();
-    var cls='date-mini-cell';
-    if(isThisMonth&&d===today.getDate()) cls+=' today';
-    if(miniCalSelectedDay===d) cls+=' selected';
-    if(dow===0) cls+=' sun';
-    if(dow===6) cls+=' sat';
-    html+='<div class="'+cls+'" onclick="miniCalSelectDay('+d+')">'+d+'</div>';
-  }
-  document.getElementById('miniCalGrid').innerHTML=html;
+
+function selectEditCat(btn,cat){
+  editSelectedCat=cat;
+  document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
 }
-function miniCalMove(dir){
-  miniCalMonth+=dir;
-  if(miniCalMonth>11){miniCalMonth=0;miniCalYear++;}
-  if(miniCalMonth<0){miniCalMonth=11;miniCalYear--;}
-  miniCalSelectedDay=0;
-  document.getElementById('dpYear').value=miniCalYear;
-  document.getElementById('dpMonth').value=String(miniCalMonth+1).padStart(2,'0');
-  document.getElementById('dpDay').value='';
-  renderMiniCal();
+
+function selectEditVat(type){
+  editSelectedVat=type;
+  ['editVatNone','editVatIncluded','editVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
+  document.getElementById({none:'editVatNone',included:'editVatIncluded',excluded:'editVatExcluded'}[type]).classList.add('selected');
 }
-function miniCalSelectDay(d){
-  miniCalSelectedDay=d;
-  document.getElementById('dpYear').value=miniCalYear;
-  document.getElementById('dpMonth').value=String(miniCalMonth+1).padStart(2,'0');
-  document.getElementById('dpDay').value=String(d).padStart(2,'0');
-  renderMiniCal();
+
+function renderEditPayChips(){
+  var el=document.getElementById('editPayChips');
+  var html='';
+  // 카드
+  cards.forEach(function(c){
+    var label=c.num?c.name+' ('+c.num+')':c.name;
+    var sel=editSelectedPayMethod===c.name;
+    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" onclick="selectEditPay(this,''+c.name+'','card')">'+label+'</button>';
+  });
+  // 현금
+  ['현금 직접','카카오페이','토스'].forEach(function(m){
+    var sel=editSelectedPayMethod===m;
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,''+m+'','cash')">'+m+'</button>';
+  });
+  // 계좌
+  accounts.forEach(function(a){
+    var sel=editSelectedPayMethod===a.name;
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,''+a.name+'','cash')">🏦 '+a.name+'</button>';
+  });
+  el.innerHTML=html;
 }
-function confirmDatePicker(){
-  var y=document.getElementById('dpYear').value||new Date().getFullYear();
-  var m=String(parseInt(document.getElementById('dpMonth').value)||new Date().getMonth()+1).padStart(2,'0');
-  var d=String(parseInt(document.getElementById('dpDay').value)||new Date().getDate()).padStart(2,'0');
-  var h=String(parseInt(document.getElementById('dpHour').value)||0).padStart(2,'0');
-  var mn=String(parseInt(document.getElementById('dpMin').value)||0).padStart(2,'0');
-  selectedManualDate=y+'-'+m+'-'+d+'T'+h+':'+mn+':00.000+09:00';
-  var label=y+'년 '+parseInt(m)+'월 '+parseInt(d)+'일 '+h+':'+mn;
-  document.getElementById('dateBadge').style.display='inline-block';
-  document.getElementById('dateBadge').textContent=label;
-  document.getElementById('datePickerBox').classList.add('has-date');
-  showToast('📅 '+label+' 선택됨');
+
+function selectEditPay(btn,method,type){
+  if(editSelectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');editSelectedPayMethod='';editSelectedPayType='';return;}
+  document.querySelectorAll('#editPayChips .pay-chip').forEach(function(b){b.classList.remove('selected-card','selected-cash');});
+  btn.classList.add(type==='card'?'selected-card':'selected-cash');
+  editSelectedPayMethod=method;editSelectedPayType=type;
 }
-function resetManualDate(){
-  selectedManualDate='';
-  document.getElementById('dateBadge').style.display='none';
-  document.getElementById('datePickerBox').classList.remove('has-date');
-  resetToNow();
+
+function saveEditRecord(){
+  var amount=parseInt(editAmountStr||'0');
+  if(!amount){showToast('금액을 입력해주세요');return;}
+  var site=document.getElementById('editSite').value;
+  if(!site){showToast('현장을 선택해주세요');return;}
+
+  // 날짜 처리
+  var dtVal=document.getElementById('editDate').value; // YYYY-MM-DDTHH:mm
+  var saveDate=dtVal?dtVal+':00.000+09:00':new Date().toISOString();
+
+  var vendor=document.getElementById('editVendor').value.trim();
+  var itemsRaw=document.getElementById('editItems').value.trim();
+  var items=itemsRaw?itemsRaw.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean):[];
+  var memo=document.getElementById('editMemo').value.trim();
+
+  setSyncStatus('saving');
+  db.collection('expenses').doc(editingRecordId).update({
+    amount:amount, site:site, category:editSelectedCat,
+    payMethod:editSelectedPayMethod, payType:editSelectedPayType,
+    vat:editSelectedVat, vendor:vendor, items:items, memo:memo,
+    date:saveDate
+  }).then(function(){
+    closeEditModal();
+    setSyncStatus('ok');
+    showToast('✓ 수정됐어요');
+  }).catch(function(e){
+    setSyncStatus('err');
+    showToast('수정 실패: '+e.message);
+  });
+}
+
+function deleteEditRecord(){
+  if(!confirm('이 내역을 삭제할까요?'))return;
+  closeEditModal();
+  deleteRecord(editingRecordId);
 }
 
 // ── CALENDAR ──
@@ -1885,7 +1837,6 @@ function switchTab(tab){
   var tabEl=document.getElementById('tab-'+tab);
   if(tabEl)tabEl.classList.add('active');
   document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
-  if(tab==='input'){initDatePicker();}
   if(tab==='list'){renderFilterBar();renderList();}
   if(tab==='notif'){renderNotifTab();}
   if(tab==='cal'){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
@@ -1899,14 +1850,84 @@ function showToast(msg){
   setTimeout(function(){t.classList.remove('show');},2200);
 }
 </script>
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js')
-      .then(function(reg){ console.log('SW registered'); })
-      .catch(function(err){ console.log('SW error:', err); });
-  });
-}
-</script>
+
+<!-- EDIT RECORD MODAL -->
+<div class="edit-modal-overlay" id="editRecordModal">
+  <div class="edit-modal-inner">
+    <div class="edit-modal-title">
+      <span>✏️ 내역 수정</span>
+      <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <!-- 금액 -->
+    <div class="field-label">금액</div>
+    <div class="edit-amount-display" id="editAmountDisplay" onclick="toggleEditNumpad()">₩0</div>
+    <div class="edit-numpad" id="editNumpad">
+      <button class="edit-num-btn" onclick="editNumInput('1')">1</button>
+      <button class="edit-num-btn" onclick="editNumInput('2')">2</button>
+      <button class="edit-num-btn" onclick="editNumInput('3')">3</button>
+      <button class="edit-num-btn" onclick="editNumInput('4')">4</button>
+      <button class="edit-num-btn" onclick="editNumInput('5')">5</button>
+      <button class="edit-num-btn" onclick="editNumInput('6')">6</button>
+      <button class="edit-num-btn" onclick="editNumInput('7')">7</button>
+      <button class="edit-num-btn" onclick="editNumInput('8')">8</button>
+      <button class="edit-num-btn" onclick="editNumInput('9')">9</button>
+      <button class="edit-num-btn zero" onclick="editNumInput('0')">0</button>
+      <button class="edit-num-btn del" onclick="editNumDelete()">⌫</button>
+    </div>
+    <!-- 날짜 -->
+    <div class="field-row" style="margin-top:10px">
+      <div class="field-label">날짜</div>
+      <input class="field-input" id="editDate" type="datetime-local">
+    </div>
+    <!-- 현장 -->
+    <div class="field-row">
+      <div class="field-label">현장명</div>
+      <select class="field-select" id="editSite"></select>
+    </div>
+    <!-- 카테고리 -->
+    <div class="field-row">
+      <div class="field-label">카테고리</div>
+      <div class="chips" id="editCatChips">
+        <button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
+        <button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
+        <button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
+        <button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
+        <button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
+        <button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
+      </div>
+    </div>
+    <!-- 결제수단 -->
+    <div class="field-row">
+      <div class="field-label">결제수단</div>
+      <div class="pay-chips" id="editPayChips"></div>
+    </div>
+    <!-- 부가세 -->
+    <div class="field-row">
+      <div class="field-label">부가세</div>
+      <div class="vat-row-ui">
+        <button class="vat-btn" id="editVatNone" onclick="selectEditVat('none')">미발행</button>
+        <button class="vat-btn" id="editVatIncluded" onclick="selectEditVat('included')">포함</button>
+        <button class="vat-btn" id="editVatExcluded" onclick="selectEditVat('excluded')">별도</button>
+      </div>
+    </div>
+    <!-- 구매처 -->
+    <div class="field-row">
+      <div class="field-label">구매처</div>
+      <input class="field-input" id="editVendor" type="text" placeholder="구매처">
+    </div>
+    <!-- 품목 -->
+    <div class="field-row">
+      <div class="field-label">품목 (쉼표로 구분)</div>
+      <input class="field-input" id="editItems" type="text" placeholder="예: 타일, 시멘트, 줄눈">
+    </div>
+    <!-- 메모 -->
+    <div class="field-row">
+      <div class="field-label">메모</div>
+      <input class="field-input" id="editMemo" type="text" placeholder="메모">
+    </div>
+    <button class="edit-save-btn" onclick="saveEditRecord()">✓ 수정 저장</button>
+    <button class="edit-del-btn" onclick="deleteEditRecord()">🗑 이 내역 삭제</button>
+  </div>
+</div>
 </body>
 </html>
