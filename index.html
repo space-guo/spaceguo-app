@@ -1699,17 +1699,17 @@ function renderEditPayChips(){
   cards.forEach(function(c){
     var label=c.num?c.name+' ('+c.num+')':c.name;
     var sel=editSelectedPayMethod===c.name;
-    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" onclick="selectEditPay(this,''+c.name+'','card')">'+label+'</button>';
+    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" onclick="selectEditPay(this,\''+c.name+'\',\'card\')">'+label+'</button>';
   });
   // 현금
   ['현금 직접','카카오페이','토스'].forEach(function(m){
     var sel=editSelectedPayMethod===m;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,''+m+'','cash')">'+m+'</button>';
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,\''+m+'\',\'cash\')">'+m+'</button>';
   });
   // 계좌
   accounts.forEach(function(a){
     var sel=editSelectedPayMethod===a.name;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,''+a.name+'','cash')">🏦 '+a.name+'</button>';
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,\''+a.name+'\',\'cash\')">🏦 '+a.name+'</button>';
   });
   el.innerHTML=html;
 }
