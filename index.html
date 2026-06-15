@@ -351,6 +351,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .proc-item-move{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 3px;line-height:1}
 .proc-item-move:active{color:var(--accent)}
 .proc-item-move:disabled{opacity:.2;cursor:default}
+
+/* ── DRAG SORT ── */
+.drag-handle{cursor:grab;color:var(--muted);font-size:16px;padding:4px 6px;touch-action:none;user-select:none;flex-shrink:0}
+.drag-handle:active{cursor:grabbing}
+.drag-item{transition:opacity .15s}
+.drag-item.dragging{opacity:.4}
+.drag-item.drag-over{border-color:var(--accent)!important;background:var(--surface2)!important}
 </style>
 </head>
 <body>
@@ -1538,31 +1545,26 @@ function renderSiteSelect(){
 function renderSiteList(){
   var el=document.getElementById('siteList');
   if(!sites.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';return;}
-  var sLen=sites.length;
   el.innerHTML=sites.map(function(s,i){
-    return '<div class="site-item">'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="display:flex;flex-direction:column;gap:2px">'
-      +'<button class="proc-btn" '+(i===0?'disabled style="opacity:.3"':'')+' data-move-site="'+i+'" data-dir="-1">↑</button>'
-      +'<button class="proc-btn" '+(i===sLen-1?'disabled style="opacity:.3"':'')+' data-move-site="'+i+'" data-dir="1">↓</button>'
-      +'</div>'
-      +'<span class="site-name">'+s+'</span>'
-      +'</div>'
+    return '<div class="site-item drag-item">'
+      +'<span class="drag-handle">☰</span>'
+      +'<span class="site-name" style="flex:1">'+s+'</span>'
       +'<div style="display:flex;gap:6px">'
       +'<button class="proc-btn" data-edit-site="'+i+'">수정</button>'
       +'<button class="site-del" data-del-site="'+i+'">✕</button>'
       +'</div></div>';
   }).join('');
-  el.querySelectorAll('[data-move-site]').forEach(function(btn){
-    btn.addEventListener('click',function(){moveSite(parseInt(this.getAttribute('data-move-site')),parseInt(this.dataset.dir));});
-  });
   el.querySelectorAll('[data-edit-site]').forEach(function(btn){
     btn.addEventListener('click',function(){openSiteEditModal(parseInt(this.getAttribute('data-edit-site')));});
   });
   el.querySelectorAll('[data-del-site]').forEach(function(btn){
     btn.addEventListener('click',function(){deleteSite(parseInt(this.getAttribute('data-del-site')));});
   });
+  initDragList(el, sites, 'sites', function(){
+    saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
+  });
 }
+
 var editingSiteIdx=-1;
 function openSiteEditModal(i){
   editingSiteIdx=i;
@@ -1701,32 +1703,29 @@ function renderCardChips(){
 function renderCardList(){
   var el=document.getElementById('cardList');
   if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
-  var cLen=cards.length;
   el.innerHTML=cards.map(function(c,i){
-    return '<div class="site-item">'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="display:flex;flex-direction:column;gap:2px">'
-      +'<button class="proc-btn" '+(i===0?'disabled style="opacity:.3"':'')+' data-move-card="'+i+'" data-dir="-1">↑</button>'
-      +'<button class="proc-btn" '+(i===cLen-1?'disabled style="opacity:.3"':'')+' data-move-card="'+i+'" data-dir="1">↓</button>'
-      +'</div>'
-      +'<div><div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div></div>'
+    return '<div class="site-item drag-item">'
+      +'<span class="drag-handle">☰</span>'
+      +'<div style="flex:1">'
+      +'<div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:6px">'
       +'<button class="proc-btn" data-edit-card="'+i+'">수정</button>'
       +'<button class="site-del" data-del-card="'+i+'">✕</button>'
       +'</div></div>';
   }).join('');
-  el.querySelectorAll('[data-move-card]').forEach(function(btn){
-    btn.addEventListener('click',function(){moveCard(parseInt(this.getAttribute('data-move-card')),parseInt(this.dataset.dir));});
-  });
   el.querySelectorAll('[data-edit-card]').forEach(function(btn){
     btn.addEventListener('click',function(){openCardModal(parseInt(this.getAttribute('data-edit-card')));});
   });
   el.querySelectorAll('[data-del-card]').forEach(function(btn){
     btn.addEventListener('click',function(){deleteCard(parseInt(this.getAttribute('data-del-card')));});
   });
+  initDragList(el, cards, 'cards', function(){
+    saveSettings().then(function(){renderCardList();renderCardChips();});
+  });
 }
+
 function selectCardType(type){
   selectedCardType=type;
   [{id:'ctCredit',t:'신용'},{id:'ctDebit',t:'체크'},{id:'ctCorp',t:'법인'}].forEach(function(x){var el=document.getElementById(x.id);if(el)el.classList.toggle('selected-card',x.t===type);});
@@ -1772,32 +1771,29 @@ function renderAccountList(){
   var el=document.getElementById('accountList');
   if(!el)return;
   if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
-  var aLen=accounts.length;
   el.innerHTML=accounts.map(function(a,i){
-    return '<div class="site-item">'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="display:flex;flex-direction:column;gap:2px">'
-      +'<button class="proc-btn" '+(i===0?'disabled style="opacity:.3"':'')+' data-move-acc="'+i+'" data-dir="-1">↑</button>'
-      +'<button class="proc-btn" '+(i===aLen-1?'disabled style="opacity:.3"':'')+' data-move-acc="'+i+'" data-dir="1">↓</button>'
-      +'</div>'
-      +'<div><div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div></div>'
+    return '<div class="site-item drag-item">'
+      +'<span class="drag-handle">☰</span>'
+      +'<div style="flex:1">'
+      +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:6px">'
       +'<button class="proc-btn" data-edit-acc="'+i+'">수정</button>'
       +'<button class="site-del" data-del-acc="'+i+'">✕</button>'
       +'</div></div>';
   }).join('');
-  el.querySelectorAll('[data-move-acc]').forEach(function(btn){
-    btn.addEventListener('click',function(){moveAccount(parseInt(this.getAttribute('data-move-acc')),parseInt(this.dataset.dir));});
-  });
   el.querySelectorAll('[data-edit-acc]').forEach(function(btn){
     btn.addEventListener('click',function(){openAccountModal(parseInt(this.getAttribute('data-edit-acc')));});
   });
   el.querySelectorAll('[data-del-acc]').forEach(function(btn){
     btn.addEventListener('click',function(){deleteAccount(parseInt(this.getAttribute('data-del-acc')));});
   });
+  initDragList(el, accounts, 'accounts', function(){
+    saveSettings().then(function(){renderAccountList();renderAccountChips();});
+  });
 }
+
 function openAccountModal(idx){
   editingAccIdx=idx===undefined?-1:idx;
   document.getElementById('accountModalTitle').textContent=editingAccIdx>=0?'계좌 수정':'계좌 추가';
@@ -1877,51 +1873,38 @@ function renderProcessList(){
   var el=document.getElementById('processList');
   if(!el)return;
   if(!processes.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';return;}
-  var pLen=processes.length;
   el.innerHTML=processes.map(function(p,pi){
-    var itemLen=(p.items||[]).length;
     var itemTags=(p.items||[]).map(function(item,ii){
-      return '<span class="proc-item-tag">'
-        +'<button class="proc-item-move" '+(ii===0?'disabled':'')+' data-pi="'+pi+'" data-ii="'+ii+'" data-dir="-1">↑</button>'
+      return '<span class="proc-item-tag drag-item" style="cursor:default">'
+        +'<span class="drag-handle" style="font-size:12px;padding:2px 4px">☰</span>'
         +item.name+(item.unit?' <span style="opacity:.6;font-size:10px">'+item.unit+'</span>':'')
-        +'<button class="proc-item-move" '+(ii===itemLen-1?'disabled':'')+' data-pi="'+pi+'" data-ii="'+ii+'" data-dir="1">↓</button>'
         +'<button class="proc-item-del" data-pi="'+pi+'" data-ii="'+ii+'">✕</button>'
         +'</span>';
     }).join('');
-    return '<div class="process-block">'
+    return '<div class="process-block drag-item">'
       +'<div class="process-header">'
-      +'<div style="display:flex;flex-direction:column;gap:2px">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<span class="drag-handle">☰</span>'
       +'<span class="process-name">'+p.name+'</span>'
-      +'<div style="display:flex;gap:4px">'
-      +'<button class="proc-btn" '+(pi===0?'disabled style="opacity:.3"':'')+' data-move-proc="'+pi+'" data-dir="-1">↑</button>'
-      +'<button class="proc-btn" '+(pi===pLen-1?'disabled style="opacity:.3"':'')+' data-move-proc="'+pi+'" data-dir="1">↓</button>'
-      +'</div>'
       +'</div>'
       +'<div class="process-actions">'
       +'<button class="proc-btn" data-add-item="'+pi+'">＋ 품목</button>'
       +'<button class="proc-btn" data-edit-proc="'+pi+'">수정</button>'
       +'<button class="proc-btn del" data-del-proc="'+pi+'">삭제</button>'
       +'</div></div>'
-      +'<div class="proc-item-list">'+(itemTags||'<span style="font-size:12px;color:var(--muted)">품목 없음</span>')+'</div>'
+      +'<div class="proc-item-list" id="item-list-'+pi+'">'+(itemTags||'<span style="font-size:12px;color:var(--muted)">품목 없음</span>')+'</div>'
       +'</div>';
   }).join('');
 
-  // 품목 ↑↓
-  el.querySelectorAll('.proc-item-move').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      moveProcessItem(parseInt(this.dataset.pi),parseInt(this.dataset.ii),parseInt(this.dataset.dir));
-    });
+  // 공정 드래그
+  initDragList(el, processes, 'processes', function(){
+    saveSettings().then(function(){renderProcessList();renderProcessSelect();});
   });
+
   // 품목 삭제
   el.querySelectorAll('.proc-item-del').forEach(function(btn){
     btn.addEventListener('click',function(){
       deleteProcessItem(parseInt(this.dataset.pi),parseInt(this.dataset.ii));
-    });
-  });
-  // 공정 ↑↓
-  el.querySelectorAll('[data-move-proc]').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      moveProcess(parseInt(this.getAttribute('data-move-proc')),parseInt(this.dataset.dir));
     });
   });
   // 품목 추가
@@ -1935,6 +1918,15 @@ function renderProcessList(){
   // 공정 삭제
   el.querySelectorAll('[data-del-proc]').forEach(function(btn){
     btn.addEventListener('click',function(){deleteProcess(parseInt(this.getAttribute('data-del-proc')));});
+  });
+
+  // 품목별 드래그
+  processes.forEach(function(p,pi){
+    var itemEl=document.getElementById('item-list-'+pi);
+    if(!itemEl||!(p.items&&p.items.length))return;
+    initDragList(itemEl, p.items, 'items-'+pi, function(){
+      saveSettings().then(function(){renderProcessList();renderProcessSelect();});
+    });
   });
 }
 
@@ -2087,6 +2079,85 @@ function applySmsResult(amount, vendor, bank){
 }
 
 
+
+// ── DRAG SORT UTIL ──
+var dragState={srcIdx:-1,listKey:'',arr:null,onDone:null};
+
+function initDragList(containerEl, arr, listKey, onDone){
+  var items=containerEl.querySelectorAll('.drag-item');
+  items.forEach(function(item, idx){
+    var handle=item.querySelector('.drag-handle');
+    if(!handle)return;
+
+    // Touch
+    handle.addEventListener('touchstart',function(e){
+      dragState={srcIdx:idx,listKey:listKey,arr:arr,onDone:onDone,el:item};
+      item.classList.add('dragging');
+      e.preventDefault();
+    },{passive:false});
+
+    handle.addEventListener('touchmove',function(e){
+      e.preventDefault();
+      var touch=e.touches[0];
+      var target=document.elementFromPoint(touch.clientX,touch.clientY);
+      var targetItem=target&&target.closest('.drag-item');
+      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');});
+      if(targetItem&&targetItem!==dragState.el) targetItem.classList.add('drag-over');
+    },{passive:false});
+
+    handle.addEventListener('touchend',function(e){
+      var touch=e.changedTouches[0];
+      var target=document.elementFromPoint(touch.clientX,touch.clientY);
+      var targetItem=target&&target.closest('.drag-item');
+      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');i.classList.remove('dragging');});
+      if(targetItem&&targetItem!==dragState.el){
+        var allItems=Array.from(containerEl.querySelectorAll('.drag-item'));
+        var toIdx=allItems.indexOf(targetItem);
+        if(toIdx>=0&&toIdx!==dragState.srcIdx){
+          var tmp=dragState.arr.splice(dragState.srcIdx,1)[0];
+          dragState.arr.splice(toIdx,0,tmp);
+          dragState.onDone();
+        }
+      }
+      dragState={srcIdx:-1};
+    });
+
+    // Mouse (PC)
+    handle.addEventListener('mousedown',function(e){
+      dragState={srcIdx:idx,listKey:listKey,arr:arr,onDone:onDone,el:item};
+      item.classList.add('dragging');
+      e.preventDefault();
+    });
+  });
+
+  containerEl.addEventListener('dragover',function(e){e.preventDefault();});
+  containerEl.addEventListener('drop',function(e){e.preventDefault();});
+
+  // mouseenter on items
+  items.forEach(function(item,idx){
+    item.addEventListener('mouseenter',function(){
+      if(dragState.srcIdx<0)return;
+      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');});
+      if(idx!==dragState.srcIdx) item.classList.add('drag-over');
+    });
+    item.addEventListener('mouseup',function(){
+      if(dragState.srcIdx<0)return;
+      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');i.classList.remove('dragging');});
+      if(idx!==dragState.srcIdx){
+        var tmp=dragState.arr.splice(dragState.srcIdx,1)[0];
+        dragState.arr.splice(idx,0,tmp);
+        dragState.onDone();
+      }
+      dragState={srcIdx:-1};
+    });
+  });
+
+  document.addEventListener('mouseup',function(){
+    if(dragState.srcIdx<0)return;
+    containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');i.classList.remove('dragging');});
+    dragState={srcIdx:-1};
+  },{once:false});
+}
 // ── EDIT RECORD MODAL ──
 var editingRecordId='', editAmountStr='', editSelectedCat='', editSelectedVat='none';
 var editSelectedPayMethod='', editSelectedPayType='';
