@@ -310,6 +310,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .sch-progress-bar{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
 .sch-item-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:var(--muted)}
 .sch-done-badge{background:#1a2a1a;color:var(--green);border:1px solid var(--green);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700}
+
+/* ── NOTIF BELL ── */
+.notif-bell-btn{position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px;line-height:1}
+.notif-bell-badge{position:absolute;top:-2px;right:-2px;background:var(--accent);color:#fff;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;min-width:16px;text-align:center}
 </style>
 </head>
 <body>
@@ -344,14 +348,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="header-right">
       <span class="today-total" id="headerTotal"></span>
       <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
+      <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()">🔔<span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
   <div class="tab-bar">
     <button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
-    <button class="tab" id="tab-notif" onclick="switchTab('notif')">알림<span id="notifBadge" style="display:none;background:var(--accent2);color:#000;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;margin-left:3px"></span></button>
     <button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
-    <button class="tab" id="tab-cal" onclick="switchTab('cal')">달력</button>
     <button class="tab" id="tab-sch" onclick="switchTab('sch')">공정표</button>
     <button class="tab" id="tab-dash" onclick="switchTab('dash')">손익</button>
     <button class="tab" id="tab-settings" onclick="switchTab('settings')">설정</button>
@@ -483,8 +486,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
 </div>
 
-<!-- LIST -->
+<!-- LIST (달력 + 내역 통합) -->
 <div class="view" id="view-list">
+  <!-- 상단 달력 -->
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
+    <span class="cal-month-label" id="calMonthLabel"></span>
+    <button class="cal-nav-btn" onclick="calMove(1)">›</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="cal-day-detail" id="calDayDetail"></div>
+  <!-- 구분선 -->
+  <div style="height:1px;background:var(--border);margin:14px 0"></div>
+  <!-- 하단 내역 -->
   <div class="filter-bar" id="filterBar"><button class="filter-chip active" onclick="setFilter('전체',this)">전체</button></div>
   <div class="summary-card">
     <div><div class="s-label">필터 합계</div><div class="s-value" id="filteredTotal">₩0</div></div>
@@ -493,16 +507,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div id="recordList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
 </div>
 
-<!-- CALENDAR -->
-<div class="view" id="view-cal">
-  <div class="cal-nav">
-    <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
-    <span class="cal-month-label" id="calMonthLabel"></span>
-    <button class="cal-nav-btn" onclick="calMove(1)">›</button>
-  </div>
-  <div class="cal-grid" id="calGrid"></div>
-  <div class="cal-day-detail" id="calDayDetail"></div>
-</div>
+<!-- 달력은 내역 탭에 통합됨 -->
 
 
 <!-- SCHEDULE -->
@@ -762,6 +767,22 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
+
+<!-- NOTIFICATION MODAL -->
+<div class="modal-overlay" id="notifModal" onclick="if(event.target===this)closeNotifModal()">
+  <div class="modal-inner" style="max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">🔔 카드 알림</div>
+      <button onclick="closeNotifModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="notif-filter">
+      <button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
+      <button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
+      <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
+    </div>
+    <div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
+  </div>
+</div>
 <!-- EDIT RECORD MODAL -->
 <div class="edit-modal-overlay" id="editRecordModal">
   <div class="edit-modal-inner">
@@ -977,9 +998,11 @@ function subscribePending(){
 
 function updateNotifBadge(){
   var pending=pendingNotifs.filter(function(n){return n.status==='pending';});
-  var badge=document.getElementById('notifBadge');
-  if(pending.length>0){badge.style.display='inline';badge.textContent=pending.length;}
-  else{badge.style.display='none';}
+  var badge=document.getElementById('notifBellBadge');
+  if(badge){
+    if(pending.length>0){badge.style.display='inline';badge.textContent=pending.length;}
+    else{badge.style.display='none';}
+  }
 }
 
 function renderPendingSection(){
@@ -2179,14 +2202,24 @@ function switchTab(tab){
   var tabEl=document.getElementById('tab-'+tab);
   if(tabEl)tabEl.classList.add('active');
   document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
-  if(tab==='list'){renderFilterBar();renderList();}
+  if(tab==='list'){
+    calYear=new Date().getFullYear();calMonth=new Date().getMonth();
+    renderCal();renderFilterBar();renderList();
+  }
   if(tab==='sch'){renderSchTab();}
-  if(tab==='notif'){renderNotifTab();}
-  if(tab==='cal'){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
   if(tab==='dash'){renderDash();}
   if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();}
 }
 
+
+// ── NOTIF MODAL ──
+function openNotifModal(){
+  renderNotifTab();
+  document.getElementById('notifModal').style.display='flex';
+}
+function closeNotifModal(){
+  document.getElementById('notifModal').style.display='none';
+}
 // ── TOAST ──
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
