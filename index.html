@@ -353,10 +353,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .proc-item-move:disabled{opacity:.2;cursor:default}
 
 /* ── DRAG SORT ── */
-.drag-handle{cursor:grab;color:var(--muted);font-size:16px;padding:4px 6px;touch-action:none;user-select:none;flex-shrink:0}
-.drag-handle:active{cursor:grabbing}
-.drag-item{transition:opacity .15s}
-.drag-item.dragging{opacity:.4}
+.drag-item{transition:box-shadow .15s,transform .1s;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.drag-item.drag-ready{box-shadow:0 0 0 2px var(--accent2);transform:scale(1.01)}
+.drag-item.dragging{opacity:.5;transform:scale(1.02);box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:10;position:relative}
 .drag-item.drag-over{border-color:var(--accent)!important;background:var(--surface2)!important}
 </style>
 </head>
@@ -560,15 +559,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <button class="submit-btn" onclick="saveRecord()">💾 저장</button>
 </div>
 
-<!-- NOTIFICATIONS -->
-<div class="view" id="view-notif">
-  <div class="notif-filter">
-    <button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
-    <button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
-    <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
-  </div>
-  <div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
-</div>
+<!-- 알림 탭은 헤더 벨 모달로 이동 -->
 
 <!-- LIST (달력 + 내역 통합) -->
 <div class="view" id="view-list">
@@ -1076,7 +1067,6 @@ function subscribePending(){
     pendingNotifs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     renderPendingSection();
     updateNotifBadge();
-    if(document.getElementById('view-notif').classList.contains('active'))renderNotifTab();
   });
 }
 
@@ -1547,7 +1537,7 @@ function renderSiteList(){
   if(!sites.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';return;}
   el.innerHTML=sites.map(function(s,i){
     return '<div class="site-item drag-item">'
-      +'<span class="drag-handle">☰</span>'
+      
       +'<span class="site-name" style="flex:1">'+s+'</span>'
       +'<div style="display:flex;gap:6px">'
       +'<button class="proc-btn" data-edit-site="'+i+'">수정</button>'
@@ -1705,7 +1695,7 @@ function renderCardList(){
   if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
   el.innerHTML=cards.map(function(c,i){
     return '<div class="site-item drag-item">'
-      +'<span class="drag-handle">☰</span>'
+      
       +'<div style="flex:1">'
       +'<div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div>'
       +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div>'
@@ -1773,7 +1763,7 @@ function renderAccountList(){
   if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
   el.innerHTML=accounts.map(function(a,i){
     return '<div class="site-item drag-item">'
-      +'<span class="drag-handle">☰</span>'
+      
       +'<div style="flex:1">'
       +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
       +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
@@ -1869,6 +1859,43 @@ function toggleItem(btn,label){
     selectedItems.push(label);
   }
 }
+function openProcessModal(idx){
+  editingProcIdx=idx===undefined?-1:idx;
+  document.getElementById('processModalTitle').textContent=editingProcIdx>=0?'공정 수정':'공정 추가';
+  document.getElementById('procNameInp').value=editingProcIdx>=0?(processes[editingProcIdx].name||''):'';
+  document.getElementById('processModal').style.display='flex';
+  setTimeout(function(){document.getElementById('procNameInp').focus();},100);
+}
+function closeProcessModal(){document.getElementById('processModal').style.display='none';}
+function saveProcessModal(){
+  var name=document.getElementById('procNameInp').value.trim();
+  if(!name){showToast('공정명을 입력해주세요');return;}
+  if(editingProcIdx>=0){processes[editingProcIdx].name=name;}
+  else{processes.push({name:name,items:[]});}
+  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
+}
+function deleteProcess(pi){
+  if(!confirm('"'+processes[pi].name+'" 공정을 삭제할까요?'))return;
+  processes.splice(pi,1);
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();});
+}
+function openItemModal(pi){
+  currentProcForItem=pi;editingItemIdx=-1;
+  document.getElementById('itemModalTitle').textContent=processes[pi].name+' · 품목 추가';
+  document.getElementById('itemNameInp').value='';
+  document.getElementById('itemUnitInp').value='';
+  document.getElementById('itemModal').style.display='flex';
+  setTimeout(function(){document.getElementById('itemNameInp').focus();},100);
+}
+function closeItemModal(){document.getElementById('itemModal').style.display='none';}
+function saveItemModal(){
+  var name=document.getElementById('itemNameInp').value.trim();
+  if(!name){showToast('품목명을 입력해주세요');return;}
+  var unit=document.getElementById('itemUnitInp').value.trim();
+  if(!processes[currentProcForItem].items)processes[currentProcForItem].items=[];
+  processes[currentProcForItem].items.push({name:name,unit:unit});
+  saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
+}
 function renderProcessList(){
   var el=document.getElementById('processList');
   if(!el)return;
@@ -1876,7 +1903,7 @@ function renderProcessList(){
   el.innerHTML=processes.map(function(p,pi){
     var itemTags=(p.items||[]).map(function(item,ii){
       return '<span class="proc-item-tag drag-item" style="cursor:default">'
-        +'<span class="drag-handle" style="font-size:12px;padding:2px 4px">☰</span>'
+        
         +item.name+(item.unit?' <span style="opacity:.6;font-size:10px">'+item.unit+'</span>':'')
         +'<button class="proc-item-del" data-pi="'+pi+'" data-ii="'+ii+'">✕</button>'
         +'</span>';
@@ -1884,11 +1911,11 @@ function renderProcessList(){
     return '<div class="process-block drag-item">'
       +'<div class="process-header">'
       +'<div style="display:flex;align-items:center;gap:8px">'
-      +'<span class="drag-handle">☰</span>'
+      
       +'<span class="process-name">'+p.name+'</span>'
       +'</div>'
       +'<div class="process-actions">'
-      +'<button class="proc-btn" data-add-item="'+pi+'">＋ 품목</button>'
+      +''
       +'<button class="proc-btn" data-edit-proc="'+pi+'">수정</button>'
       +'<button class="proc-btn del" data-del-proc="'+pi+'">삭제</button>'
       +'</div></div>'
@@ -2081,83 +2108,147 @@ function applySmsResult(amount, vendor, bank){
 
 
 // ── DRAG SORT UTIL ──
-var dragState={srcIdx:-1,listKey:'',arr:null,onDone:null};
+var dragState={active:false,srcIdx:-1,el:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null};
+
+function vibrate(ms){if(navigator.vibrate)navigator.vibrate(ms||30);}
 
 function initDragList(containerEl, arr, listKey, onDone){
-  var items=containerEl.querySelectorAll('.drag-item');
+  var items=Array.from(containerEl.querySelectorAll('.drag-item'));
   items.forEach(function(item, idx){
-    var handle=item.querySelector('.drag-handle');
-    if(!handle)return;
+    // 길게 누르기 시작
+    item.addEventListener('touchstart',function(e){
+      var self=this;
+      var selfIdx=idx;
+      dragState.longPressTimer=setTimeout(function(){
+        // 길게 누르기 완료 → 드래그 모드 진입
+        vibrate(60);
+        dragState={
+          active:true, srcIdx:selfIdx, el:self,
+          arr:arr, onDone:onDone, container:containerEl,
+          lastOverIdx:-1, longPressTimer:null
+        };
+        self.classList.add('dragging');
+        containerEl.querySelectorAll('.drag-item').forEach(function(i){
+          i.style.touchAction='none';
+        });
+      }, 400);
+    },{passive:true});
 
-    // Touch
-    handle.addEventListener('touchstart',function(e){
-      dragState={srcIdx:idx,listKey:listKey,arr:arr,onDone:onDone,el:item};
-      item.classList.add('dragging');
-      e.preventDefault();
-    },{passive:false});
-
-    handle.addEventListener('touchmove',function(e){
+    item.addEventListener('touchend',function(){
+      if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
+    });
+    item.addEventListener('touchmove',function(e){
+      if(!dragState.active){
+        // 길게 누르기 중 움직이면 취소
+        if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
+        return;
+      }
       e.preventDefault();
       var touch=e.touches[0];
-      var target=document.elementFromPoint(touch.clientX,touch.clientY);
+      var target=document.elementFromPoint(touch.clientX, touch.clientY);
       var targetItem=target&&target.closest('.drag-item');
-      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');});
-      if(targetItem&&targetItem!==dragState.el) targetItem.classList.add('drag-over');
+      if(!targetItem||targetItem===dragState.el)return;
+      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
+      var toIdx=allItems.indexOf(targetItem);
+      if(toIdx<0)return;
+      // 다른 아이템 위로 이동할 때마다 진동
+      if(toIdx!==dragState.lastOverIdx){
+        vibrate(20);
+        dragState.lastOverIdx=toIdx;
+        allItems.forEach(function(i){i.classList.remove('drag-over');});
+        targetItem.classList.add('drag-over');
+      }
     },{passive:false});
 
-    handle.addEventListener('touchend',function(e){
+    item.addEventListener('touchend',function(e){
+      if(!dragState.active)return;
       var touch=e.changedTouches[0];
-      var target=document.elementFromPoint(touch.clientX,touch.clientY);
+      var target=document.elementFromPoint(touch.clientX, touch.clientY);
       var targetItem=target&&target.closest('.drag-item');
-      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');i.classList.remove('dragging');});
+      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
+      allItems.forEach(function(i){
+        i.classList.remove('drag-over','dragging','drag-ready');
+        i.style.touchAction='';
+      });
       if(targetItem&&targetItem!==dragState.el){
-        var allItems=Array.from(containerEl.querySelectorAll('.drag-item'));
         var toIdx=allItems.indexOf(targetItem);
         if(toIdx>=0&&toIdx!==dragState.srcIdx){
+          vibrate([30,20,30]);
           var tmp=dragState.arr.splice(dragState.srcIdx,1)[0];
           dragState.arr.splice(toIdx,0,tmp);
           dragState.onDone();
         }
       }
-      dragState={srcIdx:-1};
+      dragState={active:false,srcIdx:-1,el:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null};
+    },{passive:true});
+
+    // PC 마우스 지원
+    item.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;
+      var self=this; var selfIdx=idx;
+      dragState.longPressTimer=setTimeout(function(){
+        vibrate(60);
+        dragState={
+          active:true, srcIdx:selfIdx, el:self,
+          arr:arr, onDone:onDone, container:containerEl,
+          lastOverIdx:-1, longPressTimer:null
+        };
+        self.classList.add('dragging');
+        document.body.style.cursor='grabbing';
+      },400);
     });
 
-    // Mouse (PC)
-    handle.addEventListener('mousedown',function(e){
-      dragState={srcIdx:idx,listKey:listKey,arr:arr,onDone:onDone,el:item};
-      item.classList.add('dragging');
-      e.preventDefault();
-    });
-  });
-
-  containerEl.addEventListener('dragover',function(e){e.preventDefault();});
-  containerEl.addEventListener('drop',function(e){e.preventDefault();});
-
-  // mouseenter on items
-  items.forEach(function(item,idx){
-    item.addEventListener('mouseenter',function(){
-      if(dragState.srcIdx<0)return;
-      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');});
-      if(idx!==dragState.srcIdx) item.classList.add('drag-over');
-    });
     item.addEventListener('mouseup',function(){
-      if(dragState.srcIdx<0)return;
-      containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');i.classList.remove('dragging');});
-      if(idx!==dragState.srcIdx){
+      if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
+      if(!dragState.active)return;
+      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
+      allItems.forEach(function(i){i.classList.remove('drag-over','dragging');});
+      document.body.style.cursor='';
+      dragState={active:false,srcIdx:-1,el:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null};
+    });
+
+    item.addEventListener('mouseenter',function(){
+      if(!dragState.active||this===dragState.el)return;
+      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
+      var toIdx=allItems.indexOf(this);
+      if(toIdx!==dragState.lastOverIdx){
+        vibrate(20);
+        dragState.lastOverIdx=toIdx;
+        allItems.forEach(function(i){i.classList.remove('drag-over');});
+        this.classList.add('drag-over');
+      }
+    });
+
+    item.addEventListener('mouseup',function(){
+      if(!dragState.active||this===dragState.el)return;
+      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
+      var toIdx=allItems.indexOf(this);
+      allItems.forEach(function(i){i.classList.remove('drag-over','dragging');});
+      document.body.style.cursor='';
+      if(toIdx>=0&&toIdx!==dragState.srcIdx){
+        vibrate([30,20,30]);
         var tmp=dragState.arr.splice(dragState.srcIdx,1)[0];
-        dragState.arr.splice(idx,0,tmp);
+        dragState.arr.splice(toIdx,0,tmp);
         dragState.onDone();
       }
-      dragState={srcIdx:-1};
+      dragState={active:false,srcIdx:-1,el:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null};
     });
   });
 
+  // 전역 mouseup (드래그 중 놓치는 경우)
   document.addEventListener('mouseup',function(){
-    if(dragState.srcIdx<0)return;
-    containerEl.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('drag-over');i.classList.remove('dragging');});
-    dragState={srcIdx:-1};
-  },{once:false});
+    if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
+    if(!dragState.active)return;
+    if(dragState.container){
+      dragState.container.querySelectorAll('.drag-item').forEach(function(i){
+        i.classList.remove('drag-over','dragging');
+      });
+    }
+    document.body.style.cursor='';
+    dragState={active:false,srcIdx:-1,el:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null};
+  });
 }
+
 // ── EDIT RECORD MODAL ──
 var editingRecordId='', editAmountStr='', editSelectedCat='', editSelectedVat='none';
 var editSelectedPayMethod='', editSelectedPayType='';
