@@ -355,7 +355,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 /* ── DRAG SORT ── */
 .drag-item{user-select:none;-webkit-user-select:none;touch-action:pan-y;transition:opacity .1s}
 .drag-item.dragging{opacity:.3}
-.drag-item.drag-over{border-color:var(--accent)!important;background:var(--surface2)!important}
+.drag-insert-line{height:2px;background:var(--accent);border-radius:2px;margin:2px 0;transition:none;position:relative}
+.drag-insert-line::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 .drag-ghost{position:fixed;pointer-events:none;z-index:9999;opacity:.92;transform:scale(1.04) rotate(1deg);box-shadow:0 12px 32px rgba(0,0,0,.5);border-radius:12px;background:var(--surface);border:1px solid var(--accent);transition:none;max-width:440px;width:calc(100% - 32px)}
 </style>
 </head>
@@ -2109,9 +2110,9 @@ function applySmsResult(amount, vendor, bank){
 
 // ── DRAG SORT UTIL ──
 var dragState={
-  active:false, srcIdx:-1, el:null, ghost:null,
+  active:false, srcIdx:-1, toIdx:-1, el:null, ghost:null,
   arr:null, onDone:null, container:null,
-  lastOverIdx:-1, longPressTimer:null,
+  lastToIdx:-2, longPressTimer:null,
   offsetX:0, offsetY:0
 };
 
@@ -2120,7 +2121,7 @@ function vibrate(ms){if(navigator.vibrate)navigator.vibrate(ms||30);}
 function createGhost(el, touchX, touchY){
   var rect=el.getBoundingClientRect();
   var ghost=el.cloneNode(true);
-  ghost.className=ghost.className+' drag-ghost';
+  ghost.className='drag-ghost';
   ghost.style.left=rect.left+'px';
   ghost.style.top=rect.top+'px';
   ghost.style.width=rect.width+'px';
@@ -2140,6 +2141,35 @@ function removeGhost(){
   if(dragState.ghost){dragState.ghost.remove();dragState.ghost=null;}
 }
 
+function clearInsertLines(container){
+  container.querySelectorAll('.drag-insert-line').forEach(function(l){l.remove();});
+}
+
+// 삽입 위치 계산: Y좌표 기준으로 어느 아이템 사이인지
+function getInsertIdx(container, clientY, srcIdx){
+  var items=Array.from(container.querySelectorAll('.drag-item'));
+  var insertIdx=items.length; // 기본: 맨 아래
+  for(var i=0;i<items.length;i++){
+    var rect=items[i].getBoundingClientRect();
+    var mid=rect.top+rect.height/2;
+    if(clientY<mid){insertIdx=i;break;}
+  }
+  return insertIdx;
+}
+
+// 삽입선 표시
+function showInsertLine(container, toIdx){
+  clearInsertLines(container);
+  var items=Array.from(container.querySelectorAll('.drag-item'));
+  var line=document.createElement('div');
+  line.className='drag-insert-line';
+  if(toIdx>=items.length){
+    container.appendChild(line);
+  } else {
+    container.insertBefore(line, items[toIdx]);
+  }
+}
+
 function initDragList(containerEl, arr, listKey, onDone){
   var items=Array.from(containerEl.querySelectorAll('.drag-item'));
 
@@ -2149,70 +2179,69 @@ function initDragList(containerEl, arr, listKey, onDone){
       var self=this; var selfIdx=idx;
       var touch=e.touches[0];
       var startX=touch.clientX, startY=touch.clientY;
-      var moved=false;
 
       dragState.longPressTimer=setTimeout(function(){
         vibrate(60);
         var ghost=createGhost(self, startX, startY);
-        dragState={
-          active:true, srcIdx:selfIdx, el:self, ghost:ghost,
-          arr:arr, onDone:onDone, container:containerEl,
-          lastOverIdx:selfIdx, longPressTimer:null,
-          offsetX:dragState.offsetX, offsetY:dragState.offsetY
-        };
+        dragState.active=true;
+        dragState.srcIdx=selfIdx;
+        dragState.toIdx=selfIdx;
+        dragState.el=self;
+        dragState.ghost=ghost;
+        dragState.arr=arr;
+        dragState.onDone=onDone;
+        dragState.container=containerEl;
+        dragState.lastToIdx=-2;
+        dragState.longPressTimer=null;
         self.classList.add('dragging');
-        containerEl.style.position='relative';
       },400);
     },{passive:true});
 
     item.addEventListener('touchmove',function(e){
       var touch=e.touches[0];
-      // 롱프레스 대기 중 움직이면 취소
       if(!dragState.active){
-        if(dragState.longPressTimer){
-          clearTimeout(dragState.longPressTimer);
-          dragState.longPressTimer=null;
-        }
+        if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
         return;
       }
       e.preventDefault();
-      // 고스트 이동
       moveGhost(touch.clientX, touch.clientY);
-      // 어느 아이템 위에 있는지 감지
-      dragState.ghost.style.display='none';
-      var target=document.elementFromPoint(touch.clientX, touch.clientY);
-      dragState.ghost.style.display='';
-      var targetItem=target&&target.closest('.drag-item');
-      if(!targetItem||targetItem===dragState.el)return;
-      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
-      var toIdx=allItems.indexOf(targetItem);
-      if(toIdx<0||toIdx===dragState.lastOverIdx)return;
-      vibrate(18);
-      dragState.lastOverIdx=toIdx;
-      allItems.forEach(function(i){i.classList.remove('drag-over');});
-      targetItem.classList.add('drag-over');
+
+      // 고스트 잠깐 숨겨서 아래 엘리먼트 감지
+      dragState.ghost.style.visibility='hidden';
+      var toIdx=getInsertIdx(dragState.container, touch.clientY, dragState.srcIdx);
+      dragState.ghost.style.visibility='';
+
+      if(toIdx!==dragState.lastToIdx){
+        vibrate(18);
+        dragState.lastToIdx=toIdx;
+        dragState.toIdx=toIdx;
+        showInsertLine(dragState.container, toIdx);
+      }
     },{passive:false});
 
     item.addEventListener('touchend',function(e){
       if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
       if(!dragState.active)return;
-      var touch=e.changedTouches[0];
+
       removeGhost();
-      dragState.ghost=null;
+      clearInsertLines(dragState.container);
       dragState.el&&dragState.el.classList.remove('dragging');
-      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
-      allItems.forEach(function(i){i.classList.remove('drag-over');});
-      // 드롭 위치
-      var target=document.elementFromPoint(touch.clientX, touch.clientY);
-      var targetItem=target&&target.closest('.drag-item');
-      var toIdx=targetItem?allItems.indexOf(targetItem):-1;
-      if(toIdx>=0&&toIdx!==dragState.srcIdx){
+
+      var toIdx=dragState.toIdx;
+      var srcIdx=dragState.srcIdx;
+      var savedArr=dragState.arr;
+      var savedOnDone=dragState.onDone;
+
+      dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0};
+
+      // 실제 이동 - toIdx가 srcIdx 뒤면 -1 보정
+      var realTo=toIdx>(srcIdx)?toIdx-1:toIdx;
+      if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
         vibrate([25,15,25]);
-        var tmp=dragState.arr.splice(dragState.srcIdx,1)[0];
-        dragState.arr.splice(toIdx,0,tmp);
-        dragState.onDone();
+        var tmp=savedArr.splice(srcIdx,1)[0];
+        savedArr.splice(realTo,0,tmp);
+        savedOnDone();
       }
-      dragState={active:false,srcIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null,offsetX:0,offsetY:0};
     },{passive:true});
 
     // ── 마우스 (PC) ──
@@ -2222,64 +2251,63 @@ function initDragList(containerEl, arr, listKey, onDone){
       dragState.longPressTimer=setTimeout(function(){
         vibrate(60);
         var ghost=createGhost(self, e.clientX, e.clientY);
-        dragState={
-          active:true, srcIdx:selfIdx, el:self, ghost:ghost,
-          arr:arr, onDone:onDone, container:containerEl,
-          lastOverIdx:selfIdx, longPressTimer:null,
-          offsetX:dragState.offsetX, offsetY:dragState.offsetY
-        };
+        dragState.active=true;
+        dragState.srcIdx=selfIdx;
+        dragState.toIdx=selfIdx;
+        dragState.el=self;
+        dragState.ghost=ghost;
+        dragState.arr=arr;
+        dragState.onDone=onDone;
+        dragState.container=containerEl;
+        dragState.lastToIdx=-2;
+        dragState.longPressTimer=null;
         self.classList.add('dragging');
         document.body.style.cursor='grabbing';
       },400);
     });
-
-    item.addEventListener('mouseenter',function(){
-      if(!dragState.active||this===dragState.el)return;
-      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
-      var toIdx=allItems.indexOf(this);
-      if(toIdx===dragState.lastOverIdx)return;
-      vibrate(18);
-      dragState.lastOverIdx=toIdx;
-      allItems.forEach(function(i){i.classList.remove('drag-over');});
-      this.classList.add('drag-over');
-    });
-
-    item.addEventListener('mouseup',function(){
-      if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
-      if(!dragState.active)return;
-      removeGhost();
-      var allItems=Array.from(dragState.container.querySelectorAll('.drag-item'));
-      var toIdx=allItems.indexOf(this);
-      allItems.forEach(function(i){i.classList.remove('drag-over','dragging');});
-      document.body.style.cursor='';
-      if(toIdx>=0&&toIdx!==dragState.srcIdx){
-        vibrate([25,15,25]);
-        var tmp=dragState.arr.splice(dragState.srcIdx,1)[0];
-        dragState.arr.splice(toIdx,0,tmp);
-        dragState.onDone();
-      }
-      dragState={active:false,srcIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null,offsetX:0,offsetY:0};
-    });
   });
 
-  // 마우스 이동 시 고스트 따라오게
+  // 마우스 이동
   document.addEventListener('mousemove',function(e){
     if(!dragState.active)return;
     moveGhost(e.clientX, e.clientY);
+    dragState.ghost.style.visibility='hidden';
+    var toIdx=getInsertIdx(dragState.container, e.clientY, dragState.srcIdx);
+    dragState.ghost.style.visibility='';
+    if(toIdx!==dragState.lastToIdx){
+      vibrate(18);
+      dragState.lastToIdx=toIdx;
+      dragState.toIdx=toIdx;
+      showInsertLine(dragState.container, toIdx);
+    }
   });
 
   // 전역 mouseup
   document.addEventListener('mouseup',function(){
     if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
     if(!dragState.active)return;
+
     removeGhost();
     if(dragState.container){
-      dragState.container.querySelectorAll('.drag-item').forEach(function(i){
-        i.classList.remove('drag-over','dragging');
-      });
+      clearInsertLines(dragState.container);
+      dragState.container.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('dragging');});
     }
     document.body.style.cursor='';
-    dragState={active:false,srcIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastOverIdx:-1,longPressTimer:null,offsetX:0,offsetY:0};
+
+    var toIdx=dragState.toIdx;
+    var srcIdx=dragState.srcIdx;
+    var savedArr=dragState.arr;
+    var savedOnDone=dragState.onDone;
+
+    dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0};
+
+    var realTo=toIdx>srcIdx?toIdx-1:toIdx;
+    if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
+      vibrate([25,15,25]);
+      var tmp=savedArr.splice(srcIdx,1)[0];
+      savedArr.splice(realTo,0,tmp);
+      savedOnDone();
+    }
   });
 }
 
