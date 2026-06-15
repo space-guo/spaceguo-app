@@ -1833,17 +1833,22 @@ function renderEditPayChips(){
   cards.forEach(function(c){
     var label=c.num?c.name+' ('+c.num+')':c.name;
     var sel=editSelectedPayMethod===c.name;
-    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" onclick="selectEditPay(this,&apos;'+c.name+'&apos;,&apos;card&apos;)">'+label+'</button>';
+    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" data-method="'+c.name+'" data-type="card">'+label+'</button>';
   });
   ['현금 직접','카카오페이','토스'].forEach(function(m){
     var sel=editSelectedPayMethod===m;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,&apos;'+m+'&apos;,&apos;cash&apos;)">'+m+'</button>';
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+m+'" data-type="cash">'+m+'</button>';
   });
   accounts.forEach(function(a){
     var sel=editSelectedPayMethod===a.name;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,&apos;'+a.name+'&apos;,&apos;cash&apos;)">🏦 '+a.name+'</button>';
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+a.name+'" data-type="cash">🏦 '+a.name+'</button>';
   });
   el.innerHTML=html;
+  el.querySelectorAll('.pay-chip').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      selectEditPay(this,this.dataset.method,this.dataset.type);
+    });
+  });
 }
 function selectEditPay(btn,method,type){
   if(editSelectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');editSelectedPayMethod='';editSelectedPayType='';return;}
