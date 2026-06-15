@@ -1537,14 +1537,31 @@ function renderSiteSelect(){
 }
 function renderSiteList(){
   var el=document.getElementById('siteList');
-  el.innerHTML=sites.length?sites.map(function(s,i){
+  if(!sites.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';return;}
+  var sLen=sites.length;
+  el.innerHTML=sites.map(function(s,i){
     return '<div class="site-item">'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<div style="display:flex;flex-direction:column;gap:2px">'
+      +'<button class="proc-btn" '+(i===0?'disabled style="opacity:.3"':'')+' data-move-site="'+i+'" data-dir="-1">↑</button>'
+      +'<button class="proc-btn" '+(i===sLen-1?'disabled style="opacity:.3"':'')+' data-move-site="'+i+'" data-dir="1">↓</button>'
+      +'</div>'
       +'<span class="site-name">'+s+'</span>'
+      +'</div>'
       +'<div style="display:flex;gap:6px">'
-      +'<button class="proc-btn" onclick="openSiteEditModal('+i+')">수정</button>'
-      +'<button class="site-del" onclick="deleteSite('+i+')">✕</button>'
+      +'<button class="proc-btn" data-edit-site="'+i+'">수정</button>'
+      +'<button class="site-del" data-del-site="'+i+'">✕</button>'
       +'</div></div>';
-  }).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';
+  }).join('');
+  el.querySelectorAll('[data-move-site]').forEach(function(btn){
+    btn.addEventListener('click',function(){moveSite(parseInt(this.getAttribute('data-move-site')),parseInt(this.dataset.dir));});
+  });
+  el.querySelectorAll('[data-edit-site]').forEach(function(btn){
+    btn.addEventListener('click',function(){openSiteEditModal(parseInt(this.getAttribute('data-edit-site')));});
+  });
+  el.querySelectorAll('[data-del-site]').forEach(function(btn){
+    btn.addEventListener('click',function(){deleteSite(parseInt(this.getAttribute('data-del-site')));});
+  });
 }
 var editingSiteIdx=-1;
 function openSiteEditModal(i){
@@ -1565,6 +1582,13 @@ function addSite(){
   if(!name)return;
   if(sites.includes(name)){showToast('이미 있는 현장이에요');return;}
   sites.push(name);saveSettings().then(function(){inp.value='';renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 추가됐어요');});
+}
+
+function moveSite(i,dir){
+  var t=i+dir;
+  if(t<0||t>=sites.length)return;
+  var tmp=sites[i];sites[i]=sites[t];sites[t]=tmp;
+  saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
 }
 function deleteSite(i){sites.splice(i,1);saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});}
 
@@ -1677,7 +1701,31 @@ function renderCardChips(){
 function renderCardList(){
   var el=document.getElementById('cardList');
   if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
-  el.innerHTML=cards.map(function(c,i){return '<div class="site-item" onclick="openCardModal('+i+')"><div style="flex:1"><div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div></div><button class="site-del" onclick="event.stopPropagation();deleteCard('+i+')">✕</button></div>';}).join('');
+  var cLen=cards.length;
+  el.innerHTML=cards.map(function(c,i){
+    return '<div class="site-item">'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<div style="display:flex;flex-direction:column;gap:2px">'
+      +'<button class="proc-btn" '+(i===0?'disabled style="opacity:.3"':'')+' data-move-card="'+i+'" data-dir="-1">↑</button>'
+      +'<button class="proc-btn" '+(i===cLen-1?'disabled style="opacity:.3"':'')+' data-move-card="'+i+'" data-dir="1">↓</button>'
+      +'</div>'
+      +'<div><div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button class="proc-btn" data-edit-card="'+i+'">수정</button>'
+      +'<button class="site-del" data-del-card="'+i+'">✕</button>'
+      +'</div></div>';
+  }).join('');
+  el.querySelectorAll('[data-move-card]').forEach(function(btn){
+    btn.addEventListener('click',function(){moveCard(parseInt(this.getAttribute('data-move-card')),parseInt(this.dataset.dir));});
+  });
+  el.querySelectorAll('[data-edit-card]').forEach(function(btn){
+    btn.addEventListener('click',function(){openCardModal(parseInt(this.getAttribute('data-edit-card')));});
+  });
+  el.querySelectorAll('[data-del-card]').forEach(function(btn){
+    btn.addEventListener('click',function(){deleteCard(parseInt(this.getAttribute('data-del-card')));});
+  });
 }
 function selectCardType(type){
   selectedCardType=type;
@@ -1698,6 +1746,13 @@ function saveCardModal(){
   if(editingCardIdx>=0)cards[editingCardIdx]=card;else cards.push(card);
   saveSettings().then(function(){closeCardModal();renderCardList();renderCardChips();showToast(editingCardIdx>=0?'카드 수정됐어요':'카드 추가됐어요');});
 }
+
+function moveCard(i,dir){
+  var t=i+dir;
+  if(t<0||t>=cards.length)return;
+  var tmp=cards[i];cards[i]=cards[t];cards[t]=tmp;
+  saveSettings().then(function(){renderCardList();renderCardChips();});
+}
 function deleteCard(i){
   if(selectedPayMethod===cards[i].name){selectedPayMethod='';selectedPayType='';}
   cards.splice(i,1);saveSettings().then(function(){renderCardList();renderCardChips();});
@@ -1717,15 +1772,31 @@ function renderAccountList(){
   var el=document.getElementById('accountList');
   if(!el)return;
   if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
+  var aLen=accounts.length;
   el.innerHTML=accounts.map(function(a,i){
-    return '<div class="site-item" onclick="openAccountModal('+i+')">'
-      +'<div style="flex:1">'
-      +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
+    return '<div class="site-item">'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<div style="display:flex;flex-direction:column;gap:2px">'
+      +'<button class="proc-btn" '+(i===0?'disabled style="opacity:.3"':'')+' data-move-acc="'+i+'" data-dir="-1">↑</button>'
+      +'<button class="proc-btn" '+(i===aLen-1?'disabled style="opacity:.3"':'')+' data-move-acc="'+i+'" data-dir="1">↓</button>'
       +'</div>'
-      +'<button class="site-del" onclick="event.stopPropagation();deleteAccount('+i+')">✕</button>'
-      +'</div>';
+      +'<div><div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button class="proc-btn" data-edit-acc="'+i+'">수정</button>'
+      +'<button class="site-del" data-del-acc="'+i+'">✕</button>'
+      +'</div></div>';
   }).join('');
+  el.querySelectorAll('[data-move-acc]').forEach(function(btn){
+    btn.addEventListener('click',function(){moveAccount(parseInt(this.getAttribute('data-move-acc')),parseInt(this.dataset.dir));});
+  });
+  el.querySelectorAll('[data-edit-acc]').forEach(function(btn){
+    btn.addEventListener('click',function(){openAccountModal(parseInt(this.getAttribute('data-edit-acc')));});
+  });
+  el.querySelectorAll('[data-del-acc]').forEach(function(btn){
+    btn.addEventListener('click',function(){deleteAccount(parseInt(this.getAttribute('data-del-acc')));});
+  });
 }
 function openAccountModal(idx){
   editingAccIdx=idx===undefined?-1:idx;
@@ -1752,6 +1823,13 @@ function saveAccountModal(){
   var acc={name:name,bank:document.getElementById('accBankInp').value,num:document.getElementById('accNumInp').value.trim(),owner:document.getElementById('accOwnerInp').value.trim()};
   if(editingAccIdx>=0)accounts[editingAccIdx]=acc;else accounts.push(acc);
   saveSettings().then(function(){closeAccountModal();renderAccountList();renderAccountChips();showToast(editingAccIdx>=0?'계좌 수정됐어요':'계좌 추가됐어요');});
+}
+
+function moveAccount(i,dir){
+  var t=i+dir;
+  if(t<0||t>=accounts.length)return;
+  var tmp=accounts[i];accounts[i]=accounts[t];accounts[t]=tmp;
+  saveSettings().then(function(){renderAccountList();renderAccountChips();});
 }
 function deleteAccount(i){
   if(selectedPayMethod===accounts[i].name){selectedPayMethod='';selectedPayType='';}
@@ -1799,6 +1877,7 @@ function renderProcessList(){
   var el=document.getElementById('processList');
   if(!el)return;
   if(!processes.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';return;}
+  var pLen=processes.length;
   el.innerHTML=processes.map(function(p,pi){
     var itemLen=(p.items||[]).length;
     var itemTags=(p.items||[]).map(function(item,ii){
@@ -1811,74 +1890,62 @@ function renderProcessList(){
     }).join('');
     return '<div class="process-block">'
       +'<div class="process-header">'
+      +'<div style="display:flex;flex-direction:column;gap:2px">'
       +'<span class="process-name">'+p.name+'</span>'
+      +'<div style="display:flex;gap:4px">'
+      +'<button class="proc-btn" '+(pi===0?'disabled style="opacity:.3"':'')+' data-move-proc="'+pi+'" data-dir="-1">↑</button>'
+      +'<button class="proc-btn" '+(pi===pLen-1?'disabled style="opacity:.3"':'')+' data-move-proc="'+pi+'" data-dir="1">↓</button>'
+      +'</div>'
+      +'</div>'
       +'<div class="process-actions">'
-      +'<button class="proc-btn" data-open-item="'+pi+'">＋ 품목</button>'
+      +'<button class="proc-btn" data-add-item="'+pi+'">＋ 품목</button>'
+      +'<button class="proc-btn" data-edit-proc="'+pi+'">수정</button>'
       +'<button class="proc-btn del" data-del-proc="'+pi+'">삭제</button>'
       +'</div></div>'
       +'<div class="proc-item-list">'+(itemTags||'<span style="font-size:12px;color:var(--muted)">품목 없음</span>')+'</div>'
       +'</div>';
   }).join('');
 
-  // 이벤트 바인딩
+  // 품목 ↑↓
   el.querySelectorAll('.proc-item-move').forEach(function(btn){
     btn.addEventListener('click',function(){
-      var pi=parseInt(this.dataset.pi);
-      var ii=parseInt(this.dataset.ii);
-      var dir=parseInt(this.dataset.dir);
-      moveProcessItem(pi,ii,dir);
+      moveProcessItem(parseInt(this.dataset.pi),parseInt(this.dataset.ii),parseInt(this.dataset.dir));
     });
   });
+  // 품목 삭제
   el.querySelectorAll('.proc-item-del').forEach(function(btn){
     btn.addEventListener('click',function(){
       deleteProcessItem(parseInt(this.dataset.pi),parseInt(this.dataset.ii));
     });
   });
-  el.querySelectorAll('[data-open-item]').forEach(function(btn){
-    btn.addEventListener('click',function(){openItemModal(parseInt(this.dataset['open-item']||this.getAttribute('data-open-item')));});
+  // 공정 ↑↓
+  el.querySelectorAll('[data-move-proc]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      moveProcess(parseInt(this.getAttribute('data-move-proc')),parseInt(this.dataset.dir));
+    });
   });
+  // 품목 추가
+  el.querySelectorAll('[data-add-item]').forEach(function(btn){
+    btn.addEventListener('click',function(){openItemModal(parseInt(this.getAttribute('data-add-item')));});
+  });
+  // 공정 수정
+  el.querySelectorAll('[data-edit-proc]').forEach(function(btn){
+    btn.addEventListener('click',function(){openProcessModal(parseInt(this.getAttribute('data-edit-proc')));});
+  });
+  // 공정 삭제
   el.querySelectorAll('[data-del-proc]').forEach(function(btn){
     btn.addEventListener('click',function(){deleteProcess(parseInt(this.getAttribute('data-del-proc')));});
   });
 }
-function openProcessModal(idx){
-  editingProcIdx=idx===undefined?-1:idx;
-  document.getElementById('processModalTitle').textContent=editingProcIdx>=0?'공정 수정':'공정 추가';
-  document.getElementById('procNameInp').value=editingProcIdx>=0?(processes[editingProcIdx].name||''):'';
-  document.getElementById('processModal').style.display='flex';
-  setTimeout(function(){document.getElementById('procNameInp').focus();},100);
-}
-function closeProcessModal(){document.getElementById('processModal').style.display='none';}
-function saveProcessModal(){
-  var name=document.getElementById('procNameInp').value.trim();
-  if(!name){showToast('공정명을 입력해주세요');return;}
-  if(editingProcIdx>=0){processes[editingProcIdx].name=name;}
-  else{processes.push({name:name,items:[]});}
-  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
-}
-function deleteProcess(pi){
-  if(!confirm('"'+processes[pi].name+'" 공정을 삭제할까요?'))return;
-  processes.splice(pi,1);
+
+function moveProcess(pi,dir){
+  var target=pi+dir;
+  if(target<0||target>=processes.length)return;
+  var tmp=processes[pi];
+  processes[pi]=processes[target];
+  processes[target]=tmp;
   saveSettings().then(function(){renderProcessList();renderProcessSelect();});
 }
-function openItemModal(pi){
-  currentProcForItem=pi;editingItemIdx=-1;
-  document.getElementById('itemModalTitle').textContent=processes[pi].name+' · 품목 추가';
-  document.getElementById('itemNameInp').value='';
-  document.getElementById('itemUnitInp').value='';
-  document.getElementById('itemModal').style.display='flex';
-  setTimeout(function(){document.getElementById('itemNameInp').focus();},100);
-}
-function closeItemModal(){document.getElementById('itemModal').style.display='none';}
-function saveItemModal(){
-  var name=document.getElementById('itemNameInp').value.trim();
-  if(!name){showToast('품목명을 입력해주세요');return;}
-  var unit=document.getElementById('itemUnitInp').value.trim();
-  if(!processes[currentProcForItem].items)processes[currentProcForItem].items=[];
-  processes[currentProcForItem].items.push({name:name,unit:unit});
-  saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
-}
-
 function moveProcessItem(pi,ii,dir){
   var items=processes[pi].items;
   var target=ii+dir;
