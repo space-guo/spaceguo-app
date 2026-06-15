@@ -1907,8 +1907,11 @@ function renderSchSiteFilter(){
   var el=document.getElementById('schSiteFilter');
   var all=['전체'].concat(sites);
   el.innerHTML=all.map(function(s){
-    return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" onclick="setSchSiteFilter(''+s+'')">'+s+'</button>';
+    return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" data-site="'+s+'">'+s+'</button>';
   }).join('');
+  el.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click',function(){setSchSiteFilter(this.dataset.site);});
+  });
 }
 
 function setSchSiteFilter(s){
@@ -1976,13 +1979,16 @@ function renderSchCal(){
         var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
         var color=schColor(si);
         var label=isStart?(s.procName||'공정'):'';
-        bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" onclick="openSchModalEdit(''+s.id+'')">'+label+'</div>';
+        bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
       }
     });
     return '<div class="sch-cal-cell">'+dayNumHtml+bars+'</div>';
   }).join('');
 
   document.getElementById('schCalBody').innerHTML=html;
+  document.getElementById('schCalBody').querySelectorAll('[data-schid]').forEach(function(el){
+    el.addEventListener('click',function(e){e.stopPropagation();openSchModalEdit(this.dataset.schid);});
+  });
 }
 
 function renderSchList(){
@@ -1997,7 +2003,7 @@ function renderSchList(){
     var pct=parseInt(s.progress||0);
     var isDone=pct>=100;
     var color=schColor(si);
-    return '<div class="sch-item" onclick="openSchModalEdit(''+s.id+'')">'
+    return '<div class="sch-item" data-schid="'+s.id+'">'
       +'<div class="sch-item-top">'
       +'<div><div class="sch-item-name" style="color:'+color+'">'+( s.procName||'공정')+'</div>'
       +'<div class="sch-item-site">📍 '+s.site+(s.worker?' · 👷 '+s.worker:'')+'</div></div>'
@@ -2008,6 +2014,9 @@ function renderSchList(){
       +(s.memo?'<div style="font-size:11px;color:var(--muted);margin-top:6px">💬 '+s.memo+'</div>':'')
       +'</div>';
   }).join('');
+  el.querySelectorAll('[data-schid]').forEach(function(item){
+    item.addEventListener('click',function(){openSchModalEdit(this.dataset.schid);});
+  });
 }
 
 function openSchModal(){
