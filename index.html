@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -268,7 +269,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .edit-modal-title{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 .edit-modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px}
 .edit-amount-display{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;font-size:28px;font-weight:900;color:var(--accent);cursor:pointer}
-.edit-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px;display:none}
+.edit-numpad{display:none;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px}
 .edit-numpad.show{display:grid}
 .edit-num-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:18px;font-weight:700;padding:13px;cursor:pointer}
 .edit-num-btn:active{background:var(--accent);border-color:var(--accent)}
@@ -276,395 +277,560 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .edit-num-btn.zero{grid-column:span 2}
 .edit-save-btn{width:100%;background:var(--accent);border:none;border-radius:14px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:16px;cursor:pointer;margin-top:10px}
 .edit-del-btn{width:100%;background:none;border:1px solid var(--red);border-radius:14px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px}
+
+/* ── SCHEDULE TAB ── */
+.sch-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sch-nav-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;padding:6px 16px;cursor:pointer}
+.sch-month-label{font-size:16px;font-weight:800}
+.sch-site-filter{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:4px}
+.sch-site-filter::-webkit-scrollbar{display:none}
+.sch-cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.sch-cal-header{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
+.sch-cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:8px 2px}
+.sch-cal-body{display:grid;grid-template-columns:repeat(7,1fr)}
+.sch-cal-cell{min-height:40px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top}
+.sch-cal-cell:nth-child(7n){border-right:none}
+.sch-day-num{font-size:10px;font-weight:700;color:var(--text);margin-bottom:2px;text-align:center}
+.sch-day-num.today-mark{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 2px}
+.sch-day-num.sun{color:var(--red)}
+.sch-day-num.sat{color:var(--blue)}
+.sch-day-num.other{color:var(--border)}
+.sch-bar{font-size:9px;font-weight:700;padding:2px 4px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3}
+.sch-bar.start{border-radius:6px 0 0 6px;padding-left:5px}
+.sch-bar.end{border-radius:0 6px 6px 0}
+.sch-bar.mid{border-radius:0}
+.sch-bar.single{border-radius:6px}
+.sch-add-btn{width:100%;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:14px;cursor:pointer;margin-bottom:10px}
+.sch-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.sch-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer}
+.sch-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.sch-item-name{font-size:13px;font-weight:800}
+.sch-item-site{font-size:11px;color:var(--muted);margin-top:2px}
+.sch-item-date{font-size:11px;color:var(--accent2);font-weight:600}
+.sch-progress-wrap{background:var(--surface2);border-radius:4px;height:6px;margin-top:6px;overflow:hidden}
+.sch-progress-bar{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
+.sch-item-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:var(--muted)}
+.sch-done-badge{background:#1a2a1a;color:var(--green);border:1px solid var(--green);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="loginScreen">
-  <div class="login-logo">⚒</div>
-  <div class="login-title">SpaceGuo</div>
-  <div class="login-sub">현장 지출 · 손익 관리</div>
-  <input class="login-input" id="loginEmail" type="email" placeholder="이메일" autocomplete="email">
-  <div class="pw-wrap">
-    <input class="login-input" id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password">
-    <button class="pw-eye" id="pwEyeBtn" onclick="togglePw()">👁</button>
-  </div>
-  <div class="login-err" id="loginErr"></div>
-  <button class="login-btn" onclick="doLogin()">로그인</button>
-  <button class="login-btn forgot" onclick="doResetPw()">비밀번호 찾기 (이메일 발송)</button>
-  <div class="login-divider">— 또는 —</div>
-  <button class="login-btn google" onclick="doGoogleLogin()">
-    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-    Google로 로그인
-  </button>
-  <div class="login-divider">— 이메일로 직접 가입 —</div>
-  <button class="login-btn secondary" onclick="doSignup()">회원가입 (직원 초대용)</button>
+<div class="login-logo">⚒</div>
+<div class="login-title">SpaceGuo</div>
+<div class="login-sub">현장 지출 · 손익 관리</div>
+<input class="login-input" id="loginEmail" type="email" placeholder="이메일" autocomplete="email">
+<div class="pw-wrap">
+<input class="login-input" id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password">
+<button class="pw-eye" id="pwEyeBtn" onclick="togglePw()">👁</button>
+</div>
+<div class="login-err" id="loginErr"></div>
+<button class="login-btn" onclick="doLogin()">로그인</button>
+<button class="login-btn forgot" onclick="doResetPw()">비밀번호 찾기 (이메일 발송)</button>
+<div class="login-divider">— 또는 —</div>
+<button class="login-btn google" onclick="doGoogleLogin()">
+<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+Google로 로그인
+</button>
+<div class="login-divider">— 이메일로 직접 가입 —</div>
+<button class="login-btn secondary" onclick="doSignup()">회원가입 (직원 초대용)</button>
 </div>
 
 <!-- MAIN APP -->
 <div id="mainApp" style="display:none">
 <div class="header">
-  <div class="header-top">
-    <span class="app-title">⚒ SpaceGuo</span>
-    <div class="header-right">
-      <span class="today-total" id="headerTotal"></span>
-      <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
-      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
-    </div>
-  </div>
-  <div class="tab-bar">
-    <button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
-    <button class="tab" id="tab-notif" onclick="switchTab('notif')">알림<span id="notifBadge" style="display:none;background:var(--accent2);color:#000;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;margin-left:3px"></span></button>
-    <button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
-    <button class="tab" id="tab-cal" onclick="switchTab('cal')">달력</button>
-    <button class="tab" id="tab-dash" onclick="switchTab('dash')">손익</button>
-    <button class="tab" id="tab-settings" onclick="switchTab('settings')">설정</button>
-  </div>
+<div class="header-top">
+<span class="app-title">⚒ SpaceGuo</span>
+<div class="header-right">
+<span class="today-total" id="headerTotal"></span>
+<span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
+<button class="logout-btn" onclick="doLogout()">로그아웃</button>
+</div>
+</div>
+<div class="tab-bar">
+<button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
+<button class="tab" id="tab-notif" onclick="switchTab('notif')">알림<span id="notifBadge" style="display:none;background:var(--accent2);color:#000;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;margin-left:3px"></span></button>
+<button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
+<button class="tab" id="tab-cal" onclick="switchTab('cal')">달력</button>
+<button class="tab" id="tab-sch" onclick="switchTab('sch')">공정표</button>
+<button class="tab" id="tab-dash" onclick="switchTab('dash')">손익</button>
+<button class="tab" id="tab-settings" onclick="switchTab('settings')">설정</button>
+</div>
 </div>
 
 <!-- INPUT -->
 <div class="view active" id="view-input">
 
-  <!-- 대기 중인 카드 알림 -->
-  <div class="pending-section" id="pendingSection">
-    <div class="pending-header">
-      <span class="pending-title">🔔 카드 알림 대기</span>
-      <span class="pending-count" id="pendingCount">0건</span>
-    </div>
-    <div id="pendingList"><div class="pending-empty">대기 중인 알림이 없어요</div></div>
-  </div>
+<!-- 대기 중인 카드 알림 -->
+<div class="pending-section" id="pendingSection">
+<div class="pending-header">
+<span class="pending-title">🔔 카드 알림 대기</span>
+<span class="pending-count" id="pendingCount">0건</span>
+</div>
+<div id="pendingList"><div class="pending-empty">대기 중인 알림이 없어요</div></div>
+</div>
 
-  <!-- SMS 자동파싱 -->
-  <div class="sms-paste-bar">
-    <button class="sms-paste-btn" onclick="openSmsModal()">📱 결제 문자 붙여넣기</button>
-  </div>
+<!-- SMS 자동파싱 -->
+<div class="sms-paste-bar">
+<button class="sms-paste-btn" onclick="openSmsModal()">📱 결제 문자 붙여넣기</button>
+</div>
 
-  <!-- 활성 입력 배너 -->
-  <div class="active-input-banner" id="activeInputBanner">
-    <div class="aib-top">
-      <span class="aib-label">🔔 카드 알림 입력 중</span>
-      <button class="aib-close" onclick="clearActivePending()">✕</button>
-    </div>
-    <div class="aib-amount" id="aibAmount"></div>
-    <div class="aib-vendor" id="aibVendor"></div>
-    <div class="aib-date" id="aibDate"></div>
-    <div class="aib-hint"><span class="aib-arrow">→</span> 현장·카테고리 선택 후 저장하세요</div>
-  </div>
+<!-- 활성 입력 배너 -->
+<div class="active-input-banner" id="activeInputBanner">
+<div class="aib-top">
+<span class="aib-label">🔔 카드 알림 입력 중</span>
+<button class="aib-close" onclick="clearActivePending()">✕</button>
+</div>
+<div class="aib-amount" id="aibAmount"></div>
+<div class="aib-vendor" id="aibVendor"></div>
+<div class="aib-date" id="aibDate"></div>
+<div class="aib-hint"><span class="aib-arrow">→</span> 현장·카테고리 선택 후 저장하세요</div>
+</div>
 
-  <div class="amount-display">
-    <div class="amount-label">결제 금액 (원)</div>
-    <div class="amount-value placeholder" id="amountDisplay">0</div>
-  </div>
-  <div class="numpad">
-    <button class="num-btn" onclick="numInput('1')">1</button>
-    <button class="num-btn" onclick="numInput('2')">2</button>
-    <button class="num-btn" onclick="numInput('3')">3</button>
-    <button class="num-btn" onclick="numInput('4')">4</button>
-    <button class="num-btn" onclick="numInput('5')">5</button>
-    <button class="num-btn" onclick="numInput('6')">6</button>
-    <button class="num-btn" onclick="numInput('7')">7</button>
-    <button class="num-btn" onclick="numInput('8')">8</button>
-    <button class="num-btn" onclick="numInput('9')">9</button>
-    <button class="num-btn zero" onclick="numInput('0')">0</button>
-    <button class="num-btn del" onclick="numDelete()">⌫</button>
-  </div>
-  <div class="quick-label">빠른 금액</div>
-  <div class="quick-amounts">
-    <button class="quick-btn" onclick="addAmount(10000)">+1만</button>
-    <button class="quick-btn" onclick="addAmount(50000)">+5만</button>
-    <button class="quick-btn" onclick="addAmount(100000)">+10만</button>
-    <button class="quick-btn" onclick="addAmount(500000)">+50만</button>
-    <button class="quick-btn" onclick="addAmount(1000000)">+100만</button>
-  </div>
-  <div class="field-row">
-    <div class="field-label">현장명</div>
-    <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
-  </div>
-  <div class="field-row">
-    <div class="field-label">카테고리</div>
-    <div class="chips">
-      <button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
-      <button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
-      <button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
-      <button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
-      <button class="chip" onclick="selectCat(this,'식대')">식대</button>
-      <button class="chip" onclick="selectCat(this,'기타')">기타</button>
-    </div>
-  </div>
-  <div class="field-row">
-    <div class="field-label">결제수단</div>
-    <div class="pay-group">
-      <div class="pay-group-label">💳 카드 <span style="color:var(--accent);font-size:10px;cursor:pointer" onclick="switchTab('settings')">설정에서 추가</span></div>
-      <div class="pay-chips" id="cardChips"></div>
-    </div>
-    <div class="pay-group" style="margin-top:8px">
-      <div class="pay-group-label">💵 현금/이체</div>
-      <div class="pay-chips">
-        <button class="pay-chip" onclick="selectPay(this,'현금 직접','cash')">현금 직접</button>
-        <button class="pay-chip" onclick="selectPay(this,'카카오페이','cash')">카카오페이</button>
-        <button class="pay-chip" onclick="selectPay(this,'토스','cash')">토스</button>
-      </div>
-    </div>
-    <div class="pay-group" style="margin-top:8px">
-      <div class="pay-group-label">🏦 계좌이체 <span style="color:var(--accent);font-size:10px;cursor:pointer" onclick="switchTab('settings')">설정에서 추가</span></div>
-      <div class="pay-chips" id="accountChips"></div>
-    </div>
-  </div>
-  <div class="field-row">
-    <div class="field-label">부가세</div>
-    <div class="vat-row-ui">
-      <button class="vat-btn" id="vatNone" onclick="selectVat('none')">미발행</button>
-      <button class="vat-btn selected" id="vatIncluded" onclick="selectVat('included')">포함</button>
-      <button class="vat-btn" id="vatExcluded" onclick="selectVat('excluded')">별도</button>
-    </div>
-    <div class="vat-info" id="vatInfo"></div>
-  </div>
-  <div class="field-row">
-    <div class="field-label">구매처 (선택)</div>
-    <input class="field-input" id="vendorInput" type="text" placeholder="예: 홈플러스, 철물왕...">
-  </div>
-  <div class="field-row">
-    <div class="field-label">구매 목록 (선택)</div>
-    <select class="field-select" id="processSelect" onchange="renderItemCheckboxes()" style="margin-bottom:8px">
-      <option value="">공정 선택</option>
-    </select>
-    <div id="itemCheckboxArea"></div>
-  </div>
-  <div class="field-row">
-    <div class="field-label">메모 (선택)</div>
-    <input class="field-input" id="memoInput" type="text" placeholder="특이사항...">
-  </div>
-  <button class="submit-btn" onclick="saveRecord()">💾 저장</button>
+<div class="amount-display">
+<div class="amount-label">결제 금액 (원)</div>
+<div class="amount-value placeholder" id="amountDisplay">0</div>
+</div>
+<div class="numpad">
+<button class="num-btn" onclick="numInput('1')">1</button>
+<button class="num-btn" onclick="numInput('2')">2</button>
+<button class="num-btn" onclick="numInput('3')">3</button>
+<button class="num-btn" onclick="numInput('4')">4</button>
+<button class="num-btn" onclick="numInput('5')">5</button>
+<button class="num-btn" onclick="numInput('6')">6</button>
+<button class="num-btn" onclick="numInput('7')">7</button>
+<button class="num-btn" onclick="numInput('8')">8</button>
+<button class="num-btn" onclick="numInput('9')">9</button>
+<button class="num-btn zero" onclick="numInput('0')">0</button>
+<button class="num-btn del" onclick="numDelete()">⌫</button>
+</div>
+<div class="quick-label">빠른 금액</div>
+<div class="quick-amounts">
+<button class="quick-btn" onclick="addAmount(10000)">+1만</button>
+<button class="quick-btn" onclick="addAmount(50000)">+5만</button>
+<button class="quick-btn" onclick="addAmount(100000)">+10만</button>
+<button class="quick-btn" onclick="addAmount(500000)">+50만</button>
+<button class="quick-btn" onclick="addAmount(1000000)">+100만</button>
+</div>
+<div class="field-row">
+<div class="field-label">현장명</div>
+<select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
+</div>
+<div class="field-row">
+<div class="field-label">카테고리</div>
+<div class="chips">
+<button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
+<button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
+<button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
+<button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
+<button class="chip" onclick="selectCat(this,'식대')">식대</button>
+<button class="chip" onclick="selectCat(this,'기타')">기타</button>
+</div>
+</div>
+<div class="field-row">
+<div class="field-label">결제수단</div>
+<div class="pay-group">
+<div class="pay-group-label">💳 카드 <span style="color:var(--accent);font-size:10px;cursor:pointer" onclick="switchTab('settings')">설정에서 추가</span></div>
+<div class="pay-chips" id="cardChips"></div>
+</div>
+<div class="pay-group" style="margin-top:8px">
+<div class="pay-group-label">💵 현금/이체</div>
+<div class="pay-chips">
+<button class="pay-chip" onclick="selectPay(this,'현금 직접','cash')">현금 직접</button>
+<button class="pay-chip" onclick="selectPay(this,'카카오페이','cash')">카카오페이</button>
+<button class="pay-chip" onclick="selectPay(this,'토스','cash')">토스</button>
+</div>
+</div>
+<div class="pay-group" style="margin-top:8px">
+<div class="pay-group-label">🏦 계좌이체 <span style="color:var(--accent);font-size:10px;cursor:pointer" onclick="switchTab('settings')">설정에서 추가</span></div>
+<div class="pay-chips" id="accountChips"></div>
+</div>
+</div>
+<div class="field-row">
+<div class="field-label">부가세</div>
+<div class="vat-row-ui">
+<button class="vat-btn" id="vatNone" onclick="selectVat('none')">미발행</button>
+<button class="vat-btn selected" id="vatIncluded" onclick="selectVat('included')">포함</button>
+<button class="vat-btn" id="vatExcluded" onclick="selectVat('excluded')">별도</button>
+</div>
+<div class="vat-info" id="vatInfo"></div>
+</div>
+<div class="field-row">
+<div class="field-label">구매처 (선택)</div>
+<input class="field-input" id="vendorInput" type="text" placeholder="예: 홈플러스, 철물왕...">
+</div>
+<div class="field-row">
+<div class="field-label">구매 목록 (선택)</div>
+<select class="field-select" id="processSelect" onchange="renderItemCheckboxes()" style="margin-bottom:8px">
+<option value="">공정 선택</option>
+</select>
+<div id="itemCheckboxArea"></div>
+</div>
+<div class="field-row">
+<div class="field-label">메모 (선택)</div>
+<input class="field-input" id="memoInput" type="text" placeholder="특이사항...">
+</div>
+<button class="submit-btn" onclick="saveRecord()">💾 저장</button>
 </div>
 
 <!-- NOTIFICATIONS -->
 <div class="view" id="view-notif">
-  <div class="notif-filter">
-    <button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
-    <button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
-    <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
-  </div>
-  <div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
+<div class="notif-filter">
+<button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
+<button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
+<button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
+</div>
+<div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
 </div>
 
 <!-- LIST -->
 <div class="view" id="view-list">
-  <div class="filter-bar" id="filterBar"><button class="filter-chip active" onclick="setFilter('전체',this)">전체</button></div>
-  <div class="summary-card">
-    <div><div class="s-label">필터 합계</div><div class="s-value" id="filteredTotal">₩0</div></div>
-    <div class="s-count" id="filteredCount"></div>
-  </div>
-  <div id="recordList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
+<div class="filter-bar" id="filterBar"><button class="filter-chip active" onclick="setFilter('전체',this)">전체</button></div>
+<div class="summary-card">
+<div><div class="s-label">필터 합계</div><div class="s-value" id="filteredTotal">₩0</div></div>
+<div class="s-count" id="filteredCount"></div>
+</div>
+<div id="recordList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
 </div>
 
 <!-- CALENDAR -->
 <div class="view" id="view-cal">
-  <div class="cal-nav">
-    <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
-    <span class="cal-month-label" id="calMonthLabel"></span>
-    <button class="cal-nav-btn" onclick="calMove(1)">›</button>
-  </div>
-  <div class="cal-grid" id="calGrid"></div>
-  <div class="cal-day-detail" id="calDayDetail"></div>
+<div class="cal-nav">
+<button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
+<span class="cal-month-label" id="calMonthLabel"></span>
+<button class="cal-nav-btn" onclick="calMove(1)">›</button>
+</div>
+<div class="cal-grid" id="calGrid"></div>
+<div class="cal-day-detail" id="calDayDetail"></div>
+</div>
+
+
+<!-- SCHEDULE -->
+<div class="view" id="view-sch">
+<div class="sch-nav">
+<button class="sch-nav-btn" onclick="schCalMove(-1)">‹</button>
+<span class="sch-month-label" id="schMonthLabel"></span>
+<button class="sch-nav-btn" onclick="schCalMove(1)">›</button>
+</div>
+<div class="sch-site-filter" id="schSiteFilter"></div>
+<div class="sch-cal-wrap">
+<div class="sch-cal-header" id="schCalHeader"></div>
+<div class="sch-cal-body" id="schCalBody"></div>
+</div>
+<button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
+<div class="sch-list" id="schList"></div>
 </div>
 
 <!-- DASHBOARD -->
 <div class="view" id="view-dash">
-  <div class="dash-period" id="dashPeriod"></div>
-  <div id="dashContent"><div class="loading"><div class="spinner"></div>계산 중...</div></div>
+<div class="dash-period" id="dashPeriod"></div>
+<div id="dashContent"><div class="loading"><div class="spinner"></div>계산 중...</div></div>
 </div>
 
 <!-- SETTINGS -->
 <div class="view" id="view-settings">
-  <div class="settings-title">현장 목록</div>
-  <div class="site-list" id="siteList"></div>
-  <div class="add-site-row">
-    <input class="add-site-input" id="newSiteInput" placeholder="새 현장명 입력">
-    <button class="add-site-btn" onclick="addSite()">추가</button>
-  </div>
-  <div class="section-divider"></div>
-  <div class="settings-title" id="cardSectionLabel">💳 내 카드 목록</div>
-  <div class="site-list" id="cardList"></div>
-  <button class="add-item-btn" onclick="openCardModal()" style="margin-bottom:10px">＋ 카드 추가</button>
-  <div class="section-divider"></div>
-  <div class="settings-title">🏦 계좌 목록</div>
-  <div class="site-list" id="accountList"></div>
-  <button class="add-item-btn" onclick="openAccountModal()" style="margin-bottom:10px">＋ 계좌 추가</button>
-  <div class="section-divider"></div>
-  <div class="settings-title">📦 공정별 품목 관리</div>
-  <div id="processList"></div>
-  <button class="add-item-btn" onclick="openProcessModal()" style="margin-bottom:10px">＋ 공정 추가</button>
-  <div class="section-divider"></div>
-  <div class="settings-title">내보내기</div>
-  <button class="export-btn" onclick="exportCSV()">📋 CSV 다운로드</button>
-  <button class="export-btn" onclick="copyForKakao()">💬 카카오톡 복사 (이번 달)</button>
-  <button class="export-btn" style="color:var(--red);border-color:var(--red)" onclick="clearAll()">🗑 전체 삭제</button>
-  <div class="section-divider"></div>
-  <div class="settings-title">계정</div>
-  <div id="userInfo" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+<div class="settings-title">현장 목록</div>
+<div class="site-list" id="siteList"></div>
+<div class="add-site-row">
+<input class="add-site-input" id="newSiteInput" placeholder="새 현장명 입력">
+<button class="add-site-btn" onclick="addSite()">추가</button>
+</div>
+<div class="section-divider"></div>
+<div class="settings-title" id="cardSectionLabel">💳 내 카드 목록</div>
+<div class="site-list" id="cardList"></div>
+<button class="add-item-btn" onclick="openCardModal()" style="margin-bottom:10px">＋ 카드 추가</button>
+<div class="section-divider"></div>
+<div class="settings-title">🏦 계좌 목록</div>
+<div class="site-list" id="accountList"></div>
+<button class="add-item-btn" onclick="openAccountModal()" style="margin-bottom:10px">＋ 계좌 추가</button>
+<div class="section-divider"></div>
+<div class="settings-title">📦 공정별 품목 관리</div>
+<div id="processList"></div>
+<button class="add-item-btn" onclick="openProcessModal()" style="margin-bottom:10px">＋ 공정 추가</button>
+<div class="section-divider"></div>
+<div class="settings-title">내보내기</div>
+<button class="export-btn" onclick="exportCSV()">📋 CSV 다운로드</button>
+<button class="export-btn" onclick="copyForKakao()">💬 카카오톡 복사 (이번 달)</button>
+<button class="export-btn" style="color:var(--red);border-color:var(--red)" onclick="clearAll()">🗑 전체 삭제</button>
+<div class="section-divider"></div>
+<div class="settings-title">계정</div>
+<div id="userInfo" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
 </div>
 
 <!-- INCOME MODAL -->
 <div class="modal-overlay" id="incomeModal">
-  <div class="modal-inner">
-    <div class="modal-title">💰 매출 입력</div>
-    <div class="field-row"><div class="field-label">현장명</div><select class="field-select" id="incSiteSelect"><option value="">현장 선택</option></select></div>
-    <div class="field-row"><div class="field-label">매출 금액 (원)</div><input class="field-input" id="incAmount" type="tel" inputmode="numeric" placeholder="예: 5000000" oninput="updateIncVatInfo()"></div>
-    <div class="field-row">
-      <div class="field-label">부가세</div>
-      <div class="vat-row-ui">
-        <button class="vat-btn" id="incVatNone" onclick="selectIncVat('none')">해당없음</button>
-        <button class="vat-btn selected" id="incVatIncluded" onclick="selectIncVat('included')">포함</button>
-        <button class="vat-btn" id="incVatExcluded" onclick="selectIncVat('excluded')">별도</button>
-      </div>
-      <div class="vat-info" id="incVatInfo"></div>
-    </div>
-    <div class="field-row"><div class="field-label">항목 (선택)</div><input class="field-input" id="incMemo" type="text" placeholder="예: 1차 기성금, 계약금..."></div>
-    <div class="field-row"><div class="field-label">날짜</div><input class="field-input" id="incDate" type="date"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeIncomeModal()">취소</button>
-      <button class="modal-save" onclick="saveIncome()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title">💰 매출 입력</div>
+<div class="field-row"><div class="field-label">현장명</div><select class="field-select" id="incSiteSelect"><option value="">현장 선택</option></select></div>
+<div class="field-row"><div class="field-label">매출 금액 (원)</div><input class="field-input" id="incAmount" type="tel" inputmode="numeric" placeholder="예: 5000000" oninput="updateIncVatInfo()"></div>
+<div class="field-row">
+<div class="field-label">부가세</div>
+<div class="vat-row-ui">
+<button class="vat-btn" id="incVatNone" onclick="selectIncVat('none')">해당없음</button>
+<button class="vat-btn selected" id="incVatIncluded" onclick="selectIncVat('included')">포함</button>
+<button class="vat-btn" id="incVatExcluded" onclick="selectIncVat('excluded')">별도</button>
+</div>
+<div class="vat-info" id="incVatInfo"></div>
+</div>
+<div class="field-row"><div class="field-label">항목 (선택)</div><input class="field-input" id="incMemo" type="text" placeholder="예: 1차 기성금, 계약금..."></div>
+<div class="field-row"><div class="field-label">날짜</div><input class="field-input" id="incDate" type="date"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeIncomeModal()">취소</button>
+<button class="modal-save" onclick="saveIncome()">저장</button>
+</div>
+</div>
 </div>
 
 <!-- CARD MODAL -->
 <div class="modal-overlay" id="cardModal">
-  <div class="modal-inner">
-    <div class="modal-title" id="cardModalTitle">카드 추가</div>
-    <div class="field-row"><div class="field-label">카드 별칭 (필수)</div><input class="field-input" id="cardNameInp" placeholder="예: 신한 체크, 법인카드"></div>
-    <div class="field-row">
-      <div class="field-label">카드사</div>
-      <select class="field-select" id="cardIssuerInp">
-        <option value="">선택 안 함</option>
-        <option>신한</option><option>삼성</option><option>현대</option><option>KB국민</option>
-        <option>롯데</option><option>하나</option><option>우리</option><option>BC</option>
-        <option>NH농협</option><option>IBK기업</option><option>카카오뱅크</option><option>토스뱅크</option><option>기타</option>
-      </select>
-    </div>
-    <div class="field-row">
-      <div class="field-label">카드 종류</div>
-      <div class="pay-chips">
-        <button class="pay-chip selected-card" id="ctCredit" onclick="selectCardType('신용')">신용</button>
-        <button class="pay-chip" id="ctDebit" onclick="selectCardType('체크')">체크</button>
-        <button class="pay-chip" id="ctCorp" onclick="selectCardType('법인')">법인</button>
-      </div>
-    </div>
-    <div class="field-row"><div class="field-label">카드번호 끝 4자리 (선택)</div><input class="field-input" id="cardNumInp" type="tel" maxlength="4" inputmode="numeric" placeholder="예: 1234"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeCardModal()">취소</button>
-      <button class="modal-save" onclick="saveCardModal()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title" id="cardModalTitle">카드 추가</div>
+<div class="field-row"><div class="field-label">카드 별칭 (필수)</div><input class="field-input" id="cardNameInp" placeholder="예: 신한 체크, 법인카드"></div>
+<div class="field-row">
+<div class="field-label">카드사</div>
+<select class="field-select" id="cardIssuerInp">
+<option value="">선택 안 함</option>
+<option>신한</option><option>삼성</option><option>현대</option><option>KB국민</option>
+<option>롯데</option><option>하나</option><option>우리</option><option>BC</option>
+<option>NH농협</option><option>IBK기업</option><option>카카오뱅크</option><option>토스뱅크</option><option>기타</option>
+</select>
+</div>
+<div class="field-row">
+<div class="field-label">카드 종류</div>
+<div class="pay-chips">
+<button class="pay-chip selected-card" id="ctCredit" onclick="selectCardType('신용')">신용</button>
+<button class="pay-chip" id="ctDebit" onclick="selectCardType('체크')">체크</button>
+<button class="pay-chip" id="ctCorp" onclick="selectCardType('법인')">법인</button>
+</div>
+</div>
+<div class="field-row"><div class="field-label">카드번호 끝 4자리 (선택)</div><input class="field-input" id="cardNumInp" type="tel" maxlength="4" inputmode="numeric" placeholder="예: 1234"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeCardModal()">취소</button>
+<button class="modal-save" onclick="saveCardModal()">저장</button>
+</div>
+</div>
 </div>
 
 <!-- ACCOUNT MODAL -->
 <div class="modal-overlay" id="accountModal">
-  <div class="modal-inner">
-    <div class="modal-title" id="accountModalTitle">계좌 추가</div>
-    <div class="field-row"><div class="field-label">계좌 별칭 (필수)</div><input class="field-input" id="accNameInp" placeholder="예: 사업자 계좌, 국민은행"></div>
-    <div class="field-row">
-      <div class="field-label">은행</div>
-      <select class="field-select" id="accBankInp">
-        <option value="">선택 안 함</option>
-        <option>국민</option><option>신한</option><option>우리</option><option>하나</option>
-        <option>농협</option><option>기업</option><option>카카오뱅크</option><option>토스뱅크</option>
-        <option>새마을금고</option><option>수협</option><option>SC제일</option><option>씨티</option><option>기타</option>
-      </select>
-    </div>
-    <div class="field-row"><div class="field-label">계좌번호 (선택)</div><input class="field-input" id="accNumInp" type="tel" inputmode="numeric" placeholder="예: 123-456-789012"></div>
-    <div class="field-row"><div class="field-label">예금주 (선택)</div><input class="field-input" id="accOwnerInp" type="text" placeholder="예: 홍길동"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeAccountModal()">취소</button>
-      <button class="modal-save" onclick="saveAccountModal()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title" id="accountModalTitle">계좌 추가</div>
+<div class="field-row"><div class="field-label">계좌 별칭 (필수)</div><input class="field-input" id="accNameInp" placeholder="예: 사업자 계좌, 국민은행"></div>
+<div class="field-row">
+<div class="field-label">은행</div>
+<select class="field-select" id="accBankInp">
+<option value="">선택 안 함</option>
+<option>국민</option><option>신한</option><option>우리</option><option>하나</option>
+<option>농협</option><option>기업</option><option>카카오뱅크</option><option>토스뱅크</option>
+<option>새마을금고</option><option>수협</option><option>SC제일</option><option>씨티</option><option>기타</option>
+</select>
+</div>
+<div class="field-row"><div class="field-label">계좌번호 (선택)</div><input class="field-input" id="accNumInp" type="tel" inputmode="numeric" placeholder="예: 123-456-789012"></div>
+<div class="field-row"><div class="field-label">예금주 (선택)</div><input class="field-input" id="accOwnerInp" type="text" placeholder="예: 홍길동"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeAccountModal()">취소</button>
+<button class="modal-save" onclick="saveAccountModal()">저장</button>
+</div>
+</div>
 </div>
 
 <!-- PROCESS MODAL -->
 <div class="modal-overlay" id="processModal">
-  <div class="modal-inner">
-    <div class="modal-title" id="processModalTitle">공정 추가</div>
-    <div class="field-row"><div class="field-label">공정명 (필수)</div><input class="field-input" id="procNameInp" placeholder="예: 타일공사, 도배, 전기, 철거"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeProcessModal()">취소</button>
-      <button class="modal-save" onclick="saveProcessModal()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title" id="processModalTitle">공정 추가</div>
+<div class="field-row"><div class="field-label">공정명 (필수)</div><input class="field-input" id="procNameInp" placeholder="예: 타일공사, 도배, 전기, 철거"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeProcessModal()">취소</button>
+<button class="modal-save" onclick="saveProcessModal()">저장</button>
+</div>
+</div>
 </div>
 
 <!-- ITEM MODAL -->
 <div class="modal-overlay" id="itemModal">
-  <div class="modal-inner">
-    <div class="modal-title" id="itemModalTitle">품목 추가</div>
-    <div class="field-row"><div class="field-label">품목명 (필수)</div><input class="field-input" id="itemNameInp" placeholder="예: 타일 300x300, 실크벽지, 전선"></div>
-    <div class="field-row"><div class="field-label">단위 (선택)</div><input class="field-input" id="itemUnitInp" placeholder="예: 장, m², EA, 롤"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeItemModal()">취소</button>
-      <button class="modal-save" onclick="saveItemModal()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title" id="itemModalTitle">품목 추가</div>
+<div class="field-row"><div class="field-label">품목명 (필수)</div><input class="field-input" id="itemNameInp" placeholder="예: 타일 300x300, 실크벽지, 전선"></div>
+<div class="field-row"><div class="field-label">단위 (선택)</div><input class="field-input" id="itemUnitInp" placeholder="예: 장, m², EA, 롤"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeItemModal()">취소</button>
+<button class="modal-save" onclick="saveItemModal()">저장</button>
+</div>
+</div>
 </div>
 
 <!-- SMS PARSE MODAL -->
 <div class="modal-overlay" id="smsModal">
-  <div class="modal-inner">
-    <div class="modal-title">📱 결제 문자 붙여넣기</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">결제 알림 문자를 그대로 붙여넣으면 금액과 가맹점을 자동으로 읽어요</div>
-    <div class="field-row">
-      <textarea class="field-input" id="smsPasteInput" rows="5" placeholder="예시:
+<div class="modal-inner">
+<div class="modal-title">📱 결제 문자 붙여넣기</div>
+<div style="font-size:12px;color:var(--muted);margin-bottom:10px">결제 알림 문자를 그대로 붙여넣으면 금액과 가맹점을 자동으로 읽어요</div>
+<div class="field-row">
+<textarea class="field-input" id="smsPasteInput" rows="5" placeholder="예시:
 [신한은행] 출금 87,000원 (잔액 1,234,567원) 타일나라 05/28 14:30
 
 [국민은행] 홍길동님 34,000원 출금 (잔액 890,000원) 철물왕 2026-05-28" style="resize:none;font-size:13px;line-height:1.6"></textarea>
-    </div>
-    <div id="smsParseResult" style="display:none;background:var(--surface2);border:1px solid var(--green);border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px">
-      <div style="color:var(--green);font-weight:700;margin-bottom:6px">✓ 파싱 결과</div>
-      <div id="smsResultContent"></div>
-    </div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeSmsModal()">취소</button>
-      <button class="modal-save" id="smsParseBtn" onclick="parseSms()">자동 읽기</button>
-    </div>
-  </div>
+</div>
+<div id="smsParseResult" style="display:none;background:var(--surface2);border:1px solid var(--green);border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px">
+<div style="color:var(--green);font-weight:700;margin-bottom:6px">✓ 파싱 결과</div>
+<div id="smsResultContent"></div>
+</div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeSmsModal()">취소</button>
+<button class="modal-save" id="smsParseBtn" onclick="parseSms()">자동 읽기</button>
+</div>
+</div>
 </div>
 
 <button class="income-fab" id="incomeFab" style="display:none" onclick="openIncomeModal()">＋ 매출 입력</button>
 
 <!-- SITE EDIT MODAL -->
 <div class="modal-overlay" id="siteEditModal">
-  <div class="modal-inner">
-    <div class="modal-title">현장명 수정</div>
-    <div class="field-row"><div class="field-label">현장명</div><input class="field-input" id="siteEditInp" placeholder="현장명 입력"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
-      <button class="modal-save" onclick="saveSiteEdit()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title">현장명 수정</div>
+<div class="field-row"><div class="field-label">현장명</div><input class="field-input" id="siteEditInp" placeholder="현장명 입력"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
+<button class="modal-save" onclick="saveSiteEdit()">저장</button>
+</div>
+</div>
 </div>
 
 <!-- INCOME EDIT MODAL -->
 <div class="modal-overlay" id="incomeEditModal">
-  <div class="modal-inner">
-    <div class="modal-title">매출 수정</div>
-    <div class="field-row"><div class="field-label">현장명</div><select class="field-select" id="incEditSite"></select></div>
-    <div class="field-row"><div class="field-label">매출 금액</div><input class="field-input" id="incEditAmount" type="tel" inputmode="numeric" oninput="updateIncEditVatInfo()"></div>
-    <div class="field-row">
-      <div class="field-label">부가세</div>
-      <div class="vat-row-ui">
-        <button class="vat-btn" id="incEditVatNone" onclick="selectIncEditVat('none')">미발행</button>
-        <button class="vat-btn" id="incEditVatIncluded" onclick="selectIncEditVat('included')">포함</button>
-        <button class="vat-btn" id="incEditVatExcluded" onclick="selectIncEditVat('excluded')">별도</button>
-      </div>
-      <div class="vat-info" id="incEditVatInfo"></div>
-    </div>
-    <div class="field-row"><div class="field-label">항목</div><input class="field-input" id="incEditMemo" type="text"></div>
-    <div class="field-row"><div class="field-label">날짜</div><input class="field-input" id="incEditDate" type="date"></div>
-    <div class="modal-btn-row">
-      <button class="modal-cancel" onclick="closeIncomeEditModal()">취소</button>
-      <button class="modal-save" onclick="saveIncomeEdit()">저장</button>
-    </div>
-  </div>
+<div class="modal-inner">
+<div class="modal-title">매출 수정</div>
+<div class="field-row"><div class="field-label">현장명</div><select class="field-select" id="incEditSite"></select></div>
+<div class="field-row"><div class="field-label">매출 금액</div><input class="field-input" id="incEditAmount" type="tel" inputmode="numeric" oninput="updateIncEditVatInfo()"></div>
+<div class="field-row">
+<div class="field-label">부가세</div>
+<div class="vat-row-ui">
+<button class="vat-btn" id="incEditVatNone" onclick="selectIncEditVat('none')">미발행</button>
+<button class="vat-btn" id="incEditVatIncluded" onclick="selectIncEditVat('included')">포함</button>
+<button class="vat-btn" id="incEditVatExcluded" onclick="selectIncEditVat('excluded')">별도</button>
+</div>
+<div class="vat-info" id="incEditVatInfo"></div>
+</div>
+<div class="field-row"><div class="field-label">항목</div><input class="field-input" id="incEditMemo" type="text"></div>
+<div class="field-row"><div class="field-label">날짜</div><input class="field-input" id="incEditDate" type="date"></div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeIncomeEditModal()">취소</button>
+<button class="modal-save" onclick="saveIncomeEdit()">저장</button>
+</div>
+</div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="schModal">
+<div class="modal-inner" style="max-height:90vh;overflow-y:auto">
+<div class="modal-title" id="schModalTitle">공정 일정 추가</div>
+<div class="field-row">
+<div class="field-label">현장명</div>
+<select class="field-select" id="schSiteInp"></select>
+</div>
+<div class="field-row">
+<div class="field-label">공정</div>
+<select class="field-select" id="schProcInp"></select>
+</div>
+<div class="field-row">
+<div class="field-label">담당자</div>
+<input class="field-input" id="schWorkerInp" type="text" placeholder="예: 홍길동, 외주팀">
+</div>
+<div class="field-row">
+<div class="field-label">시작일</div>
+<input class="field-input" id="schStartInp" type="date">
+</div>
+<div class="field-row">
+<div class="field-label">종료일</div>
+<input class="field-input" id="schEndInp" type="date">
+</div>
+<div class="field-row">
+<div class="field-label">진행률 <span id="schPctLabel" style="color:var(--accent);font-weight:800">0%</span></div>
+<input type="range" id="schPctInp" min="0" max="100" value="0" step="5"
+style="width:100%;accent-color:var(--accent);margin-top:6px"
+oninput="document.getElementById('schPctLabel').textContent=this.value+'%'">
+<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px"><span>0%</span><span>50%</span><span>100%</span></div>
+</div>
+<div class="field-row">
+<div class="field-label">메모 (선택)</div>
+<input class="field-input" id="schMemoInp" type="text" placeholder="특이사항">
+</div>
+<div class="modal-btn-row">
+<button class="modal-cancel" onclick="closeSchModal()">취소</button>
+<button class="modal-save" onclick="saveSchModal()">저장</button>
+</div>
+<button id="schDeleteBtn" style="display:none;width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px" onclick="deleteSchItem()">🗑 삭제</button>
+</div>
+</div>
+
+<!-- EDIT RECORD MODAL -->
+<div class="edit-modal-overlay" id="editRecordModal">
+<div class="edit-modal-inner">
+<div class="edit-modal-title">
+<span>✏️ 내역 수정</span>
+<button class="edit-modal-close" onclick="closeEditModal()">✕</button>
+</div>
+<div class="field-label">금액</div>
+<div class="edit-amount-display" id="editAmountDisplay" onclick="toggleEditNumpad()">₩0</div>
+<div class="edit-numpad" id="editNumpad">
+<button class="edit-num-btn" onclick="editNumInput('1')">1</button>
+<button class="edit-num-btn" onclick="editNumInput('2')">2</button>
+<button class="edit-num-btn" onclick="editNumInput('3')">3</button>
+<button class="edit-num-btn" onclick="editNumInput('4')">4</button>
+<button class="edit-num-btn" onclick="editNumInput('5')">5</button>
+<button class="edit-num-btn" onclick="editNumInput('6')">6</button>
+<button class="edit-num-btn" onclick="editNumInput('7')">7</button>
+<button class="edit-num-btn" onclick="editNumInput('8')">8</button>
+<button class="edit-num-btn" onclick="editNumInput('9')">9</button>
+<button class="edit-num-btn zero" onclick="editNumInput('0')">0</button>
+<button class="edit-num-btn del" onclick="editNumDelete()">⌫</button>
+</div>
+<div class="field-row" style="margin-top:10px">
+<div class="field-label">날짜</div>
+<input class="field-input" id="editDate" type="datetime-local">
+</div>
+<div class="field-row">
+<div class="field-label">현장명</div>
+<select class="field-select" id="editSite"></select>
+</div>
+<div class="field-row">
+<div class="field-label">카테고리</div>
+<div class="chips" id="editCatChips">
+<button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
+<button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
+<button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
+<button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
+<button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
+<button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
+</div>
+</div>
+<div class="field-row">
+<div class="field-label">결제수단</div>
+<div class="pay-chips" id="editPayChips"></div>
+</div>
+<div class="field-row">
+<div class="field-label">부가세</div>
+<div class="vat-row-ui">
+<button class="vat-btn" id="editVatNone" onclick="selectEditVat('none')">미발행</button>
+<button class="vat-btn" id="editVatIncluded" onclick="selectEditVat('included')">포함</button>
+<button class="vat-btn" id="editVatExcluded" onclick="selectEditVat('excluded')">별도</button>
+</div>
+</div>
+<div class="field-row">
+<div class="field-label">구매처</div>
+<input class="field-input" id="editVendor" type="text" placeholder="구매처">
+</div>
+<div class="field-row">
+<div class="field-label">품목 (쉼표로 구분)</div>
+<input class="field-input" id="editItems" type="text" placeholder="예: 타일, 시멘트, 줄눈">
+</div>
+<div class="field-row">
+<div class="field-label">메모</div>
+<input class="field-input" id="editMemo" type="text" placeholder="메모">
+</div>
+<button class="edit-save-btn" onclick="saveEditRecord()">✓ 수정 저장</button>
+<button class="edit-del-btn" onclick="deleteEditRecord()">🗑 이 내역 삭제</button>
+</div>
 </div>
 </div><!-- /mainApp -->
 
@@ -677,15 +843,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <script>
 firebase.initializeApp({
-  apiKey:"AIzaSyArI5BFxLdkPM8ZVkE7029tCa_00i5QyKM",
-  authDomain:"spaceguo-expense.firebaseapp.com",
-  projectId:"spaceguo-expense",
-  storageBucket:"spaceguo-expense.firebasestorage.app",
-  messagingSenderId:"1034533456811",
-  appId:"1:1034533456811:web:e770845fb45758ef6e60ee"
+apiKey:"AIzaSyArI5BFxLdkPM8ZVkE7029tCa_00i5QyKM",
+authDomain:"spaceguo-expense.firebaseapp.com",
+projectId:"spaceguo-expense",
+storageBucket:"spaceguo-expense.firebasestorage.app",
+messagingSenderId:"1034533456811",
+appId:"1:1034533456811:web:e770845fb45758ef6e60ee"
 });
 const auth = firebase.auth();
-const db   = firebase.firestore();
+const db = firebase.firestore();
 
 // ── 상태 ──
 let records=[], incomes=[], sites=[], cards=[], accounts=[], processes=[];
@@ -703,1231 +869,24 @@ const CAT_ICONS={'자재비':{icon:'🧱',bg:'#2a1f0f'},'인건비':{icon:'👷'
 
 // ── SYNC ──
 function setSyncStatus(s){
-  var dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
-  if(s==='ok'){dot.className='sync-dot ok';lbl.textContent='저장됨';}
-  if(s==='saving'){dot.className='sync-dot saving';lbl.textContent='저장 중';}
-  if(s==='err'){dot.className='sync-dot err';lbl.textContent='오류';}
-  if(s==='live'){dot.className='sync-dot ok';lbl.textContent='실시간';}
+var dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
+if(s==='ok'){dot.className='sync-dot ok';lbl.textContent='저장됨';}
+if(s==='saving'){dot.className='sync-dot saving';lbl.textContent='저장 중';}
+if(s==='err'){dot.className='sync-dot err';lbl.textContent='오류';}
+if(s==='live'){dot.className='sync-dot ok';lbl.textContent='실시간';}
 }
 
 // ── AUTH ──
 function togglePw(){
-  var inp=document.getElementById('loginPw'),btn=document.getElementById('pwEyeBtn');
-  inp.type=inp.type==='password'?'text':'password';
-  btn.textContent=inp.type==='password'?'👁':'🙈';
+var inp=document.getElementById('loginPw'),btn=document.getElementById('pwEyeBtn');
+inp.type=inp.type==='password'?'text':'password';
+btn.textContent=inp.type==='password'?'👁':'🙈';
 }
 function doLogin(){
-  var email=document.getElementById('loginEmail').value.trim();
-  var pw=document.getElementById('loginPw').value;
-  auth.signInWithEmailAndPassword(email,pw).catch(function(){
-    document.getElementById('loginErr').textContent='이메일 또는 비밀번호를 확인해주세요';
-  });
+var email=document.getElementById('loginEmail').value.trim();
+var pw=document.getElementById('loginPw').value;
+auth.signInWithEmailAndPassword(email,pw).catch(function(){
+document.getElementById('loginErr').textContent='이메일 또는 비밀번호를 확인해주세요';
+});
 }
 function doSignup(){
-  var email=document.getElementById('loginEmail').value.trim();
-  var pw=document.getElementById('loginPw').value;
-  if(!email||pw.length<6){document.getElementById('loginErr').textContent='이메일과 6자 이상 비밀번호를 입력하세요';return;}
-  auth.createUserWithEmailAndPassword(email,pw).catch(function(e){
-    document.getElementById('loginErr').textContent=e.message;
-  });
-}
-function doGoogleLogin(){
-  var errEl=document.getElementById('loginErr');
-  errEl.style.color='var(--muted)';errEl.textContent='구글 로그인 창 여는 중...';
-  var provider=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).then(function(){errEl.textContent='';}).catch(function(e){
-    errEl.style.color='var(--red)';
-    errEl.textContent=e.code==='auth/popup-closed-by-user'?'로그인 창이 닫혔어요':'구글 로그인 실패: '+e.message;
-  });
-}
-function doResetPw(){
-  var email=document.getElementById('loginEmail').value.trim();
-  var errEl=document.getElementById('loginErr');
-  if(!email){errEl.style.color='var(--accent2)';errEl.textContent='이메일을 먼저 입력해주세요';return;}
-  auth.sendPasswordResetEmail(email).then(function(){
-    errEl.style.color='var(--green)';errEl.textContent='✓ 재설정 이메일을 보냈어요';
-  }).catch(function(){errEl.style.color='var(--red)';errEl.textContent='이메일을 확인해주세요';});
-}
-function doLogout(){
-  if(unsubRec)unsubRec();if(unsubInc)unsubInc();if(unsubPending)unsubPending();
-  auth.signOut();
-}
-
-auth.onAuthStateChanged(function(user){
-  if(user){
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('mainApp').style.display='block';
-    document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();subscribeRecords();subscribeIncomes();subscribePending();setSyncStatus('live');
-  } else {
-    document.getElementById('loginScreen').style.display='flex';
-    document.getElementById('mainApp').style.display='none';
-    records=[];incomes=[];
-  }
-});
-
-// ── SETTINGS ──
-function loadSettings(){
-  db.collection('settings').doc('main').get().then(function(snap){
-    if(snap.exists){
-      var d=snap.data();
-      sites=d.sites||[];
-      cards=(d.cards||[]).map(function(c){return typeof c==='string'?{name:c,issuer:'',type:'신용',num:''}:c;});
-      accounts=d.accounts||[];
-      processes=d.processes||[];
-    } else {sites=[];cards=[];accounts=[];processes=[];}
-    renderSiteSelect();renderSiteList();renderCardChips();renderCardList();
-    renderAccountChips();renderAccountList();renderProcessSelect();renderProcessList();renderFilterBar();
-  });
-}
-function saveSettings(){
-  return db.collection('settings').doc('main').set({sites:sites,cards:cards,accounts:accounts,processes:processes});
-}
-
-// ── REALTIME ──
-function subscribeRecords(){
-  unsubRec=db.collection('expenses').orderBy('date','desc').onSnapshot(function(snap){
-    records=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    updateHeaderTotal();
-    if(document.getElementById('view-list').classList.contains('active'))renderList();
-    if(document.getElementById('view-dash').classList.contains('active'))renderDash();
-  });
-}
-function subscribeIncomes(){
-  unsubInc=db.collection('incomes').orderBy('date','desc').onSnapshot(function(snap){
-    incomes=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    if(document.getElementById('view-dash').classList.contains('active'))renderDash();
-  });
-}
-
-// ── PENDING NOTIFICATIONS ──
-function subscribePending(){
-  unsubPending=db.collection('sms_pending').orderBy('date','desc').onSnapshot(function(snap){
-    pendingNotifs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    renderPendingSection();
-    updateNotifBadge();
-    if(document.getElementById('view-notif').classList.contains('active'))renderNotifTab();
-  });
-}
-
-function updateNotifBadge(){
-  var pending=pendingNotifs.filter(function(n){return n.status==='pending';});
-  var badge=document.getElementById('notifBadge');
-  if(pending.length>0){badge.style.display='inline';badge.textContent=pending.length;}
-  else{badge.style.display='none';}
-}
-
-function renderPendingSection(){
-  var pending=pendingNotifs.filter(function(n){return n.status==='pending';});
-  var countEl=document.getElementById('pendingCount');
-  var listEl=document.getElementById('pendingList');
-  countEl.textContent=pending.length+'건';
-  if(!pending.length){
-    listEl.innerHTML='<div class="pending-empty">대기 중인 알림이 없어요</div>';
-    return;
-  }
-  listEl.innerHTML=pending.map(function(n){
-    var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
-    var dateStr=n.date?n.date.slice(0,16):'';
-    var vendor=n.vendor||'';
-    var cardnum=n.cardnum||'';
-    var safeVendor=vendor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    var safeDateStr=dateStr.replace(/'/g,"\\'");
-    var safeCardnum=cardnum.replace(/'/g,"\\'");
-    return '<div class="pending-card" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">'
-      +'<div class="pending-card-top">'
-      +'<span class="pending-card-amount">₩'+amount.toLocaleString('ko-KR')+'</span>'
-      +'<span class="pending-card-date">'+dateStr+'</span>'
-      +'</div>'
-      +(vendor?'<div class="pending-card-vendor">🏪 '+vendor+(cardnum?' · 카드 '+cardnum:'')+'</div>':'')
-      +'<div class="pending-card-hint">탭하면 자동 입력돼요 →</div>'
-      +'</div>';
-  }).join('');
-}
-
-// ── ACTIVE PENDING STATE ──
-var activePendingId='', activePendingDate='';
-
-function applyPending(id, amount, vendor, dateStr, cardnum){
-  activePendingId=id;
-  activePendingDate=dateStr||'';
-
-  // 금액 자동 입력
-  amountStr=String(amount);
-  updateAmountDisplay();
-
-  // 구매처 자동 입력
-  if(vendor) document.getElementById('vendorInput').value=vendor;
-
-  // 활성 배너 표시
-  var banner=document.getElementById('activeInputBanner');
-  document.getElementById('aibAmount').textContent='₩'+amount.toLocaleString('ko-KR');
-  document.getElementById('aibVendor').textContent=vendor?'🏪 '+vendor+(cardnum?' · ····'+cardnum:''):'';
-  document.getElementById('aibDate').textContent=dateStr?'📅 '+dateStr:'';
-  banner.classList.add('show');
-
-  // 입력 탭으로 먼저 이동
-  switchTab('input');
-
-  // 탭 이동 후 카드 매칭 (renderCardChips가 탭 전환 시 초기화되므로 이후 실행)
-  var matched=null;
-  if(cardnum){
-    matched=cards.find(function(c){return c.num&&c.num===String(cardnum);});
-  }
-  if(!matched&&vendor){
-    matched=cards.find(function(c){
-      return c.issuer&&vendor.indexOf(c.issuer.replace('카드',''))>=0;
-    });
-  }
-  if(matched){
-    selectedPayMethod=matched.name;
-    selectedPayType='card';
-    renderCardChips();
-  }
-
-  // pending → processing 상태로 변경
-  db.collection('sms_pending').doc(id).update({status:'processing'});
-
-  showToast(matched?'✓ 카드 자동 선택됐어요!':'✓ 자동 입력됐어요!');
-  setTimeout(function(){window.scrollTo(0,0);},100);
-}
-
-function clearActivePending(){
-  document.getElementById('activeInputBanner').classList.remove('show');
-  if(activePendingId){
-    db.collection('sms_pending').doc(activePendingId).update({status:'pending'});
-  }
-  activePendingId='';
-  activePendingDate='';
-  amountStr='';updateAmountDisplay();
-  document.getElementById('vendorInput').value='';
-}
-
-// ── NOTIF TAB ──
-function setNotifFilter(filter, btn){
-  notifFilter=filter;
-  document.querySelectorAll('.notif-filter-btn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  renderNotifTab();
-}
-
-function renderNotifTab(){
-  var filtered=pendingNotifs;
-  if(notifFilter==='pending') filtered=pendingNotifs.filter(function(n){return n.status==='pending';});
-  if(notifFilter==='done') filtered=pendingNotifs.filter(function(n){return n.status==='done';});
-  var el=document.getElementById('notifList');
-  if(!filtered.length){
-    el.innerHTML='<div class="empty-state"><div class="emoji">🔔</div><p>'+(notifFilter==='pending'?'대기 중인 알림이 없어요':notifFilter==='done'?'처리된 알림이 없어요':'알림이 없어요')+'</p></div>';
-    return;
-  }
-  el.innerHTML=filtered.map(function(n){
-    var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
-    var dateStr=n.date?n.date.slice(0,16):'';
-    var vendor=n.vendor||'';
-    var cardnum=n.cardnum||'';
-    var isPending=n.status==='pending';
-    var safeVendor=vendor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    var safeDateStr=dateStr.replace(/'/g,"\\'");
-    var safeCardnum=cardnum.replace(/'/g,"\\'");
-    return '<div class="notif-card '+(isPending?'pending':'done')+'">'
-      +'<div class="notif-status '+(isPending?'pending':'done')+'"></div>'
-      +'<div class="notif-info">'
-      +'<div class="notif-vendor">'+(vendor||'가맹점 미확인')+(cardnum?' <span style="font-size:10px;color:var(--muted)">····'+cardnum+'</span>':'')+(isPending?'':'<span class="notif-done-badge">처리됨</span>')+'</div>'
-      +'<div class="notif-meta">'+dateStr+(n.appliedAt?' · 적용: '+n.appliedAt.slice(0,16):'')+'</div>'
-      +'<div class="notif-actions">'
-      +(isPending
-        ?'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">입력에 적용</button>'
-        :'<button class="notif-apply-btn" style="background:var(--blue);color:#fff" onclick="reapplyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">↩ 다시 입력</button>'
-      )
-      +'<button class="notif-del-btn" onclick="deletePending(\''+n.id+'\')">삭제</button>'
-      +'</div>'
-      +'</div>'
-      +'<div class="notif-amount">₩'+amount.toLocaleString('ko-KR')+'</div>'
-      +'</div>';
-  }).join('');
-}
-
-function deletePending(id){
-  db.collection('sms_pending').doc(id).delete().then(function(){showToast('알림 삭제됐어요');});
-}
-
-function reapplyPending(id, amount, vendor, dateStr, cardnum){
-  db.collection('sms_pending').doc(id).update({status:'pending',appliedAt:''}).then(function(){
-    applyPending(id, amount, vendor, dateStr, cardnum);
-  });
-}
-
-// ── NUMPAD ──
-function numInput(n){if(amountStr.length>=10)return;amountStr+=n;updateAmountDisplay();}
-function numDelete(){amountStr=amountStr.slice(0,-1);updateAmountDisplay();}
-function addAmount(n){amountStr=String(parseInt(amountStr||'0')+n);updateAmountDisplay();}
-function updateAmountDisplay(){
-  var el=document.getElementById('amountDisplay');
-  if(!amountStr||amountStr==='0'){el.textContent='0';el.classList.add('placeholder');}
-  else{el.textContent='₩'+Number(amountStr).toLocaleString('ko-KR');el.classList.remove('placeholder');}
-  updateVatInfo();
-}
-
-// ── VAT ──
-function selectVat(type){
-  selectedVat=type;
-  ['vatNone','vatIncluded','vatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
-  document.getElementById({none:'vatNone',included:'vatIncluded',excluded:'vatExcluded'}[type]).classList.add('selected');
-  updateVatInfo();
-}
-function updateVatInfo(){
-  var info=document.getElementById('vatInfo'),amount=parseInt(amountStr||'0');
-  if(!amount||selectedVat==='none'){info.classList.remove('show');return;}
-  info.classList.add('show');
-  if(selectedVat==='included'){var v=Math.round(amount/11),s=amount-v;info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+s.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>합계(VAT포함)</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div>';}
-  else{var v=Math.round(amount*.1),t=amount+v;info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>VAT포함 합계</span><span class="vat-val">₩'+t.toLocaleString('ko-KR')+'</span></div>';}
-}
-
-// ── CATEGORY ──
-function selectCat(btn,cat){
-  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('selected');});
-  btn.classList.add('selected');selectedCategory=cat;
-}
-
-// ── PAYMENT ──
-function selectPay(btn,method,type){
-  if(selectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');selectedPayMethod='';selectedPayType='';return;}
-  document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
-  btn.classList.add(type==='card'?'selected-card':'selected-cash');selectedPayMethod=method;selectedPayType=type;
-}
-
-// ── ITEMS ──
-function addItemRow(val){
-  val=val||'';
-  var area=document.getElementById('itemsArea'),row=document.createElement('div');
-  row.className='item-row';
-  row.innerHTML='<input class="item-name-input" type="text" placeholder="품목명" value="'+val+'"><button class="item-del-btn" onclick="this.parentElement.remove()">✕</button>';
-  area.appendChild(row);row.querySelector('input').focus();
-}
-
-// ── SAVE EXPENSE ──
-function saveRecord(){
-  var amount=parseInt(amountStr||'0');
-  if(!amount){showToast('금액을 입력해주세요');return;}
-  var site=document.getElementById('siteSelect').value;
-  if(!site){showToast('현장을 선택해주세요');return;}
-  var memo=document.getElementById('memoInput').value.trim();
-  var vendor=document.getElementById('vendorInput').value.trim();
-  var items=selectedItems.slice();
-
-  // 날짜: MacroDroid에서 온 날짜 우선, 없으면 현재시간
-  var saveDate=new Date().toISOString();
-  if(activePendingDate){
-    // "2026-05-31 02:57" 형식 → 로컬 시간 기준 ISO 변환 (UTC 변환 방지)
-    var parts=activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
-    if(parts){
-      var localDate=new Date(
-        parseInt(parts[1]),
-        parseInt(parts[2])-1,
-        parseInt(parts[3]),
-        parseInt(parts[4]),
-        parseInt(parts[5])
-      );
-      if(!isNaN(localDate.getTime())) saveDate=localDate.toISOString();
-    }
-  }
-
-  setSyncStatus('saving');
-  db.collection('expenses').add({
-    date:saveDate,amount:amount,site:site,
-    category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
-    vat:selectedVat,vendor:vendor,items:items,memo:memo,
-    ts:firebase.firestore.FieldValue.serverTimestamp()
-  }).then(function(){
-    // pending 완료 처리
-    if(activePendingId){
-      db.collection('sms_pending').doc(activePendingId).update({status:'done',appliedAt:new Date().toISOString()});
-      activePendingId='';
-      activePendingDate='';
-      document.getElementById('activeInputBanner').classList.remove('show');
-    }
-    amountStr='';updateAmountDisplay();
-    document.getElementById('memoInput').value='';
-    document.getElementById('vendorInput').value='';
-    selectedItems=[];
-    document.getElementById('processSelect').value='';
-    document.getElementById('itemCheckboxArea').innerHTML='';
-    document.getElementById('vatInfo').classList.remove('show');
-    document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
-    selectedPayMethod='';selectedPayType='';
-    setSyncStatus('ok');showToast('✓ 저장됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
-}
-
-// ── DELETE ──
-function deleteRecord(id){
-  setSyncStatus('saving');
-  db.collection('expenses').doc(id).delete().then(function(){setSyncStatus('ok');showToast('삭제됐어요');}).catch(function(){setSyncStatus('err');});
-}
-
-// ── INCOME ──
-var selectedIncVat='included';
-function selectIncVat(type){
-  selectedIncVat=type;
-  ['incVatNone','incVatIncluded','incVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
-  document.getElementById({none:'incVatNone',included:'incVatIncluded',excluded:'incVatExcluded'}[type]).classList.add('selected');
-  updateIncVatInfo();
-}
-function updateIncVatInfo(){
-  var info=document.getElementById('incVatInfo');
-  var amount=parseInt((document.getElementById('incAmount').value||'0').replace(/,/g,''));
-  if(!amount||selectedIncVat==='none'){info.classList.remove('show');return;}
-  info.classList.add('show');
-  if(selectedIncVat==='included'){
-    var v=Math.round(amount/11),s=amount-v;
-    info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+s.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>합계(VAT포함)</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div>';
-  } else {
-    var v=Math.round(amount*.1),t=amount+v;
-    info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>VAT포함 합계</span><span class="vat-val">₩'+t.toLocaleString('ko-KR')+'</span></div>';
-  }
-}
-function openIncomeModal(){
-  var sel=document.getElementById('incSiteSelect');
-  sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
-  document.getElementById('incAmount').value='';
-  document.getElementById('incMemo').value='';
-  document.getElementById('incDate').value=new Date().toISOString().slice(0,10);
-  document.getElementById('incVatInfo').classList.remove('show');
-  selectIncVat('included');
-  document.getElementById('incomeModal').style.display='flex';
-}
-function closeIncomeModal(){document.getElementById('incomeModal').style.display='none';}
-function saveIncome(){
-  var site=document.getElementById('incSiteSelect').value;
-  var amount=parseInt(document.getElementById('incAmount').value.replace(/,/g,'')||'0');
-  if(!site||!amount){showToast('현장과 금액을 입력해주세요');return;}
-  var memo=document.getElementById('incMemo').value.trim();
-  var date=document.getElementById('incDate').value;
-  var vat=selectedIncVat;
-  var supply='',vatAmt='';
-  if(vat==='included'){vatAmt=Math.round(amount/11);supply=amount-vatAmt;}
-  else if(vat==='excluded'){supply=amount;vatAmt=Math.round(amount*.1);}
-  setSyncStatus('saving');
-  db.collection('incomes').add({site:site,amount:amount,vat:vat,supply:supply,vatAmt:vatAmt,memo:memo,date:date,ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
-    closeIncomeModal();setSyncStatus('ok');showToast('매출 저장됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
-}
-
-var editingIncomeId='', selectedIncEditVat='included';
-function selectIncEditVat(type){
-  selectedIncEditVat=type;
-  ['incEditVatNone','incEditVatIncluded','incEditVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
-  document.getElementById({none:'incEditVatNone',included:'incEditVatIncluded',excluded:'incEditVatExcluded'}[type]).classList.add('selected');
-  updateIncEditVatInfo();
-}
-function updateIncEditVatInfo(){
-  var info=document.getElementById('incEditVatInfo');
-  var amount=parseInt((document.getElementById('incEditAmount').value||'0').replace(/,/g,''));
-  if(!amount||selectedIncEditVat==='none'){info.classList.remove('show');return;}
-  info.classList.add('show');
-  if(selectedIncEditVat==='included'){var v=Math.round(amount/11),s=amount-v;info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+s.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>부가세</span><span class="vat-val">₩'+v.toLocaleString('ko-KR')+'</span></div>';}
-  else{var v=Math.round(amount*.1),t=amount+v;info.innerHTML='<div class="vat-row-info"><span>공급가액</span><span class="vat-val">₩'+amount.toLocaleString('ko-KR')+'</span></div><div class="vat-row-info"><span>VAT포함 합계</span><span class="vat-val">₩'+t.toLocaleString('ko-KR')+'</span></div>';}
-}
-function openIncomeEditModal(id){
-  var inc=incomes.find(function(r){return r.id===id;});
-  if(!inc)return;
-  editingIncomeId=id;
-  var sel=document.getElementById('incEditSite');
-  sel.innerHTML='';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===inc.site)o.selected=true;sel.appendChild(o);});
-  document.getElementById('incEditAmount').value=inc.amount;
-  document.getElementById('incEditMemo').value=inc.memo||'';
-  document.getElementById('incEditDate').value=inc.date||'';
-  selectIncEditVat(inc.vat||'none');
-  document.getElementById('incomeEditModal').style.display='flex';
-}
-function closeIncomeEditModal(){document.getElementById('incomeEditModal').style.display='none';}
-function saveIncomeEdit(){
-  var site=document.getElementById('incEditSite').value;
-  var amount=parseInt(document.getElementById('incEditAmount').value.replace(/,/g,'')||'0');
-  if(!site||!amount){showToast('현장과 금액을 입력해주세요');return;}
-  var memo=document.getElementById('incEditMemo').value.trim();
-  var date=document.getElementById('incEditDate').value;
-  var vat=selectedIncEditVat;
-  var supply='',vatAmt='';
-  if(vat==='included'){vatAmt=Math.round(amount/11);supply=amount-vatAmt;}
-  else if(vat==='excluded'){supply=amount;vatAmt=Math.round(amount*.1);}
-  setSyncStatus('saving');
-  db.collection('incomes').doc(editingIncomeId).update({site:site,amount:amount,vat:vat,supply:supply,vatAmt:vatAmt,memo:memo,date:date}).then(function(){
-    closeIncomeEditModal();setSyncStatus('ok');showToast('매출 수정됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('수정 실패: '+e.message);});
-}
-function deleteIncome(id){
-  if(!confirm('매출을 삭제할까요?'))return;
-  db.collection('incomes').doc(id).delete().then(function(){showToast('매출 삭제됐어요');});
-}
-function renderSiteSelect(){
-  var sel=document.getElementById('siteSelect'),cur=sel.value;
-  sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===cur)o.selected=true;sel.appendChild(o);});
-}
-function renderSiteList(){
-  var el=document.getElementById('siteList');
-  el.innerHTML=sites.length?sites.map(function(s,i){
-    return '<div class="site-item">'
-      +'<span class="site-name">'+s+'</span>'
-      +'<div style="display:flex;gap:6px">'
-      +'<button class="proc-btn" onclick="openSiteEditModal('+i+')">수정</button>'
-      +'<button class="site-del" onclick="deleteSite('+i+')">✕</button>'
-      +'</div></div>';
-  }).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';
-}
-var editingSiteIdx=-1;
-function openSiteEditModal(i){
-  editingSiteIdx=i;
-  document.getElementById('siteEditInp').value=sites[i];
-  document.getElementById('siteEditModal').style.display='flex';
-  setTimeout(function(){document.getElementById('siteEditInp').focus();},100);
-}
-function closeSiteEditModal(){document.getElementById('siteEditModal').style.display='none';}
-function saveSiteEdit(){
-  var name=document.getElementById('siteEditInp').value.trim();
-  if(!name){showToast('현장명을 입력해주세요');return;}
-  sites[editingSiteIdx]=name;
-  saveSettings().then(function(){closeSiteEditModal();renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장명 수정됐어요');});
-}
-function addSite(){
-  var inp=document.getElementById('newSiteInput'),name=inp.value.trim();
-  if(!name)return;
-  if(sites.includes(name)){showToast('이미 있는 현장이에요');return;}
-  sites.push(name);saveSettings().then(function(){inp.value='';renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 추가됐어요');});
-}
-function deleteSite(i){sites.splice(i,1);saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});}
-
-// ── FILTER ──
-function renderFilterBar(){
-  var bar=document.getElementById('filterBar');
-  bar.innerHTML='<button class="filter-chip '+(currentFilter==='전체'?'active':'')+'" onclick="setFilter(\'전체\',this)">전체</button>';
-  sites.forEach(function(s){bar.innerHTML+='<button class="filter-chip '+(currentFilter===s?'active':'')+'" onclick="setFilter(\''+s+'\',this)">'+s+'</button>';});
-}
-function setFilter(f,btn){
-  currentFilter=f;
-  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
-  btn.classList.add('active');renderList();
-}
-
-// ── LIST ──
-function renderList(){
-  var filtered=currentFilter==='전체'?records:records.filter(function(r){return r.site===currentFilter;});
-  var total=filtered.reduce(function(a,r){return a+r.amount;},0);
-  document.getElementById('filteredTotal').textContent='₩'+total.toLocaleString('ko-KR');
-  document.getElementById('filteredCount').textContent=filtered.length+'건';
-  var el=document.getElementById('recordList');
-  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="emoji">📋</div><p>기록이 없어요</p></div>';return;}
-  var groups={};
-  filtered.forEach(function(r){
-    var d=new Date(r.date),key=d.getFullYear()+'.'+(d.getMonth()+1+'').padStart(2,'0')+'.'+(''+d.getDate()).padStart(2,'0');
-    if(!groups[key])groups[key]=[];groups[key].push(r);
-  });
-  el.innerHTML=Object.entries(groups).map(function(e){
-    var date=e[0],recs=e[1];
-    var dayTotal=recs.reduce(function(a,r){return a+r.amount;},0);
-    return '<div class="section-header">'+date+' · ₩'+dayTotal.toLocaleString('ko-KR')+'</div>'+recs.map(function(r){
-      var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
-      var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
-      var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
-      var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
-      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
-    }).join('');
-  }).join('');
-}
-
-// ── HEADER TOTAL ──
-function updateHeaderTotal(){
-  var today=new Date().toDateString();
-  var t=records.filter(function(r){return new Date(r.date).toDateString()===today;}).reduce(function(a,r){return a+r.amount;},0);
-  document.getElementById('headerTotal').textContent=t?'오늘 ₩'+t.toLocaleString('ko-KR'):'';
-}
-
-// ── DASHBOARD ──
-function buildPeriods(){
-  var set={};
-  records.concat(incomes).forEach(function(r){
-    var d=new Date(r.date||'');
-    if(!isNaN(d)){set[d.getFullYear()]=1;set[d.getFullYear()+'-'+(''+( d.getMonth()+1)).padStart(2,'0')]=1;}
-  });
-  return Object.keys(set).sort().reverse();
-}
-function filterByPeriod(arr){
-  return arr.filter(function(r){
-    var d=new Date(r.date||'');if(isNaN(d))return false;
-    if(dashPeriod.includes('-')){var p=dashPeriod.split('-');return d.getFullYear()===parseInt(p[0])&&d.getMonth()+1===parseInt(p[1]);}
-    return d.getFullYear()===parseInt(dashPeriod);
-  });
-}
-function selectDashPeriod(p){dashPeriod=p;renderDash();}
-function renderDash(){
-  var periods=buildPeriods();
-  if(!periods.length){document.getElementById('dashPeriod').innerHTML='';document.getElementById('dashContent').innerHTML='<div class="empty-state"><div class="emoji">📊</div><p>기록을 먼저 입력해주세요</p></div>';return;}
-  if(!dashPeriod||!periods.includes(dashPeriod))dashPeriod=periods[0];
-  document.getElementById('dashPeriod').innerHTML=periods.map(function(p){return '<button class="period-btn '+(dashPeriod===p?'active':'')+'" onclick="selectDashPeriod(\''+p+'\')">'+p+'</button>';}).join('');
-  var fRec=filterByPeriod(records),fInc=filterByPeriod(incomes);
-  var totalInc=fInc.reduce(function(a,r){return a+r.amount;},0);
-  var totalExp=fRec.reduce(function(a,r){return a+r.amount;},0);
-  var profit=totalInc-totalExp,margin=totalInc?Math.round(profit/totalInc*100):0;
-  var byCat={};fRec.forEach(function(r){byCat[r.category]=(byCat[r.category]||0)+r.amount;});
-  var catEntries=Object.entries(byCat).sort(function(a,b){return b[1]-a[1];});
-  var bySite={};
-  fRec.forEach(function(r){if(!bySite[r.site])bySite[r.site]={exp:0,inc:0};bySite[r.site].exp+=r.amount;});
-  fInc.forEach(function(r){if(!bySite[r.site])bySite[r.site]={exp:0,inc:0};bySite[r.site].inc+=r.amount;});
-  var siteEntries=Object.entries(bySite).sort(function(a,b){return(b[1].inc-b[1].exp)-(a[1].inc-a[1].exp);});
-  function fmt(n){return '₩'+Math.abs(n).toLocaleString('ko-KR');}
-  document.getElementById('dashContent').innerHTML=
-    '<div class="kpi-grid">'
-    +'<div class="kpi-card"><div class="kpi-label">📥 총 매출</div><div class="kpi-value income">'+fmt(totalInc)+'</div><div class="kpi-sub">'+fInc.length+'건</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">📤 총 매입</div><div class="kpi-value expense">'+fmt(totalExp)+'</div><div class="kpi-sub">'+fRec.length+'건</div></div>'
-    +'<div class="kpi-card full"><div class="kpi-label">💰 손익 (매출 - 매입)</div><div class="kpi-value profit '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'-')+fmt(profit)+'</div><div class="kpi-sub">이익률 '+margin+'%'+(totalInc?'':' · 매출 입력 필요')+'</div></div>'
-    +'</div>'
-    +'<div class="section-header" style="margin-bottom:10px">현장별 손익</div>'
-    +'<div class="site-pl-list">'+(siteEntries.length?siteEntries.map(function(e){var s=e[0],v=e[1],pl=v.inc-v.exp,plc=pl>=0?'var(--green)':'var(--red)',pct=v.inc?Math.round(v.exp/v.inc*100):100;return '<div class="site-pl-item"><div class="site-pl-name">📍 '+s+'</div><div class="site-pl-row"><span class="lbl">매출</span><span style="color:var(--blue)">'+fmt(v.inc)+'</span></div><div class="site-pl-row"><span class="lbl">매입</span><span style="color:var(--red)">'+fmt(v.exp)+'</span></div><div class="site-pl-row"><span class="lbl">손익</span><span style="color:'+plc+'">'+(pl>=0?'+':'-')+fmt(pl)+'</span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+plc+'"></div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">데이터 없음</div>')+'</div>'
-    +'<div class="section-header" style="margin-bottom:10px">카테고리별 매입</div>'
-    +'<div class="cat-breakdown">'+(catEntries.length?catEntries.map(function(e){var cat=e[0],amt=e[1],ci=CAT_ICONS[cat]||CAT_ICONS['기타'],pct=totalExp?Math.round(amt/totalExp*100):0;return '<div class="cat-row"><div class="cat-name">'+ci.icon+' '+cat+'</div><div style="display:flex;align-items:center;gap:8px"><span class="cat-pct">'+pct+'%</span><span style="font-weight:700">'+fmt(amt)+'</span></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:4px">데이터 없음</div>')+'</div>'
-    +'<div class="section-header" style="margin-bottom:10px;margin-top:4px">매출 내역</div>'
-    +'<div>'+(fInc.length?fInc.map(function(r){return '<div class="record-item" style="margin-bottom:8px">'
-      +'<div class="record-icon" style="background:#1a1f2e">💰</div>'
-      +'<div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div><div class="record-cat">'+r.date+'</div></div>'
-      +'<div class="record-right"><div class="record-amount" style="color:var(--blue)">₩'+r.amount.toLocaleString('ko-KR')+'</div>'
-      +'<div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end">'
-      +'<button class="proc-btn" onclick="openIncomeEditModal(\''+r.id+'\')">수정</button>'
-      +'<button class="proc-btn del" onclick="deleteIncome(\''+r.id+'\')">삭제</button>'
-      +'</div></div>'
-      +'</div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">매출 기록이 없어요</div>')+'</div>';
-}
-
-// ── CARDS ──
-function renderCardChips(){
-  var el=document.getElementById('cardChips');
-  if(!cards.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">카드 없음 · 설정에서 추가</span>';return;}
-  el.innerHTML=cards.map(function(c){var label=c.num?c.name+' ('+c.num+')':c.name;return '<button class="pay-chip'+(selectedPayMethod===c.name?' selected-card':'')+'" onclick="selectPay(this,\''+c.name+'\',\'card\')">'+label+'</button>';}).join('');
-}
-function renderCardList(){
-  var el=document.getElementById('cardList');
-  if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
-  el.innerHTML=cards.map(function(c,i){return '<div class="site-item" onclick="openCardModal('+i+')"><div style="flex:1"><div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div></div><button class="site-del" onclick="event.stopPropagation();deleteCard('+i+')">✕</button></div>';}).join('');
-}
-function selectCardType(type){
-  selectedCardType=type;
-  [{id:'ctCredit',t:'신용'},{id:'ctDebit',t:'체크'},{id:'ctCorp',t:'법인'}].forEach(function(x){var el=document.getElementById(x.id);if(el)el.classList.toggle('selected-card',x.t===type);});
-}
-function openCardModal(idx){
-  editingCardIdx=idx===undefined?-1:idx;
-  document.getElementById('cardModalTitle').textContent=editingCardIdx>=0?'카드 수정':'카드 추가';
-  if(editingCardIdx>=0){var c=cards[editingCardIdx];document.getElementById('cardNameInp').value=c.name||'';document.getElementById('cardIssuerInp').value=c.issuer||'';document.getElementById('cardNumInp').value=c.num||'';selectCardType(c.type||'신용');}
-  else{document.getElementById('cardNameInp').value='';document.getElementById('cardIssuerInp').value='';document.getElementById('cardNumInp').value='';selectCardType('신용');}
-  document.getElementById('cardModal').style.display='flex';
-}
-function closeCardModal(){document.getElementById('cardModal').style.display='none';}
-function saveCardModal(){
-  var name=document.getElementById('cardNameInp').value.trim();
-  if(!name){showToast('카드 별칭을 입력해주세요');return;}
-  var card={name:name,issuer:document.getElementById('cardIssuerInp').value,type:selectedCardType,num:document.getElementById('cardNumInp').value.trim()};
-  if(editingCardIdx>=0)cards[editingCardIdx]=card;else cards.push(card);
-  saveSettings().then(function(){closeCardModal();renderCardList();renderCardChips();showToast(editingCardIdx>=0?'카드 수정됐어요':'카드 추가됐어요');});
-}
-function deleteCard(i){
-  if(selectedPayMethod===cards[i].name){selectedPayMethod='';selectedPayType='';}
-  cards.splice(i,1);saveSettings().then(function(){renderCardList();renderCardChips();});
-}
-
-// ── ACCOUNTS ──
-function renderAccountChips(){
-  var el=document.getElementById('accountChips');
-  if(!el)return;
-  if(!accounts.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">계좌 없음 · 설정에서 추가</span>';return;}
-  el.innerHTML=accounts.map(function(a){
-    var label=a.num?a.name+' ('+a.num.slice(-4)+')':a.name;
-    return '<button class="pay-chip'+(selectedPayMethod===a.name?' selected-cash':'')+'" onclick="selectPay(this,\''+a.name+'\',\'cash\')">🏦 '+label+'</button>';
-  }).join('');
-}
-function renderAccountList(){
-  var el=document.getElementById('accountList');
-  if(!el)return;
-  if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
-  el.innerHTML=accounts.map(function(a,i){
-    return '<div class="site-item" onclick="openAccountModal('+i+')">'
-      +'<div style="flex:1">'
-      +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
-      +'</div>'
-      +'<button class="site-del" onclick="event.stopPropagation();deleteAccount('+i+')">✕</button>'
-      +'</div>';
-  }).join('');
-}
-function openAccountModal(idx){
-  editingAccIdx=idx===undefined?-1:idx;
-  document.getElementById('accountModalTitle').textContent=editingAccIdx>=0?'계좌 수정':'계좌 추가';
-  if(editingAccIdx>=0){
-    var a=accounts[editingAccIdx];
-    document.getElementById('accNameInp').value=a.name||'';
-    document.getElementById('accBankInp').value=a.bank||'';
-    document.getElementById('accNumInp').value=a.num||'';
-    document.getElementById('accOwnerInp').value=a.owner||'';
-  } else {
-    document.getElementById('accNameInp').value='';
-    document.getElementById('accBankInp').value='';
-    document.getElementById('accNumInp').value='';
-    document.getElementById('accOwnerInp').value='';
-  }
-  document.getElementById('accountModal').style.display='flex';
-  setTimeout(function(){document.getElementById('accNameInp').focus();},100);
-}
-function closeAccountModal(){document.getElementById('accountModal').style.display='none';}
-function saveAccountModal(){
-  var name=document.getElementById('accNameInp').value.trim();
-  if(!name){showToast('계좌 별칭을 입력해주세요');return;}
-  var acc={name:name,bank:document.getElementById('accBankInp').value,num:document.getElementById('accNumInp').value.trim(),owner:document.getElementById('accOwnerInp').value.trim()};
-  if(editingAccIdx>=0)accounts[editingAccIdx]=acc;else accounts.push(acc);
-  saveSettings().then(function(){closeAccountModal();renderAccountList();renderAccountChips();showToast(editingAccIdx>=0?'계좌 수정됐어요':'계좌 추가됐어요');});
-}
-function deleteAccount(i){
-  if(selectedPayMethod===accounts[i].name){selectedPayMethod='';selectedPayType='';}
-  accounts.splice(i,1);saveSettings().then(function(){renderAccountList();renderAccountChips();});
-}
-
-// ── PROCESSES ──
-function renderProcessSelect(){
-  var sel=document.getElementById('processSelect');
-  if(!sel)return;
-  var cur=sel.value;
-  sel.innerHTML='<option value="">공정 선택</option>';
-  processes.forEach(function(p,i){
-    var o=document.createElement('option');o.value=i;o.textContent=p.name;
-    if(String(i)===cur)o.selected=true;
-    sel.appendChild(o);
-  });
-}
-function renderItemCheckboxes(){
-  var sel=document.getElementById('processSelect');
-  var area=document.getElementById('itemCheckboxArea');
-  selectedItems=[];
-  if(!sel.value&&sel.value!=='0'){area.innerHTML='';return;}
-  var proc=processes[parseInt(sel.value)];
-  if(!proc||!proc.items||!proc.items.length){
-    area.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">품목이 없어요 · 설정에서 추가하세요</div>';return;
-  }
-  area.innerHTML='<div class="item-check-grid">'+proc.items.map(function(item,i){
-    return '<button class="item-check-btn" onclick="toggleItem(this,\''+item.name+(item.unit?' ('+item.unit+')':'')+'\')">'
-      +'<span>'+item.name+'</span>'
-      +(item.unit?'<span class="unit">'+item.unit+'</span>':'')
-      +'</button>';
-  }).join('')+'</div>';
-}
-function toggleItem(btn,label){
-  if(btn.classList.contains('checked')){
-    btn.classList.remove('checked');
-    selectedItems=selectedItems.filter(function(i){return i!==label;});
-  } else {
-    btn.classList.add('checked');
-    selectedItems.push(label);
-  }
-}
-function renderProcessList(){
-  var el=document.getElementById('processList');
-  if(!el)return;
-  if(!processes.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';return;}
-  el.innerHTML=processes.map(function(p,pi){
-    var itemTags=(p.items||[]).map(function(item,ii){
-      return '<span class="proc-item-tag">'+item.name+(item.unit?' <span style="opacity:.6;font-size:10px">'+item.unit+'</span>':'')
-        +'<button class="proc-item-del" onclick="deleteProcessItem('+pi+','+ii+')">✕</button></span>';
-    }).join('');
-    return '<div class="process-block">'
-      +'<div class="process-header">'
-      +'<span class="process-name">'+p.name+'</span>'
-      +'<div class="process-actions">'
-      +'<button class="proc-btn" onclick="openItemModal('+pi+')">＋ 품목</button>'
-      +'<button class="proc-btn del" onclick="deleteProcess('+pi+')">삭제</button>'
-      +'</div></div>'
-      +'<div class="proc-item-list">'+(itemTags||'<span style="font-size:12px;color:var(--muted)">품목 없음</span>')+'</div>'
-      +'</div>';
-  }).join('');
-}
-function openProcessModal(idx){
-  editingProcIdx=idx===undefined?-1:idx;
-  document.getElementById('processModalTitle').textContent=editingProcIdx>=0?'공정 수정':'공정 추가';
-  document.getElementById('procNameInp').value=editingProcIdx>=0?(processes[editingProcIdx].name||''):'';
-  document.getElementById('processModal').style.display='flex';
-  setTimeout(function(){document.getElementById('procNameInp').focus();},100);
-}
-function closeProcessModal(){document.getElementById('processModal').style.display='none';}
-function saveProcessModal(){
-  var name=document.getElementById('procNameInp').value.trim();
-  if(!name){showToast('공정명을 입력해주세요');return;}
-  if(editingProcIdx>=0){processes[editingProcIdx].name=name;}
-  else{processes.push({name:name,items:[]});}
-  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
-}
-function deleteProcess(pi){
-  if(!confirm('"'+processes[pi].name+'" 공정을 삭제할까요?'))return;
-  processes.splice(pi,1);
-  saveSettings().then(function(){renderProcessList();renderProcessSelect();});
-}
-function openItemModal(pi){
-  currentProcForItem=pi;editingItemIdx=-1;
-  document.getElementById('itemModalTitle').textContent=processes[pi].name+' · 품목 추가';
-  document.getElementById('itemNameInp').value='';
-  document.getElementById('itemUnitInp').value='';
-  document.getElementById('itemModal').style.display='flex';
-  setTimeout(function(){document.getElementById('itemNameInp').focus();},100);
-}
-function closeItemModal(){document.getElementById('itemModal').style.display='none';}
-function saveItemModal(){
-  var name=document.getElementById('itemNameInp').value.trim();
-  if(!name){showToast('품목명을 입력해주세요');return;}
-  var unit=document.getElementById('itemUnitInp').value.trim();
-  if(!processes[currentProcForItem].items)processes[currentProcForItem].items=[];
-  processes[currentProcForItem].items.push({name:name,unit:unit});
-  saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
-}
-function deleteProcessItem(pi,ii){
-  processes[pi].items.splice(ii,1);
-  saveSettings().then(function(){renderProcessList();});
-}
-
-// ── EXPORT ──
-function exportCSV(){
-  if(!records.length){showToast('기록이 없어요');return;}
-  var header='날짜,시간,현장명,카테고리,결제수단,부가세,구매처,구매목록,금액,공급가액,부가세액,메모';
-  var rows=records.map(function(r){
-    var d=new Date(r.date),date=d.getFullYear()+'-'+(''+( d.getMonth()+1)).padStart(2,'0')+'-'+(''+d.getDate()).padStart(2,'0');
-    var time=(''+d.getHours()).padStart(2,'0')+':'+(''+d.getMinutes()).padStart(2,'0');
-    var items=r.items?r.items.join(' / '):'';
-    var vatLabel=r.vat==='included'?'VAT포함':r.vat==='excluded'?'VAT별도':'해당없음';
-    var supply='',vatAmt='';
-    if(r.vat==='included'){vatAmt=Math.round(r.amount/11);supply=r.amount-vatAmt;}
-    else if(r.vat==='excluded'){supply=r.amount;vatAmt=Math.round(r.amount*.1);}
-    return [date,time,r.site,r.category,r.payMethod||'',vatLabel,r.vendor||'',items,r.amount,supply,vatAmt,r.memo||''].join(',');
-  });
-  var csv='\uFEFF'+[header].concat(rows).join('\n');
-  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='현장지출내역.csv';a.click();showToast('CSV 다운로드됐어요');
-}
-function copyForKakao(){
-  var now=new Date();
-  var thisMonth=records.filter(function(r){var d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  if(!thisMonth.length){showToast('이번 달 기록이 없어요');return;}
-  var total=thisMonth.reduce(function(a,r){return a+r.amount;},0);
-  var bySite={};thisMonth.forEach(function(r){bySite[r.site]=(bySite[r.site]||0)+r.amount;});
-  var text='📊 '+(now.getMonth()+1)+'월 현장 지출 내역\n─────────────────\n';
-  Object.entries(bySite).forEach(function(e){text+='• '+e[0]+': ₩'+e[1].toLocaleString('ko-KR')+'\n';});
-  text+='─────────────────\n합계: ₩'+total.toLocaleString('ko-KR')+' ('+thisMonth.length+'건)';
-  navigator.clipboard.writeText(text).then(function(){showToast('카카오톡에 붙여넣기 하세요');}).catch(function(){prompt('복사하세요:',text);});
-}
-function clearAll(){
-  if(!confirm('정말 전체 삭제할까요?'))return;
-  db.collection('expenses').get().then(function(snap){
-    var batch=db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});return batch.commit();
-  }).then(function(){showToast('전체 삭제됐어요');});
-}
-
-// ── SMS PARSE ──
-function openSmsModal(){
-  document.getElementById('smsPasteInput').value='';
-  document.getElementById('smsParseResult').style.display='none';
-  document.getElementById('smsParseBtn').textContent='자동 읽기';
-  document.getElementById('smsModal').style.display='flex';
-  setTimeout(function(){document.getElementById('smsPasteInput').focus();},100);
-}
-function closeSmsModal(){document.getElementById('smsModal').style.display='none';}
-
-function parseSms(){
-  var text=document.getElementById('smsPasteInput').value.trim();
-  if(!text){showToast('문자를 붙여넣어주세요');return;}
-
-  var amount=0, vendor='', bank='';
-
-  // ── 금액 파싱 (여러 패턴) ──
-  var amtPatterns=[
-    /출금\s*([\d,]+)원/,
-    /결제\s*([\d,]+)원/,
-    /이체\s*([\d,]+)원/,
-    /([\d,]+)원\s*출금/,
-    /([\d,]+)원\s*결제/,
-    /금액[:\s]*([\d,]+)원/,
-    /승인금액[:\s]*([\d,]+)/,
-    /([\d,]+)원/,
-  ];
-  for(var i=0;i<amtPatterns.length;i++){
-    var m=text.match(amtPatterns[i]);
-    if(m){amount=parseInt(m[1].replace(/,/g,''));break;}
-  }
-
-  // ── 은행/카드사 파싱 ──
-  var bankPatterns=['신한은행','국민은행','하나은행','우리은행','농협','기업은행','카카오뱅크','토스','신한카드','국민카드','삼성카드','현대카드','롯데카드','하나카드'];
-  for(var i=0;i<bankPatterns.length;i++){
-    if(text.indexOf(bankPatterns[i])>=0){bank=bankPatterns[i];break;}
-  }
-
-  // ── 가맹점/출처 파싱 ──
-  // 패턴: 금액 뒤에 오는 가게명
-  var vendorPatterns=[
-    /원\s*[(\s]*잔액[^\)]*[)\s]*([가-힣a-zA-Z0-9\s]+?)(?:\s*\d{2}\/\d{2}|\s*\d{4}-\d{2}|$)/,
-    /([가-힣a-zA-Z0-9]+(?:마트|몰|스토어|상회|철물|타일|자재|페인트|전기|설비|도배|목공|인테리어|건자재|철강|유통|산업|상사|씨앤))/,
-    /가맹점[:\s]*([^\s\n]+)/,
-    /\)\s*([가-힣a-zA-Z0-9]+)\s+\d{2}\/\d{2}/,
-  ];
-  for(var i=0;i<vendorPatterns.length;i++){
-    var m=text.match(vendorPatterns[i]);
-    if(m&&m[1]&&m[1].trim().length>1){vendor=m[1].trim();break;}
-  }
-
-  // ── 결과 표시 ──
-  var resultEl=document.getElementById('smsParseResult');
-  var contentEl=document.getElementById('smsResultContent');
-
-  if(!amount){
-    showToast('금액을 찾지 못했어요. 문자를 확인해주세요');
-    return;
-  }
-
-  resultEl.style.display='block';
-  contentEl.innerHTML=
-    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">금액</span><span style="font-weight:800;color:var(--accent)">₩'+amount.toLocaleString('ko-KR')+'</span></div>'
-    +(vendor?'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">가맹점</span><span style="font-weight:700">'+vendor+'</span></div>':'')
-    +(bank?'<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">은행/카드</span><span style="font-weight:700">'+bank+'</span></div>':'');
-
-  document.getElementById('smsParseBtn').textContent='이 정보로 입력하기';
-  document.getElementById('smsParseBtn').onclick=function(){applySmsResult(amount,vendor,bank);};
-}
-
-function applySmsResult(amount, vendor, bank){
-  // 금액 적용
-  amountStr=String(amount);
-  updateAmountDisplay();
-
-  // 가맹점 적용
-  if(vendor) document.getElementById('vendorInput').value=vendor;
-
-  // 카드 자동 선택 (등록된 카드 중 매칭)
-  if(bank){
-    var matched=cards.find(function(c){return c.issuer&&c.issuer.indexOf(bank.replace('은행','').replace('카드',''))>=0;});
-    if(matched){
-      selectedPayMethod=matched.name;selectedPayType='card';
-      renderCardChips();
-    }
-  }
-
-  closeSmsModal();
-  showToast('✓ 자동 입력됐어요! 현장 선택 후 저장하세요');
-}
-
-
-// ── EDIT RECORD MODAL ──
-var editingRecordId='', editAmountStr='', editSelectedCat='', editSelectedVat='none';
-var editSelectedPayMethod='', editSelectedPayType='';
-
-function openEditModal(id){
-  var r=records.find(function(x){return x.id===id;});
-  if(!r) return;
-  editingRecordId=id;
-
-  // 금액
-  editAmountStr=String(r.amount||0);
-  updateEditAmountDisplay();
-  document.getElementById('editNumpad').classList.remove('show');
-
-  // 날짜 (datetime-local 포맷: YYYY-MM-DDTHH:mm)
-  var d=new Date(r.date);
-  var localDt=d.getFullYear()+'-'
-    +String(d.getMonth()+1).padStart(2,'0')+'-'
-    +String(d.getDate()).padStart(2,'0')+'T'
-    +String(d.getHours()).padStart(2,'0')+':'
-    +String(d.getMinutes()).padStart(2,'0');
-  document.getElementById('editDate').value=localDt;
-
-  // 현장
-  var sel=document.getElementById('editSite');
-  sel.innerHTML='';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===r.site)o.selected=true;sel.appendChild(o);});
-
-  // 카테고리
-  editSelectedCat=r.category||'자재비';
-  document.querySelectorAll('#editCatChips .chip').forEach(function(b){
-    b.classList.toggle('selected', b.textContent===editSelectedCat);
-  });
-
-  // 결제수단
-  editSelectedPayMethod=r.payMethod||'';
-  editSelectedPayType=r.payType||'';
-  renderEditPayChips();
-
-  // 부가세
-  selectEditVat(r.vat||'none');
-
-  // 구매처/품목/메모
-  document.getElementById('editVendor').value=r.vendor||'';
-  document.getElementById('editItems').value=(r.items&&r.items.length)?r.items.join(', '):'';
-  document.getElementById('editMemo').value=r.memo||'';
-
-  document.getElementById('editRecordModal').classList.add('show');
-}
-
-function closeEditModal(){
-  document.getElementById('editRecordModal').classList.remove('show');
-}
-
-function toggleEditNumpad(){
-  document.getElementById('editNumpad').classList.toggle('show');
-}
-function editNumInput(n){if(editAmountStr.length>=10)return;editAmountStr+=n;updateEditAmountDisplay();}
-function editNumDelete(){editAmountStr=editAmountStr.slice(0,-1);updateEditAmountDisplay();}
-function updateEditAmountDisplay(){
-  var el=document.getElementById('editAmountDisplay');
-  el.textContent=editAmountStr?'₩'+Number(editAmountStr).toLocaleString('ko-KR'):'₩0';
-}
-
-function selectEditCat(btn,cat){
-  editSelectedCat=cat;
-  document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.remove('selected');});
-  btn.classList.add('selected');
-}
-
-function selectEditVat(type){
-  editSelectedVat=type;
-  ['editVatNone','editVatIncluded','editVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
-  document.getElementById({none:'editVatNone',included:'editVatIncluded',excluded:'editVatExcluded'}[type]).classList.add('selected');
-}
-
-function renderEditPayChips(){
-  var el=document.getElementById('editPayChips');
-  var html='';
-  // 카드
-  cards.forEach(function(c){
-    var label=c.num?c.name+' ('+c.num+')':c.name;
-    var sel=editSelectedPayMethod===c.name;
-    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" onclick="selectEditPay(this,\''+c.name+'\',\'card\')">'+label+'</button>';
-  });
-  // 현금
-  ['현금 직접','카카오페이','토스'].forEach(function(m){
-    var sel=editSelectedPayMethod===m;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,\''+m+'\',\'cash\')">'+m+'</button>';
-  });
-  // 계좌
-  accounts.forEach(function(a){
-    var sel=editSelectedPayMethod===a.name;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" onclick="selectEditPay(this,\''+a.name+'\',\'cash\')">🏦 '+a.name+'</button>';
-  });
-  el.innerHTML=html;
-}
-
-function selectEditPay(btn,method,type){
-  if(editSelectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');editSelectedPayMethod='';editSelectedPayType='';return;}
-  document.querySelectorAll('#editPayChips .pay-chip').forEach(function(b){b.classList.remove('selected-card','selected-cash');});
-  btn.classList.add(type==='card'?'selected-card':'selected-cash');
-  editSelectedPayMethod=method;editSelectedPayType=type;
-}
-
-function saveEditRecord(){
-  var amount=parseInt(editAmountStr||'0');
-  if(!amount){showToast('금액을 입력해주세요');return;}
-  var site=document.getElementById('editSite').value;
-  if(!site){showToast('현장을 선택해주세요');return;}
-
-  // 날짜 처리
-  var dtVal=document.getElementById('editDate').value; // YYYY-MM-DDTHH:mm
-  var saveDate=dtVal?dtVal+':00.000+09:00':new Date().toISOString();
-
-  var vendor=document.getElementById('editVendor').value.trim();
-  var itemsRaw=document.getElementById('editItems').value.trim();
-  var items=itemsRaw?itemsRaw.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean):[];
-  var memo=document.getElementById('editMemo').value.trim();
-
-  setSyncStatus('saving');
-  db.collection('expenses').doc(editingRecordId).update({
-    amount:amount, site:site, category:editSelectedCat,
-    payMethod:editSelectedPayMethod, payType:editSelectedPayType,
-    vat:editSelectedVat, vendor:vendor, items:items, memo:memo,
-    date:saveDate
-  }).then(function(){
-    closeEditModal();
-    setSyncStatus('ok');
-    showToast('✓ 수정됐어요');
-  }).catch(function(e){
-    setSyncStatus('err');
-    showToast('수정 실패: '+e.message);
-  });
-}
-
-function deleteEditRecord(){
-  if(!confirm('이 내역을 삭제할까요?'))return;
-  closeEditModal();
-  deleteRecord(editingRecordId);
-}
-
-// ── CALENDAR ──
-var calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDate='';
-function calMove(dir){
-  calMonth+=dir;
-  if(calMonth>11){calMonth=0;calYear++;}
-  if(calMonth<0){calMonth=11;calYear--;}
-  renderCal();
-}
-function renderCal(){
-  var label=calYear+'년 '+(calMonth+1)+'월';
-  document.getElementById('calMonthLabel').textContent=label;
-  var firstDay=new Date(calYear,calMonth,1).getDay();
-  var lastDate=new Date(calYear,calMonth+1,0).getDate();
-  var today=new Date();
-  // 날짜별 합계
-  var dayTotals={};
-  records.forEach(function(r){
-    var d=new Date(r.date);
-    // 로컬 시간 기준으로 날짜 비교
-    if(d.getFullYear()===calYear&&d.getMonth()===calMonth){
-      var key=d.getDate();
-      dayTotals[key]=(dayTotals[key]||0)+r.amount;
-    }
-  });
-  var dows=['일','월','화','수','목','금','토'];
-  var html=dows.map(function(d,i){return '<div class="cal-dow'+(i===0?' style="color:var(--red)"':'')+'">'+d+'</div>';}).join('');
-  // 이전달 빈칸
-  for(var i=0;i<firstDay;i++){html+='<div class="cal-cell other-month"></div>';}
-  for(var d=1;d<=lastDate;d++){
-    var isToday=d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
-    var dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    var isSel=dateStr===calSelectedDate;
-    var dow=new Date(calYear,calMonth,d).getDay();
-    var cls='cal-cell'+(isToday?' today':'')+(isSel?' selected':'')+(dayTotals[d]?' has-data':'');
-    var dowCls=dow===0?'sun':dow===6?'sat':'';
-    var amtHtml=dayTotals[d]?'<div class="cal-day-amt">₩'+Math.round(dayTotals[d]/1000)+'k</div>':'';
-    html+='<div class="'+cls+'" onclick="selectCalDay(\''+dateStr+'\')"><div class="cal-day-num '+dowCls+'">'+d+'</div>'+amtHtml+'</div>';
-  }
-  document.getElementById('calGrid').innerHTML=html;
-  if(calSelectedDate)renderCalDetail(calSelectedDate);
-}
-function selectCalDay(dateStr){
-  calSelectedDate=dateStr;
-  renderCal();
-  renderCalDetail(dateStr);
-}
-function renderCalDetail(dateStr){
-  var detail=document.getElementById('calDayDetail');
-  var dayRecs=records.filter(function(r){
-    if(!r.date) return false;
-    // ISO 날짜를 로컬 시간 기준으로 비교
-    var d=new Date(r.date);
-    var localStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    return localStr===dateStr;
-  });
-  if(!dayRecs.length){detail.classList.remove('show');return;}
-  var total=dayRecs.reduce(function(a,r){return a+r.amount;},0);
-  var d=new Date(dateStr);
-  detail.classList.add('show');
-  detail.innerHTML='<div class="cal-detail-title">'+( d.getMonth()+1)+'월 '+d.getDate()+'일</div>'
-    +'<div class="cal-detail-total">₩'+total.toLocaleString('ko-KR')+'</div>'
-    +dayRecs.map(function(r){
-      var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
-      return '<div class="record-item" style="margin-bottom:6px">'
-        +'<div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div>'
-        +'<div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+'</div></div>'
-        +'<div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div></div>'
-        +'</div>';
-    }).join('');
-}
-
-// ── TABS ──
-function switchTab(tab){
-  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('view-'+tab).classList.add('active');
-  var tabEl=document.getElementById('tab-'+tab);
-  if(tabEl)tabEl.classList.add('active');
-  document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
-  if(tab==='list'){renderFilterBar();renderList();}
-  if(tab==='notif'){renderNotifTab();}
-  if(tab==='cal'){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
-  if(tab==='dash'){renderDash();}
-  if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();}
-}
-
-// ── TOAST ──
-function showToast(msg){
-  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2200);
-}
-</script>
-
-<!-- EDIT RECORD MODAL -->
-<div class="edit-modal-overlay" id="editRecordModal">
-  <div class="edit-modal-inner">
-    <div class="edit-modal-title">
-      <span>✏️ 내역 수정</span>
-      <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
-    </div>
-    <!-- 금액 -->
-    <div class="field-label">금액</div>
-    <div class="edit-amount-display" id="editAmountDisplay" onclick="toggleEditNumpad()">₩0</div>
-    <div class="edit-numpad" id="editNumpad">
-      <button class="edit-num-btn" onclick="editNumInput('1')">1</button>
-      <button class="edit-num-btn" onclick="editNumInput('2')">2</button>
-      <button class="edit-num-btn" onclick="editNumInput('3')">3</button>
-      <button class="edit-num-btn" onclick="editNumInput('4')">4</button>
-      <button class="edit-num-btn" onclick="editNumInput('5')">5</button>
-      <button class="edit-num-btn" onclick="editNumInput('6')">6</button>
-      <button class="edit-num-btn" onclick="editNumInput('7')">7</button>
-      <button class="edit-num-btn" onclick="editNumInput('8')">8</button>
-      <button class="edit-num-btn" onclick="editNumInput('9')">9</button>
-      <button class="edit-num-btn zero" onclick="editNumInput('0')">0</button>
-      <button class="edit-num-btn del" onclick="editNumDelete()">⌫</button>
-    </div>
-    <!-- 날짜 -->
-    <div class="field-row" style="margin-top:10px">
-      <div class="field-label">날짜</div>
-      <input class="field-input" id="editDate" type="datetime-local">
-    </div>
-    <!-- 현장 -->
-    <div class="field-row">
-      <div class="field-label">현장명</div>
-      <select class="field-select" id="editSite"></select>
-    </div>
-    <!-- 카테고리 -->
-    <div class="field-row">
-      <div class="field-label">카테고리</div>
-      <div class="chips" id="editCatChips">
-        <button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
-        <button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
-        <button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
-        <button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
-        <button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
-        <button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
-      </div>
-    </div>
-    <!-- 결제수단 -->
-    <div class="field-row">
-      <div class="field-label">결제수단</div>
-      <div class="pay-chips" id="editPayChips"></div>
-    </div>
-    <!-- 부가세 -->
-    <div class="field-row">
-      <div class="field-label">부가세</div>
-      <div class="vat-row-ui">
-        <button class="vat-btn" id="editVatNone" onclick="selectEditVat('none')">미발행</button>
-        <button class="vat-btn" id="editVatIncluded" onclick="selectEditVat('included')">포함</button>
-        <button class="vat-btn" id="editVatExcluded" onclick="selectEditVat('excluded')">별도</button>
-      </div>
-    </div>
-    <!-- 구매처 -->
-    <div class="field-row">
-      <div class="field-label">구매처</div>
-      <input class="field-input" id="editVendor" type="text" placeholder="구매처">
-    </div>
-    <!-- 품목 -->
-    <div class="field-row">
-      <div class="field-label">품목 (쉼표로 구분)</div>
-      <input class="field-input" id="editItems" type="text" placeholder="예: 타일, 시멘트, 줄눈">
-    </div>
-    <!-- 메모 -->
-    <div class="field-row">
-      <div class="field-label">메모</div>
-      <input class="field-input" id="editMemo" type="text" placeholder="메모">
-    </div>
-    <button class="edit-save-btn" onclick="saveEditRecord()">✓ 수정 저장</button>
-    <button class="edit-del-btn" onclick="deleteEditRecord()">🗑 이 내역 삭제</button>
-  </div>
-</div>
-</body>
-</html>
