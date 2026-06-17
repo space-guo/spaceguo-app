@@ -379,6 +379,23 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .sch-add-check-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer}
 .sch-progress-bar-wrap{background:var(--surface2);border-radius:4px;height:4px;margin-bottom:10px;overflow:hidden}
 .sch-progress-bar-fill{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
+
+/* ── WORK JOURNAL ── */
+.journal-section{margin-top:20px}
+.journal-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.journal-section-title{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em}
+.journal-add-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer}
+.journal-filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.journal-filter-select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;min-width:100px}
+.journal-filter-select:focus{border-color:var(--accent)}
+.journal-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.journal-card:active{border-color:var(--accent)}
+.journal-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.journal-card-site{font-size:12px;font-weight:700;color:var(--accent2)}
+.journal-card-date{font-size:11px;color:var(--muted)}
+.journal-card-content{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap}
+.journal-card-weather{font-size:11px;color:var(--muted);margin-top:6px}
+.journal-empty{text-align:center;padding:30px 20px;color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -621,6 +638,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
   <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-list" id="schList"></div>
+
+  <!-- 업무일지 섹션 -->
+  <div class="journal-section">
+    <div class="journal-section-header">
+      <span class="journal-section-title">📝 업무일지</span>
+      <button class="journal-add-btn" onclick="openJournalModal()">＋ 일지 작성</button>
+    </div>
+    <div class="journal-filter-row">
+      <select class="journal-filter-select" id="journalSiteFilter" onchange="renderJournalList()">
+        <option value="전체">전체 현장</option>
+      </select>
+      <input class="journal-filter-select" id="journalMonthFilter" type="month" onchange="renderJournalList()" style="flex:1">
+    </div>
+    <div id="journalList"></div>
+  </div>
 </div>
 
 <!-- DASHBOARD -->
@@ -822,6 +854,43 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 </div>
 
 
+
+<!-- JOURNAL MODAL -->
+<div class="modal-overlay" id="journalModal" onclick="if(event.target===this)closeJournalModal()">
+  <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="journalModalTitle">업무일지 작성</div>
+      <button onclick="closeJournalModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field-label">현장</div>
+      <select class="field-select" id="journalSiteInp"></select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">날짜</div>
+      <input class="field-input" id="journalDateInp" type="date">
+    </div>
+    <div class="field-row">
+      <div class="field-label">날씨 (선택)</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="chip" onclick="selectWeather(this,'☀️ 맑음')">☀️ 맑음</button>
+        <button class="chip" onclick="selectWeather(this,'⛅ 구름')">⛅ 구름</button>
+        <button class="chip" onclick="selectWeather(this,'🌧️ 비')">🌧️ 비</button>
+        <button class="chip" onclick="selectWeather(this,'❄️ 눈')">❄️ 눈</button>
+        <button class="chip" onclick="selectWeather(this,'💨 바람')">💨 바람</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">작업 내용</div>
+      <textarea class="field-input" id="journalContentInp" rows="6" placeholder="오늘 진행한 작업, 특이사항, 인원 등을 기록하세요..." style="resize:none;line-height:1.6"></textarea>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeJournalModal()">취소</button>
+      <button class="modal-save" onclick="saveJournal()">저장</button>
+    </div>
+    <button id="journalDeleteBtn" style="display:none;width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px" onclick="deleteJournal()">🗑 삭제</button>
+  </div>
+</div>
 <!-- CHECKLIST MODAL -->
 <div class="modal-overlay" id="checklistModal" onclick="if(event.target===this)closeChecklistModal()">
   <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
@@ -1068,7 +1137,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();subscribeRecords();subscribeIncomes();subscribePending();subscribeSchedules();setSyncStatus('live');setTimeout(initDatePicker,100);
+    loadSettings();subscribeRecords();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -2561,6 +2630,147 @@ document.addEventListener('DOMContentLoaded',function(){
   var inp=document.getElementById('checklistNewInp');
   if(inp){inp.addEventListener('keydown',function(e){if(e.key==='Enter')addCheckItem();});}
 });
+
+// ── WORK JOURNAL ──
+var journals=[], unsubJournal=null, editingJournalId='', selectedWeather='';
+
+function subscribeJournals(){
+  if(unsubJournal)unsubJournal();
+  unsubJournal=db.collection('journals').orderBy('date','desc').onSnapshot(function(snap){
+    journals=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById('view-sch').classList.contains('active'))renderJournalList();
+  });
+}
+
+function renderJournalSiteFilter(){
+  var sel=document.getElementById('journalSiteFilter');
+  if(!sel)return;
+  var cur=sel.value||'전체';
+  sel.innerHTML='<option value="전체">전체 현장</option>';
+  sites.forEach(function(s){
+    var o=document.createElement('option');
+    o.value=s;o.textContent=s;
+    if(s===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function renderJournalList(){
+  var el=document.getElementById('journalList');
+  if(!el)return;
+  var siteF=document.getElementById('journalSiteFilter').value||'전체';
+  var monthF=document.getElementById('journalMonthFilter').value||'';
+
+  var filtered=journals.filter(function(j){
+    if(siteF!=='전체'&&j.site!==siteF)return false;
+    if(monthF&&j.date&&!j.date.startsWith(monthF))return false;
+    return true;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<div class="journal-empty">📝 작성된 업무일지가 없어요</div>';
+    return;
+  }
+
+  el.innerHTML=filtered.map(function(j){
+    var dateLabel=j.date?j.date.replace(/-/g,'.'):'';
+    var preview=j.content?j.content.slice(0,60)+(j.content.length>60?'...':''):'';
+    return '<div class="journal-card" data-jid="'+j.id+'">'
+      +'<div class="journal-card-top">'
+      +'<span class="journal-card-site">📍 '+(j.site||'')+'</span>'
+      +'<span class="journal-card-date">'+dateLabel+'</span>'
+      +'</div>'
+      +(j.weather?'<div class="journal-card-weather">'+j.weather+'</div>':'')
+      +'<div class="journal-card-content">'+preview+'</div>'
+      +'</div>';
+  }).join('');
+
+  el.querySelectorAll('.journal-card').forEach(function(card){
+    card.addEventListener('click',function(){
+      openJournalModalEdit(this.dataset.jid);
+    });
+  });
+}
+
+function selectWeather(btn, weather){
+  selectedWeather=weather;
+  document.querySelectorAll('#journalModal .chip').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
+}
+
+function openJournalModal(){
+  editingJournalId='';
+  selectedWeather='';
+  document.getElementById('journalModalTitle').textContent='업무일지 작성';
+  document.getElementById('journalDeleteBtn').style.display='none';
+  document.querySelectorAll('#journalModal .chip').forEach(function(b){b.classList.remove('selected');});
+
+  var sel=document.getElementById('journalSiteInp');
+  sel.innerHTML='<option value="">현장 선택</option>';
+  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+
+  // 현장 필터 선택된 현장 자동 세팅
+  var siteF=document.getElementById('journalSiteFilter').value;
+  if(siteF&&siteF!=='전체') sel.value=siteF;
+
+  document.getElementById('journalDateInp').value=new Date().toISOString().slice(0,10);
+  document.getElementById('journalContentInp').value='';
+  document.getElementById('journalModal').style.display='flex';
+  setTimeout(function(){document.getElementById('journalContentInp').focus();},100);
+}
+
+function openJournalModalEdit(id){
+  var j=journals.find(function(x){return x.id===id;});
+  if(!j)return;
+  editingJournalId=id;
+  selectedWeather=j.weather||'';
+  document.getElementById('journalModalTitle').textContent='업무일지 수정';
+  document.getElementById('journalDeleteBtn').style.display='block';
+
+  var sel=document.getElementById('journalSiteInp');
+  sel.innerHTML='<option value="">현장 선택</option>';
+  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===j.site)o.selected=true;sel.appendChild(o);});
+
+  document.getElementById('journalDateInp').value=j.date||'';
+  document.getElementById('journalContentInp').value=j.content||'';
+
+  // 날씨 칩 선택
+  document.querySelectorAll('#journalModal .chip').forEach(function(b){
+    b.classList.toggle('selected', b.textContent===j.weather);
+  });
+
+  document.getElementById('journalModal').style.display='flex';
+}
+
+function closeJournalModal(){
+  document.getElementById('journalModal').style.display='none';
+}
+
+function saveJournal(){
+  var site=document.getElementById('journalSiteInp').value;
+  var date=document.getElementById('journalDateInp').value;
+  var content=document.getElementById('journalContentInp').value.trim();
+  if(!site){showToast('현장을 선택해주세요');return;}
+  if(!date){showToast('날짜를 선택해주세요');return;}
+  if(!content){showToast('내용을 입력해주세요');return;}
+
+  var data={site:site,date:date,content:content,weather:selectedWeather,ts:firebase.firestore.FieldValue.serverTimestamp()};
+  setSyncStatus('saving');
+  var promise=editingJournalId
+    ?db.collection('journals').doc(editingJournalId).update(data)
+    :db.collection('journals').add(data);
+  promise.then(function(){
+    closeJournalModal();setSyncStatus('ok');
+    showToast(editingJournalId?'✓ 일지 수정됐어요':'✓ 일지 저장됐어요');
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+
+function deleteJournal(){
+  if(!confirm('이 업무일지를 삭제할까요?'))return;
+  db.collection('journals').doc(editingJournalId).delete().then(function(){
+    closeJournalModal();showToast('일지 삭제됐어요');
+  });
+}
 // ── SCHEDULE ──
 var schYear=new Date().getFullYear(), schMonth=new Date().getMonth();
 var schSiteFilter='전체', schedules=[], unsubSch=null;
@@ -2582,6 +2792,14 @@ function renderSchTab(){
   renderSchSiteFilter();
   renderSchCal();
   renderSchList();
+  // 업무일지 이번달 기본값
+  var monthEl=document.getElementById('journalMonthFilter');
+  if(monthEl&&!monthEl.value){
+    var now=new Date();
+    monthEl.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  }
+  renderJournalSiteFilter();
+  renderJournalList();
 }
 
 function renderSchSiteFilter(){
@@ -2871,7 +3089,7 @@ function switchTab(tab){
     calYear=new Date().getFullYear();calMonth=new Date().getMonth();
     renderCal();renderFilterBar();renderList();
   }
-  if(tab==='sch'){renderSchTab();}
+  if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
   if(tab==='dash'){renderDash();}
   if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();}
 }
