@@ -396,6 +396,27 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .journal-card-content{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap}
 .journal-card-weather{font-size:11px;color:var(--muted);margin-top:6px}
 .journal-empty{text-align:center;padding:30px 20px;color:var(--muted);font-size:13px}
+
+/* ── VENDOR MANAGE ── */
+.vendor-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer}
+.vendor-card-name{font-size:14px;font-weight:700;margin-bottom:4px}
+.vendor-card-sub{font-size:11px;color:var(--muted);line-height:1.6}
+/* ── CHECKLIST IN MODAL ── */
+.modal-check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.modal-check-item:last-child{border-bottom:none}
+.modal-check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;background:none}
+.modal-check-box.checked{background:var(--green);border-color:var(--green)}
+.modal-check-box.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:900}
+.modal-check-label{flex:1;font-size:13px}
+.modal-check-label.done{color:var(--muted);text-decoration:line-through}
+.modal-check-del{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px}
+.modal-check-del:active{color:var(--red)}
+.modal-add-check-row{display:flex;gap:6px;margin-top:8px}
+.modal-add-check-inp{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 10px;outline:none}
+.modal-add-check-inp:focus{border-color:var(--accent)}
+.modal-add-check-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer}
+.progress-mini{background:var(--surface2);border-radius:4px;height:4px;margin-top:6px;overflow:hidden}
+.progress-mini-fill{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
 </style>
 </head>
 <body>
@@ -687,6 +708,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <button class="export-btn" onclick="copyForKakao()">💬 카카오톡 복사 (이번 달)</button>
   <button class="export-btn" style="color:var(--red);border-color:var(--red)" onclick="clearAll()">🗑 전체 삭제</button>
   <div class="section-divider"></div>
+  <div class="settings-title">👷 거래처 관리</div>
+  <div id="vendorMgmtList"></div>
+  <button class="add-item-btn" onclick="openVendorModal()" style="margin-bottom:10px">＋ 거래처 추가</button>
+  <div class="section-divider"></div>
   <div class="settings-title">계정</div>
   <div id="userInfo" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
 </div>
@@ -855,6 +880,26 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 
 
+<!-- VENDOR MODAL -->
+<div class="modal-overlay" id="vendorModal" onclick="if(event.target===this)closeVendorModal()">
+  <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="vendorModalTitle">거래처 추가</div>
+      <button onclick="closeVendorModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="field-row"><div class="field-label">업체명 (필수)</div><input class="field-input" id="vendorCompanyInp" placeholder="예: (주)홍길동인테리어"></div>
+    <div class="field-row"><div class="field-label">담당자 이름</div><input class="field-input" id="vendorNameInp" placeholder="예: 홍길동"></div>
+    <div class="field-row"><div class="field-label">전화번호</div><input class="field-input" id="vendorPhoneInp" type="tel" placeholder="010-0000-0000"></div>
+    <div class="field-row"><div class="field-label">이메일</div><input class="field-input" id="vendorEmailInp" type="email" placeholder="example@email.com"></div>
+    <div class="field-row"><div class="field-label">사업자등록번호</div><input class="field-input" id="vendorBizInp" type="tel" placeholder="000-00-00000"></div>
+    <div class="field-row"><div class="field-label">주민등록번호 (선택)</div><input class="field-input" id="vendorIdInp" type="tel" placeholder="000000-0000000"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeVendorModal()">취소</button>
+      <button class="modal-save" onclick="saveVendorModal()">저장</button>
+    </div>
+    <button id="vendorDeleteBtn" style="display:none;width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px" onclick="deleteVendorItem()">🗑 삭제</button>
+  </div>
+</div>
 <!-- JOURNAL MODAL -->
 <div class="modal-overlay" id="journalModal" onclick="if(event.target===this)closeJournalModal()">
   <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
@@ -930,8 +975,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <select class="field-select" id="schProcInp"></select>
     </div>
     <div class="field-row">
-      <div class="field-label">담당자</div>
-      <input class="field-input" id="schWorkerInp" type="text" placeholder="예: 홍길동, 외주팀">
+      <div class="field-label">담당자 (거래처)</div>
+      <select class="field-select" id="schWorkerInp">
+        <option value="">선택 안 함</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">작업자 수 (담당자 포함)</div>
+      <input class="field-input" id="schWorkerCountInp" type="tel" inputmode="numeric" placeholder="예: 3" style="width:120px">
     </div>
     <div class="field-row">
       <div class="field-label">시작일</div>
@@ -949,8 +1000,34 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px"><span>0%</span><span>50%</span><span>100%</span></div>
     </div>
     <div class="field-row">
-      <div class="field-label">메모 (선택)</div>
-      <input class="field-input" id="schMemoInp" type="text" placeholder="특이사항">
+      <div class="field-label">메모</div>
+      <textarea class="field-input" id="schMemoInp" rows="3" placeholder="특이사항, 작업 내용..." style="resize:none;line-height:1.6"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span>📋 체크리스트</span>
+        <span id="schCheckProgress" style="color:var(--green);font-weight:800;font-size:11px"></span>
+      </div>
+      <div class="progress-mini"><div class="progress-mini-fill" id="schCheckProgressBar" style="width:0%"></div></div>
+      <div id="schChecklistItems" style="margin-top:6px"></div>
+      <div class="modal-add-check-row">
+        <input class="modal-add-check-inp" id="schCheckNewInp" type="text" placeholder="체크리스트 항목 추가...">
+        <button class="modal-add-check-btn" onclick="addSchCheckItem()">추가</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">📝 업무일지</div>
+      <textarea class="field-input" id="schJournalInp" rows="4" placeholder="날씨, 인원, 진행 내용, 특이사항 등..." style="resize:none;line-height:1.6"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field-label">날씨</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="schWeatherChips">
+        <button class="chip" data-weather="☀️ 맑음">☀️ 맑음</button>
+        <button class="chip" data-weather="⛅ 구름">⛅ 구름</button>
+        <button class="chip" data-weather="🌧️ 비">🌧️ 비</button>
+        <button class="chip" data-weather="❄️ 눈">❄️ 눈</button>
+        <button class="chip" data-weather="💨 바람">💨 바람</button>
+      </div>
     </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeSchModal()">취소</button>
@@ -960,22 +1037,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-
-<!-- NOTIFICATION MODAL -->
-<div class="modal-overlay" id="notifModal" onclick="if(event.target===this)closeNotifModal()">
-  <div class="modal-inner" style="max-height:85vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="modal-title" style="margin-bottom:0">🔔 카드 알림</div>
-      <button onclick="closeNotifModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
-    </div>
-    <div class="notif-filter">
-      <button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
-      <button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
-      <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
-    </div>
-    <div id="notifList"><div class="loading"><div class="spinner"></div>불러오는 중...</div></div>
-  </div>
-</div>
 <!-- EDIT RECORD MODAL -->
 <div class="edit-modal-overlay" id="editRecordModal">
   <div class="edit-modal-inner">
@@ -1137,7 +1198,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();subscribeRecords();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
+    loadSettings();loadVendors();subscribeRecords();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -2631,6 +2692,180 @@ document.addEventListener('DOMContentLoaded',function(){
   if(inp){inp.addEventListener('keydown',function(e){if(e.key==='Enter')addCheckItem();});}
 });
 
+
+// ── VENDOR (거래처) MANAGE ──
+var vendors=[], editingVendorId='';
+
+function loadVendors(){
+  db.collection('vendors').orderBy('company','asc').get().then(function(snap){
+    vendors=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    renderVendorMgmtList();
+    renderVendorSelect();
+  });
+}
+
+function renderVendorMgmtList(){
+  var el=document.getElementById('vendorMgmtList');
+  if(!el)return;
+  if(!vendors.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">거래처가 없어요</div>';return;}
+  el.innerHTML=vendors.map(function(v){
+    return '<div class="vendor-card" data-vid="'+v.id+'">'
+      +'<div class="vendor-card-name">🏢 '+(v.company||'')+(v.name?' · '+v.name:'')+'</div>'
+      +'<div class="vendor-card-sub">'
+      +(v.phone?'📞 '+v.phone+'<br>':'')
+      +(v.email?'✉️ '+v.email+'<br>':'')
+      +(v.biz?'사업자: '+v.biz:'')
+      +'</div>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('.vendor-card').forEach(function(card){
+    card.addEventListener('click',function(){openVendorModal(this.dataset.vid);});
+  });
+}
+
+function renderVendorSelect(){
+  // 공정표 담당자 선택 드롭다운 업데이트
+  var sel=document.getElementById('schWorkerInp');
+  if(!sel)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">선택 안 함</option>';
+  vendors.forEach(function(v){
+    var o=document.createElement('option');
+    o.value=v.id;
+    o.textContent=(v.company||'')+(v.name?' ('+v.name+')':'');
+    if(v.id===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function openVendorModal(id){
+  editingVendorId=id||'';
+  var isEdit=!!id;
+  document.getElementById('vendorModalTitle').textContent=isEdit?'거래처 수정':'거래처 추가';
+  document.getElementById('vendorDeleteBtn').style.display=isEdit?'block':'none';
+  if(isEdit){
+    var v=vendors.find(function(x){return x.id===id;});
+    if(!v)return;
+    document.getElementById('vendorCompanyInp').value=v.company||'';
+    document.getElementById('vendorNameInp').value=v.name||'';
+    document.getElementById('vendorPhoneInp').value=v.phone||'';
+    document.getElementById('vendorEmailInp').value=v.email||'';
+    document.getElementById('vendorBizInp').value=v.biz||'';
+    document.getElementById('vendorIdInp').value=v.idnum||'';
+  } else {
+    ['vendorCompanyInp','vendorNameInp','vendorPhoneInp','vendorEmailInp','vendorBizInp','vendorIdInp'].forEach(function(id){
+      document.getElementById(id).value='';
+    });
+  }
+  document.getElementById('vendorModal').style.display='flex';
+}
+
+function closeVendorModal(){document.getElementById('vendorModal').style.display='none';}
+
+function saveVendorModal(){
+  var company=document.getElementById('vendorCompanyInp').value.trim();
+  if(!company){showToast('업체명을 입력해주세요');return;}
+  var data={
+    company:company,
+    name:document.getElementById('vendorNameInp').value.trim(),
+    phone:document.getElementById('vendorPhoneInp').value.trim(),
+    email:document.getElementById('vendorEmailInp').value.trim(),
+    biz:document.getElementById('vendorBizInp').value.trim(),
+    idnum:document.getElementById('vendorIdInp').value.trim(),
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  setSyncStatus('saving');
+  var promise=editingVendorId
+    ?db.collection('vendors').doc(editingVendorId).update(data)
+    :db.collection('vendors').add(data);
+  promise.then(function(){
+    closeVendorModal();loadVendors();setSyncStatus('ok');
+    showToast(editingVendorId?'✓ 거래처 수정됐어요':'✓ 거래처 추가됐어요');
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+
+function deleteVendorItem(){
+  if(!confirm('이 거래처를 삭제할까요?'))return;
+  db.collection('vendors').doc(editingVendorId).delete().then(function(){
+    closeVendorModal();loadVendors();showToast('거래처 삭제됐어요');
+  });
+}
+
+// ── SCHEDULE MODAL 체크리스트 ──
+var schCheckItems=[];
+
+function initSchChecklist(procName){
+  // 해당 공정의 품목을 기본값으로 로드
+  var proc=processes.find(function(p){return p.name===procName;});
+  schCheckItems=[];
+  if(proc&&proc.items&&proc.items.length){
+    schCheckItems=proc.items.map(function(item){
+      return {label:item.name+(item.unit?' ('+item.unit+')':''),checked:false};
+    });
+  }
+  renderSchChecklist();
+}
+
+function loadSchChecklist(schId, procName){
+  db.collection('checklists').doc(schId).get().then(function(snap){
+    if(snap.exists&&snap.data().items){
+      schCheckItems=snap.data().items;
+    } else {
+      initSchChecklist(procName);
+    }
+    renderSchChecklist();
+  });
+}
+
+function renderSchChecklist(){
+  var el=document.getElementById('schChecklistItems');
+  if(!el)return;
+  var total=schCheckItems.length;
+  var done=schCheckItems.filter(function(i){return i.checked;}).length;
+  var pct=total?Math.round(done/total*100):0;
+  var progEl=document.getElementById('schCheckProgress');
+  var barEl=document.getElementById('schCheckProgressBar');
+  if(progEl)progEl.textContent=total?done+' / '+total:'';
+  if(barEl)barEl.style.width=pct+'%';
+  if(!total){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">항목이 없어요</div>';return;}
+  el.innerHTML=schCheckItems.map(function(item,i){
+    return '<div class="modal-check-item">'
+      +'<div class="modal-check-box'+(item.checked?' checked':'')+'" data-ci="'+i+'"></div>'
+      +'<span class="modal-check-label'+(item.checked?' done':'')+'">'+item.label+'</span>'
+      +'<button class="modal-check-del" data-di="'+i+'">✕</button>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('.modal-check-box').forEach(function(box){
+    box.addEventListener('click',function(){
+      schCheckItems[parseInt(this.dataset.ci)].checked=!schCheckItems[parseInt(this.dataset.ci)].checked;
+      renderSchChecklist();
+    });
+  });
+  el.querySelectorAll('.modal-check-del').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      schCheckItems.splice(parseInt(this.dataset.di),1);
+      renderSchChecklist();
+    });
+  });
+}
+
+function addSchCheckItem(){
+  var inp=document.getElementById('schCheckNewInp');
+  var label=inp.value.trim();
+  if(!label)return;
+  schCheckItems.push({label:label,checked:false});
+  inp.value='';renderSchChecklist();inp.focus();
+}
+
+// 날씨 칩 이벤트 (모달 열릴 때 바인딩)
+function bindWeatherChips(){
+  document.querySelectorAll('#schWeatherChips .chip').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
+      this.classList.toggle('selected');
+    });
+  });
+}
 // ── WORK JOURNAL ──
 var journals=[], unsubJournal=null, editingJournalId='', selectedWeather='';
 
@@ -2928,47 +3163,72 @@ function openSchModal(){
   editingSchId='';
   document.getElementById('schModalTitle').textContent='공정 일정 추가';
   document.getElementById('schDeleteBtn').style.display='none';
-  // 현장
+  schCheckItems=[];renderSchChecklist();
+  document.getElementById('schJournalInp').value='';
+  document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
+
   var sel=document.getElementById('schSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
   sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
-  // 공정
+
   var psel=document.getElementById('schProcInp');
   psel.innerHTML='<option value="">공정 선택</option>';
   processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;psel.appendChild(o);});
-  // 날짜 기본값
+
+  // 공정 변경시 체크리스트 자동 로드
+  psel.onchange=function(){initSchChecklist(this.value);};
+
+  renderVendorSelect();
+  document.getElementById('schWorkerCountInp').value='';
+
   var today=new Date().toISOString().slice(0,10);
   document.getElementById('schStartInp').value=today;
   document.getElementById('schEndInp').value=today;
-  document.getElementById('schWorkerInp').value='';
   document.getElementById('schPctInp').value=0;
   document.getElementById('schPctLabel').textContent='0%';
   document.getElementById('schMemoInp').value='';
+  document.getElementById('schCheckNewInp').value='';
   document.getElementById('schModal').style.display='flex';
+  bindWeatherChips();
 }
-
 function openSchModalEdit(id){
   var s=schedules.find(function(x){return x.id===id;});
   if(!s)return;
   editingSchId=id;
   document.getElementById('schModalTitle').textContent='공정 일정 수정';
   document.getElementById('schDeleteBtn').style.display='block';
+
   var sel=document.getElementById('schSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
   sites.forEach(function(st){var o=document.createElement('option');o.value=st;o.textContent=st;if(st===s.site)o.selected=true;sel.appendChild(o);});
+
   var psel=document.getElementById('schProcInp');
   psel.innerHTML='<option value="">공정 선택</option>';
   processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;if(p.name===s.procName)o.selected=true;psel.appendChild(o);});
-  document.getElementById('schWorkerInp').value=s.worker||'';
+  psel.onchange=function(){initSchChecklist(this.value);};
+
+  renderVendorSelect();
+  document.getElementById('schWorkerInp').value=s.workerId||'';
+  document.getElementById('schWorkerCountInp').value=s.workerCount||'';
   document.getElementById('schStartInp').value=s.startDate||'';
   document.getElementById('schEndInp').value=s.endDate||'';
   var pct=parseInt(s.progress||0);
   document.getElementById('schPctInp').value=pct;
   document.getElementById('schPctLabel').textContent=pct+'%';
   document.getElementById('schMemoInp').value=s.memo||'';
-  document.getElementById('schModal').style.display='flex';
-}
+  document.getElementById('schJournalInp').value=s.journal||'';
+  document.getElementById('schCheckNewInp').value='';
 
+  // 날씨
+  document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){
+    b.classList.toggle('selected',b.dataset.weather===s.weather);
+  });
+
+  // 체크리스트 로드
+  loadSchChecklist(id, s.procName);
+  document.getElementById('schModal').style.display='flex';
+  bindWeatherChips();
+}
 function closeSchModal(){document.getElementById('schModal').style.display='none';}
 
 function saveSchModal(){
@@ -2980,24 +3240,43 @@ function saveSchModal(){
   var endDate=document.getElementById('schEndInp').value;
   if(!startDate||!endDate){showToast('날짜를 입력해주세요');return;}
   if(startDate>endDate){showToast('종료일이 시작일보다 빠릅니다');return;}
+
+  // 날씨 선택값
+  var weatherEl=document.querySelector('#schWeatherChips .chip.selected');
+  var weather=weatherEl?weatherEl.dataset.weather:'';
+
+  // 담당자 ID → 이름
+  var workerSel=document.getElementById('schWorkerInp');
+  var workerId=workerSel.value;
+  var workerName=workerSel.options[workerSel.selectedIndex]?workerSel.options[workerSel.selectedIndex].text:'';
+
   var data={
-    site:site,procName:proc,
-    worker:document.getElementById('schWorkerInp').value.trim(),
-    startDate:startDate,endDate:endDate,
+    site:site, procName:proc,
+    workerId:workerId, worker:workerName,
+    workerCount:parseInt(document.getElementById('schWorkerCountInp').value)||0,
+    startDate:startDate, endDate:endDate,
     progress:parseInt(document.getElementById('schPctInp').value)||0,
     memo:document.getElementById('schMemoInp').value.trim(),
+    journal:document.getElementById('schJournalInp').value.trim(),
+    weather:weather,
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
+
   setSyncStatus('saving');
   var promise=editingSchId
     ?db.collection('schedules').doc(editingSchId).update(data)
     :db.collection('schedules').add(data);
-  promise.then(function(){
+
+  promise.then(function(ref){
+    var schId=editingSchId||(ref&&ref.id);
+    // 체크리스트 저장
+    if(schId&&schCheckItems.length){
+      db.collection('checklists').doc(schId).set({items:schCheckItems,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    }
     closeSchModal();setSyncStatus('ok');
     showToast(editingSchId?'✓ 공정 수정됐어요':'✓ 공정 추가됐어요');
   }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
 }
-
 function deleteSchItem(){
   if(!confirm('이 공정 일정을 삭제할까요?'))return;
   db.collection('schedules').doc(editingSchId).delete().then(function(){
@@ -3091,7 +3370,7 @@ function switchTab(tab){
   }
   if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
   if(tab==='dash'){renderDash();}
-  if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();}
+  if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
 }
 
 
