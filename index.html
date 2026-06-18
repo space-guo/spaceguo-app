@@ -1771,7 +1771,7 @@ function updateIncVatInfo(){
 function openIncomeModal(){
   var sel=document.getElementById('incSiteSelect');
   sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
   document.getElementById('incAmount').value='';
   document.getElementById('incMemo').value='';
   document.getElementById('incDate').value=new Date().toISOString().slice(0,10);
@@ -1819,7 +1819,7 @@ function openIncomeEditModal(id){
   editingIncomeId=id;
   var sel=document.getElementById('incEditSite');
   sel.innerHTML='';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===inc.site)o.selected=true;sel.appendChild(o);});
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;if(name===inc.site)o.selected=true;sel.appendChild(o);});
   document.getElementById('incEditAmount').value=inc.amount;
   document.getElementById('incEditMemo').value=inc.memo||'';
   document.getElementById('incEditDate').value=inc.date||'';
@@ -3285,13 +3285,13 @@ function renderJournalSiteFilter(){
   var cur=sel.value||'전체';
   sel.innerHTML='<option value="전체">전체 현장</option>';
   sites.forEach(function(s){
+    var name=typeof s==='object'?s.name:s;
     var o=document.createElement('option');
-    o.value=s;o.textContent=s;
-    if(s===cur)o.selected=true;
+    o.value=name;o.textContent=name;
+    if(name===cur)o.selected=true;
     sel.appendChild(o);
   });
 }
-
 function renderJournalList(){
   var el=document.getElementById('journalList');
   if(!el)return;
@@ -3344,7 +3344,7 @@ function openJournalModal(){
 
   var sel=document.getElementById('journalSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
 
   // 현장 필터 선택된 현장 자동 세팅
   var siteF=document.getElementById('journalSiteFilter').value;
@@ -3367,7 +3367,7 @@ function openJournalModalEdit(id){
 
   var sel=document.getElementById('journalSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===j.site)o.selected=true;sel.appendChild(o);});
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;if(name===j.site)o.selected=true;sel.appendChild(o);});
 
   document.getElementById('journalDateInp').value=j.date||'';
   document.getElementById('journalContentInp').value=j.content||'';
@@ -3450,7 +3450,8 @@ function renderSchTab(){
 
 function renderSchSiteFilter(){
   var el=document.getElementById('schSiteFilter');
-  var all=['전체'].concat(sites);
+  var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
+  var all=['전체'].concat(siteNames);
   el.innerHTML=all.map(function(s){
     return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" data-site="'+s+'">'+s+'</button>';
   }).join('');
@@ -3458,7 +3459,6 @@ function renderSchSiteFilter(){
     btn.addEventListener('click',function(){setSchSiteFilter(this.dataset.site);});
   });
 }
-
 function setSchSiteFilter(s){
   schSiteFilter=s;
   renderSchCal();
@@ -3476,7 +3476,8 @@ function schCalMove(dir){
 
 function getFilteredSch(){
   return schedules.filter(function(s){
-    return schSiteFilter==='전체'||s.site===schSiteFilter;
+    var siteName=typeof s.site==='object'?s.site.name:s.site;
+    return schSiteFilter==='전체'||siteName===schSiteFilter;
   });
 }
 
@@ -3591,7 +3592,7 @@ function openSchModal(){
 
   var sel=document.getElementById('schSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
 
   var psel=document.getElementById('schProcInp');
   psel.innerHTML='<option value="">공정 선택</option>';
@@ -3623,7 +3624,7 @@ function openSchModalEdit(id){
 
   var sel=document.getElementById('schSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(st){var o=document.createElement('option');o.value=st;o.textContent=st;if(st===s.site)o.selected=true;sel.appendChild(o);});
+  sites.forEach(function(st){var name=typeof st==='object'?st.name:st;var o=document.createElement('option');o.value=name;o.textContent=name;if(name===s.site)o.selected=true;sel.appendChild(o);});
 
   var psel=document.getElementById('schProcInp');
   psel.innerHTML='<option value="">공정 선택</option>';
