@@ -419,8 +419,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .progress-mini-fill{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
 
 /* ── COLOR PICKER ── */
-.color-pick-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.color-pick-btn{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .1s}
+.color-pick-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.color-pick-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .1s}
 .color-pick-btn.selected{border-color:#fff;transform:scale(1.2)}
 .color-pick-btn:active{transform:scale(.9)}
 
@@ -446,6 +446,29 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .daily-check-confirm-box.checked{background:var(--green);border-color:var(--green)}
 .daily-check-confirm-box.checked::after{content:'✓';color:#fff;font-size:12px;font-weight:900}
 .daily-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+
+/* ── COLOR POPUP ── */
+.color-popup-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5)}
+.color-popup-overlay.show{display:flex;align-items:center;justify-content:center}
+.color-popup-box{background:var(--surface);border-radius:16px;padding:18px;width:300px;max-width:90vw}
+.color-popup-title{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:.06em}
+.color-popup-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.color-popup-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .1s;margin:0 auto;display:block}
+.color-popup-btn:active{transform:scale(.9)}
+.color-popup-btn.selected{border-color:#fff;transform:scale(1.15)}
+.color-selected-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;flex-shrink:0;transition:transform .1s}
+.color-selected-dot:active{transform:scale(.9)}
+
+/* ── COLOR POPUP ── */
+.color-popup-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
+.color-popup-overlay.show{display:flex}
+.color-popup-inner{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:480px}
+.color-popup-title{font-size:14px;font-weight:800;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.color-popup-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+.color-popup-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-start}
+.color-popup-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s;flex-shrink:0}
+.color-popup-btn:active{transform:scale(.88)}
+.color-popup-btn.selected{border-color:#fff;transform:scale(1.15)}
 </style>
 </head>
 <body>
@@ -909,6 +932,28 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 
 
+
+<!-- COLOR POPUP -->
+<div class="color-popup-overlay" id="colorPopup" onclick="if(event.target===this)closeColorPopup()">
+  <div class="color-popup-box">
+    <div class="color-popup-title">🎨 색상 선택</div>
+    <div class="color-popup-grid" id="colorPopupGrid"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button onclick="closeColorPopup()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;font-weight:700;padding:8px 18px;cursor:pointer">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLOR POPUP -->
+<div class="color-popup-overlay" id="colorPopup" onclick="if(event.target===this)closeColorPopup()">
+  <div class="color-popup-inner">
+    <div class="color-popup-title">
+      <span>색상 선택</span>
+      <button class="color-popup-close" onclick="closeColorPopup()">✕</button>
+    </div>
+    <div class="color-popup-grid" id="colorPopupGrid"></div>
+  </div>
+</div>
 <!-- VENDOR MODAL -->
 <div class="modal-overlay" id="vendorModal" onclick="if(event.target===this)closeVendorModal()">
   <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
@@ -2133,7 +2178,7 @@ function saveItemModal(){
 function renderProcessList(){
   var el=document.getElementById('processList');
   if(!el)return;
-  var SCH_COLORS_LIST=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800','#e91e63','#00bcd4'];
+  var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
   if(!processes.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';return;}
   el.innerHTML=processes.map(function(p,pi){
     var pColor=p.color||SCH_COLORS_LIST[pi%SCH_COLORS_LIST.length];
@@ -2144,14 +2189,11 @@ function renderProcessList(){
         +'<button class="proc-item-del" data-pi="'+pi+'" data-ii="'+ii+'">✕</button>'
         +'</span>';
     }).join('');
-    var colorBtns=SCH_COLORS_LIST.map(function(c){
-      return '<button class="color-pick-btn'+(pColor===c?' selected':'')+'" data-color="'+c+'" data-pi="'+pi+'" style="background:'+c+'"></button>';
-    }).join('');
     return '<div class="process-block drag-item">'
       +'<div class="process-header">'
       +'<div style="display:flex;align-items:center;gap:8px">'
       +'<span class="drag-handle">☰</span>'
-      +'<div style="width:10px;height:10px;border-radius:50%;background:'+pColor+';flex-shrink:0"></div>'
+      +'<div class="proc-color-dot" data-pi="'+pi+'" style="width:14px;height:14px;border-radius:50%;background:'+pColor+';flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.3)" title="색상 변경"></div>'
       +'<span class="process-name">'+p.name+'</span>'
       +'</div>'
       +'<div class="process-actions">'
@@ -2159,17 +2201,15 @@ function renderProcessList(){
       +'<button class="proc-btn" data-edit-proc="'+pi+'">수정</button>'
       +'<button class="proc-btn del" data-del-proc="'+pi+'">삭제</button>'
       +'</div></div>'
-      +'<div class="color-pick-row" style="padding:4px 0 8px 34px">'+colorBtns+'</div>'
       +'<div class="proc-item-list" id="item-list-'+pi+'">'+(itemTags||'')+'</div>'
       +'</div>';
   }).join('');
 
-  // 색상 버튼 이벤트
-  el.querySelectorAll('.color-pick-btn[data-pi]').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var pi=parseInt(this.dataset.pi);
-      processes[pi].color=this.dataset.color;
-      saveSettings().then(function(){renderProcessList();renderProcessSelect();});
+  // 색상 점 클릭 → 팝업
+  el.querySelectorAll('.proc-color-dot').forEach(function(dot){
+    dot.addEventListener('click',function(e){
+      e.stopPropagation();
+      openColorPopup(parseInt(this.dataset.pi));
     });
   });
   // 공정 드래그
@@ -3280,6 +3320,7 @@ var editingSchId='';
 // 공정별 색상
 var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
 function schColor(idx){return SCH_COLORS[idx%SCH_COLORS.length];}
+function getProcColor(procName,fallbackIdx){var SCH_C=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];var proc=processes.find(function(p){return p.name===procName;});if(proc&&proc.color)return proc.color;return SCH_C[fallbackIdx%SCH_C.length];}
 function getProcColor(procName, fallbackIdx){
   var proc=processes.find(function(p){return p.name===procName;});
   if(proc&&proc.color)return proc.color;
@@ -3670,6 +3711,84 @@ function closeNotifModal(){
   document.getElementById('notifModal').style.display='none';
 }
 
+
+// ── COLOR POPUP ──
+var colorPopupPi=-1;
+var COLOR_30=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800','#e91e63','#00bcd4','#43a047','#2e7d32','#66bb6a','#a5d6a7','#c62828','#f06292','#ad1457','#fdd835','#f57f17','#0288d1','#0097a7','#1565c0','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b'];
+
+function openColorPopup(pi){
+  colorPopupPi=pi;
+  var curColor=processes[pi].color||COLOR_30[pi%COLOR_30.length];
+  var grid=document.getElementById('colorPopupGrid');
+  grid.innerHTML=COLOR_30.map(function(c){
+    return '<button class="color-popup-btn'+(c===curColor?' selected':'')+'" data-color="'+c+'" style="background:'+c+'"></button>';
+  }).join('');
+  grid.querySelectorAll('.color-popup-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      grid.querySelectorAll('.color-popup-btn').forEach(function(b){b.classList.remove('selected');});
+      this.classList.add('selected');
+      processes[colorPopupPi].color=this.dataset.color;
+      saveSettings().then(function(){
+        renderProcessList();
+        renderProcessSelect();
+        closeColorPopup();
+        showToast('✓ 색상 변경됐어요');
+      });
+    });
+  });
+  document.getElementById('colorPopup').classList.add('show');
+  pushModalState('colorPopup');
+}
+
+function closeColorPopup(){
+  document.getElementById('colorPopup').classList.remove('show');
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='colorPopup'){
+    modalStack.pop();
+    history.go(-1);
+  }
+}
+
+// ── COLOR POPUP ──
+var colorPopupProcIdx = -1;
+var SCH_COLORS_ALL = [
+  '#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0',
+  '#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7',
+  '#e05252','#e91e63','#c62828','#f06292','#ad1457',
+  '#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17',
+  '#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8',
+  '#795548','#6d4c41','#546e7a','#607d8b','#78909c'
+];
+
+function openColorPopup(pi){
+  colorPopupProcIdx = pi;
+  var curColor = processes[pi].color || SCH_COLORS_ALL[pi % SCH_COLORS_ALL.length];
+  var grid = document.getElementById('colorPopupGrid');
+  grid.innerHTML = SCH_COLORS_ALL.map(function(c){
+    return '<button class="color-popup-btn'+(c===curColor?' selected':'')+'" data-color="'+c+'" style="background:'+c+'"></button>';
+  }).join('');
+  grid.querySelectorAll('.color-popup-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      grid.querySelectorAll('.color-popup-btn').forEach(function(b){b.classList.remove('selected');});
+      this.classList.add('selected');
+      processes[colorPopupProcIdx].color = this.dataset.color;
+      saveSettings().then(function(){
+        renderProcessList();
+        renderProcessSelect();
+        closeColorPopup();
+      });
+    });
+  });
+  document.getElementById('colorPopup').classList.add('show');
+  pushModalState('colorPopup');
+}
+
+function closeColorPopup(){
+  document.getElementById('colorPopup').classList.remove('show');
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='colorPopup'){
+    modalStack.pop();
+    history.go(-1);
+  }
+}
 // ── COLOR PICKER ──
 function bindColorPicker(defaultColor){
   var btns=document.querySelectorAll('#schColorPicker .color-pick-btn');
