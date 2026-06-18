@@ -751,7 +751,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div class="site-list" id="accountList"></div>
   <button class="add-item-btn" onclick="openAccountModal()" style="margin-bottom:10px">＋ 계좌 추가</button>
   <div class="section-divider"></div>
-  <div class="settings-title">📦 공정별 품목 관리</div>
+  <div class="settings-title">📦 공정</div>
   <div id="processList"></div>
   <button class="add-item-btn" onclick="openProcessModal()" style="margin-bottom:10px">＋ 공정 추가</button>
   <div class="section-divider"></div>
@@ -847,9 +847,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <!-- PROCESS MODAL -->
 <div class="modal-overlay" id="processModal">
-  <div class="modal-inner">
+  <div class="modal-inner" style="max-height:85vh;overflow-y:auto">
     <div class="modal-title" id="processModalTitle">공정 추가</div>
     <div class="field-row"><div class="field-label">공정명 (필수)</div><input class="field-input" id="procNameInp" placeholder="예: 타일공사, 도배, 전기, 철거"></div>
+    <!-- 품목 목록 (수정 시에만 표시) -->
+    <div id="procItemSection" style="display:none">
+      <div class="field-label" style="margin-bottom:8px">품목 목록</div>
+      <div id="procModalItemList"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input class="field-input" id="procModalNewItem" placeholder="품목명" style="flex:1">
+        <input class="field-input" id="procModalNewUnit" placeholder="단위" style="width:80px">
+        <button class="add-site-btn" onclick="addProcModalItem()">추가</button>
+      </div>
+    </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeProcessModal()">취소</button>
       <button class="modal-save" onclick="saveProcessModal()">저장</button>
@@ -2189,21 +2199,31 @@ function renderProcessList(){
         +'<button class="proc-item-del" data-pi="'+pi+'" data-ii="'+ii+'">✕</button>'
         +'</span>';
     }).join('');
-    return '<div class="process-block drag-item">'
+    return '<div class="process-block drag-item" data-tap-proc="'+pi+'" style="cursor:pointer">'
       +'<div class="process-header">'
       +'<div style="display:flex;align-items:center;gap:8px">'
-      +'<span class="drag-handle">☰</span>'
+      +'<span class="drag-handle" onclick="event.stopPropagation()">☰</span>'
       +'<div class="proc-color-dot" data-pi="'+pi+'" style="width:14px;height:14px;border-radius:50%;background:'+pColor+';flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.3)" title="색상 변경"></div>'
       +'<span class="process-name">'+p.name+'</span>'
       +'</div>'
       +'<div class="process-actions">'
-      +'<button class="proc-btn" data-add-item="'+pi+'">＋ 품목</button>'
-      +'<button class="proc-btn" data-edit-proc="'+pi+'">수정</button>'
       +'<button class="proc-btn del" data-del-proc="'+pi+'">삭제</button>'
       +'</div></div>'
       +'<div class="proc-item-list" id="item-list-'+pi+'">'+(itemTags||'')+'</div>'
       +'</div>';
   }).join('');
+
+  // 카드 탭 → 수정 모달
+  el.querySelectorAll('[data-tap-proc]').forEach(function(card){
+    card.addEventListener('click',function(e){
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('proc-color-dot'))return;
+      if(e.target.classList.contains('proc-item-del'))return;
+      if(e.target.classList.contains('proc-btn'))return;
+      if(e.target.closest('.proc-item-tag'))return;
+      openProcessModal(parseInt(this.dataset.tapProc));
+    });
+  });
 
   // 색상 점 클릭 → 팝업
   el.querySelectorAll('.proc-color-dot').forEach(function(dot){
@@ -2212,28 +2232,28 @@ function renderProcessList(){
       openColorPopup(parseInt(this.dataset.pi));
     });
   });
+
   // 공정 드래그
   initDragList(el, processes, 'processes', function(){
     saveSettings().then(function(){renderProcessList();renderProcessSelect();});
   });
+
   // 품목 삭제
   el.querySelectorAll('.proc-item-del').forEach(function(btn){
-    btn.addEventListener('click',function(){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
       deleteProcessItem(parseInt(this.dataset.pi),parseInt(this.dataset.ii));
     });
   });
-  // 품목 추가
-  el.querySelectorAll('[data-add-item]').forEach(function(btn){
-    btn.addEventListener('click',function(){openItemModal(parseInt(this.getAttribute('data-add-item')));});
-  });
-  // 공정 수정
-  el.querySelectorAll('[data-edit-proc]').forEach(function(btn){
-    btn.addEventListener('click',function(){openProcessModal(parseInt(this.getAttribute('data-edit-proc')));});
-  });
+
   // 공정 삭제
   el.querySelectorAll('[data-del-proc]').forEach(function(btn){
-    btn.addEventListener('click',function(){deleteProcess(parseInt(this.getAttribute('data-del-proc')));});
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteProcess(parseInt(this.getAttribute('data-del-proc')));
+    });
   });
+
   // 품목별 드래그
   processes.forEach(function(p,pi){
     var itemEl=document.getElementById('item-list-'+pi);
