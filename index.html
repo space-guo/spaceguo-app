@@ -469,6 +469,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .color-popup-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s;flex-shrink:0}
 .color-popup-btn:active{transform:scale(.88)}
 .color-popup-btn.selected{border-color:#fff;transform:scale(1.15)}
+
+/* ── SITE STATUS ── */
+.site-status-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;margin-left:6px;vertical-align:middle}
+.site-status-badge.meeting{background:#1a1f2e;color:var(--blue)}
+.site-status-badge.before{background:#2a1f00;color:var(--accent2)}
+.site-status-badge.ongoing{background:#1a2a1a;color:var(--green)}
+.site-status-badge.done{background:#222;color:var(--muted)}
+.site-status-row{display:flex;gap:6px;flex-wrap:wrap}
+.site-status-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;text-align:center;min-width:60px}
+.site-status-btn.active-meeting{background:#1a1f2e;border-color:var(--blue);color:var(--blue)}
+.site-status-btn.active-before{background:#2a1f00;border-color:var(--accent2);color:var(--accent2)}
+.site-status-btn.active-ongoing{background:#1a2a1a;border-color:var(--green);color:var(--green)}
+.site-status-btn.active-done{background:#2a2a2a;border-color:var(--muted);color:var(--muted)}
+.site-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;cursor:pointer;transition:border-color .15s}
+.site-card:active{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -906,9 +921,30 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <!-- SITE EDIT MODAL -->
 <div class="modal-overlay" id="siteEditModal">
-  <div class="modal-inner">
-    <div class="modal-title">현장명 수정</div>
-    <div class="field-row"><div class="field-label">현장명</div><input class="field-input" id="siteEditInp" placeholder="현장명 입력"></div>
+  <div class="modal-inner" style="max-height:88vh;overflow-y:auto">
+    <div class="modal-title" id="siteEditModalTitle">현장 정보</div>
+    <div class="field-row">
+      <div class="field-label">진행 상태</div>
+      <div class="site-status-row" id="siteStatusRow">
+        <button class="site-status-btn" data-status="meeting">미팅</button>
+        <button class="site-status-btn" data-status="before">공사전</button>
+        <button class="site-status-btn active-ongoing" data-status="ongoing">공사중</button>
+        <button class="site-status-btn" data-status="done">마감</button>
+      </div>
+    </div>
+    <div class="field-row"><div class="field-label">현장명 (필수)</div><input class="field-input" id="siteEditInp" placeholder="현장명 입력"></div>
+    <div class="field-row"><div class="field-label">고객명</div><input class="field-input" id="siteCustomerInp" placeholder="예: 홍길동"></div>
+    <div class="field-row"><div class="field-label">전화번호</div><input class="field-input" id="sitePhoneInp" type="tel" placeholder="010-0000-0000"></div>
+    <div class="field-row"><div class="field-label">주소</div><input class="field-input" id="siteAddressInp" placeholder="예: 서울시 광진구 자양동"></div>
+    <div class="field-row"><div class="field-label">아파트명</div><input class="field-input" id="siteAptInp" placeholder="예: 자이아파트"></div>
+    <div class="field-row"><div class="field-label">동 / 호수</div>
+      <div style="display:flex;gap:8px">
+        <input class="field-input" id="siteDongInp" placeholder="동" style="flex:1">
+        <input class="field-input" id="siteHoInp" placeholder="호수" style="flex:1">
+      </div>
+    </div>
+    <div class="field-row"><div class="field-label">공용 비밀번호</div><input class="field-input" id="siteCommonPwInp" type="tel" placeholder="예: 1234#"></div>
+    <div class="field-row"><div class="field-label">세대 비밀번호</div><input class="field-input" id="siteUnitPwInp" type="tel" placeholder="예: 1234*"></div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
       <button class="modal-save" onclick="saveSiteEdit()">저장</button>
@@ -1311,7 +1347,9 @@ function loadSettings(){
   db.collection('settings').doc('main').get().then(function(snap){
     if(snap.exists){
       var d=snap.data();
-      sites=d.sites||[];
+      sites=(d.sites||[]).map(function(s){
+        return typeof s==='string'?{name:s,status:'ongoing',customer:'',phone:'',address:'',apt:'',dongho:'',commonPw:'',unitPw:''}:s;
+      });
       cards=(d.cards||[]).map(function(c){return typeof c==='string'?{name:c,issuer:'',type:'신용',num:''}:c;});
       accounts=d.accounts||[];
       processes=d.processes||[];
@@ -1811,59 +1849,60 @@ function deleteIncome(id){
 function renderSiteSelect(){
   var sel=document.getElementById('siteSelect'),cur=sel.value;
   sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===cur)o.selected=true;sel.appendChild(o);});
+  sites.forEach(function(s){
+    var name=typeof s==='object'?s.name:s;
+    var o=document.createElement('option');o.value=name;o.textContent=name;
+    if(name===cur)o.selected=true;sel.appendChild(o);
+  });
 }
 function renderSiteList(){
   var el=document.getElementById('siteList');
   if(!sites.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';return;}
+  var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
+  var statusClass={meeting:'meeting',before:'before',ongoing:'ongoing',done:'done'};
   el.innerHTML=sites.map(function(s,i){
-    return '<div class="site-item drag-item">'
-      
-      +'<span class="site-name" style="flex:1">'+s+'</span>'
-      +'<div style="display:flex;gap:6px">'
-      +'<button class="proc-btn" data-edit-site="'+i+'">수정</button>'
-      +'<button class="site-del" data-del-site="'+i+'">✕</button>'
-      +'</div></div>';
+    var name=typeof s==='object'?s.name:s;
+    var status=typeof s==='object'?s.status:'ongoing';
+    var sc=statusClass[status]||'ongoing';
+    var sl=statusMap[status]||'공사중';
+    return '<div class="site-card drag-item" data-site-idx="'+i+'">'
+      +'<span class="drag-handle">☰</span>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:center;gap:4px">'
+      +'<span class="site-name">'+name+'</span>'
+      +'<span class="site-status-badge '+sc+'">'+sl+'</span>'
+      +'</div>'
+      +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+'</div>':'')
+      +'</div>'
+      +'<button class="site-del" data-del-site="'+i+'" onclick="event.stopPropagation()">✕</button>'
+      +'</div>';
   }).join('');
-  el.querySelectorAll('[data-edit-site]').forEach(function(btn){
-    btn.addEventListener('click',function(){openSiteEditModal(parseInt(this.getAttribute('data-edit-site')));});
+  el.querySelectorAll('.site-card').forEach(function(card){
+    card.addEventListener('click',function(e){
+      if(e.target.classList.contains('drag-handle'))return;
+      openSiteEditModal(parseInt(this.dataset.siteIdx));
+    });
   });
   el.querySelectorAll('[data-del-site]').forEach(function(btn){
-    btn.addEventListener('click',function(){deleteSite(parseInt(this.getAttribute('data-del-site')));});
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteSite(parseInt(this.getAttribute('data-del-site')));
+    });
   });
   initDragList(el, sites, 'sites', function(){
     saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
   });
 }
-
-var editingSiteIdx=-1;
-function openSiteEditModal(i){
-  editingSiteIdx=i;
-  document.getElementById('siteEditInp').value=sites[i];
-  document.getElementById('siteEditModal').style.display='flex';
-  setTimeout(function(){document.getElementById('siteEditInp').focus();},100);
-}
-function closeSiteEditModal(){document.getElementById('siteEditModal').style.display='none';}
-function saveSiteEdit(){
-  var name=document.getElementById('siteEditInp').value.trim();
-  if(!name){showToast('현장명을 입력해주세요');return;}
-  sites[editingSiteIdx]=name;
-  saveSettings().then(function(){closeSiteEditModal();renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장명 수정됐어요');});
-}
-function addSite(){
-  var inp=document.getElementById('newSiteInput'),name=inp.value.trim();
-  if(!name)return;
-  if(sites.includes(name)){showToast('이미 있는 현장이에요');return;}
-  sites.push(name);saveSettings().then(function(){inp.value='';renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 추가됐어요');});
-}
-
 function moveSite(i,dir){
   var t=i+dir;
   if(t<0||t>=sites.length)return;
   var tmp=sites[i];sites[i]=sites[t];sites[t]=tmp;
   saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
 }
-function deleteSite(i){sites.splice(i,1);saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});}
+function deleteSite(i){
+  if(!confirm('"'+(typeof sites[i]==='object'?sites[i].name:sites[i])+'" 현장을 삭제할까요?'))return;
+  sites.splice(i,1);saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
+}
 
 // ── FILTER ──
 function renderFilterBar(){
