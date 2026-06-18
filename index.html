@@ -486,16 +486,30 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .site-card:active{border-color:var(--accent)}
 
 /* ── PROCESS GRID ── */
-.proc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.proc-grid-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 12px;cursor:pointer;position:relative;transition:border-color .15s;min-height:80px;display:flex;flex-direction:column;justify-content:space-between}
-.proc-grid-card:active{border-color:var(--accent)}
-.proc-grid-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.proc-grid-color{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.proc-grid-del{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px;line-height:1}
+.proc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.proc-grid-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 8px;cursor:pointer;position:relative;transition:border-color .15s;min-height:70px;display:flex;flex-direction:column}
+.proc-grid-card.open{border-color:var(--accent)}
+.proc-grid-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.proc-grid-color{width:10px;height:10px;border-radius:50%;flex-shrink:0;cursor:pointer}
+.proc-grid-actions{display:flex;gap:2px}
+.proc-grid-edit{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 3px;line-height:1}
+.proc-grid-edit:active{color:var(--accent)}
+.proc-grid-del{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 3px;line-height:1}
 .proc-grid-del:active{color:var(--red)}
-.proc-grid-name{font-size:14px;font-weight:800;color:var(--text);line-height:1.3}
-.proc-grid-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.proc-grid-drag{position:absolute;bottom:8px;right:10px;color:var(--border);font-size:12px;cursor:grab}
+.proc-grid-name{font-size:12px;font-weight:800;color:var(--text);line-height:1.3;flex:1}
+.proc-grid-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.proc-grid-drag{color:var(--border);font-size:11px;cursor:grab;text-align:right;margin-top:4px}
+/* 아코디언 */
+.proc-accordion{grid-column:1/-1;background:var(--surface2);border:1px solid var(--accent);border-radius:12px;padding:12px;margin-top:-4px;display:none}
+.proc-accordion.open{display:block}
+.proc-acc-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.proc-acc-item:last-child{border-bottom:none}
+.proc-acc-del{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px}
+.proc-acc-del:active{color:var(--red)}
+.proc-acc-add-row{display:flex;gap:6px;margin-top:8px}
+.proc-acc-inp{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px;outline:none}
+.proc-acc-inp:focus{border-color:var(--accent)}
+.proc-acc-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:12px;font-weight:700;padding:7px 12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -2276,6 +2290,8 @@ function saveItemModal(){
   processes[currentProcForItem].items.push({name:name,unit:unit});
   saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
 }
+var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
+
 function renderProcessList(){
   var el=document.getElementById('processList');
   if(!el)return;
@@ -2284,65 +2300,161 @@ function renderProcessList(){
     el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';
     return;
   }
+
+  el.innerHTML='';
   var grid=document.createElement('div');
   grid.className='proc-grid';
 
   processes.forEach(function(p,pi){
     var pColor=p.color||SCH_COLORS_LIST[pi%SCH_COLORS_LIST.length];
     var itemCount=(p.items||[]).length;
+    var isOpen=openProcIdx===pi;
+
+    // 카드
     var card=document.createElement('div');
-    card.className='proc-grid-card drag-item';
+    card.className='proc-grid-card drag-item'+(isOpen?' open':'');
     card.dataset.pi=pi;
     card.innerHTML=
       '<div class="proc-grid-top">'
-      +'<div class="proc-grid-color" style="background:'+pColor+'"></div>'
-      +'<button class="proc-grid-del" data-del-proc="'+pi+'">✕</button>'
+        +'<div class="proc-grid-color" data-color-pi="'+pi+'" style="background:'+pColor+'"></div>'
+        +'<div class="proc-grid-actions">'
+          +'<button class="proc-grid-edit" data-edit-pi="'+pi+'">✏️</button>'
+          +'<button class="proc-grid-del" data-del-proc="'+pi+'">✕</button>'
+        +'</div>'
       +'</div>'
       +'<div class="proc-grid-name">'+p.name+'</div>'
-      +(itemCount?'<div class="proc-grid-sub">품목 '+itemCount+'개</div>':'<div class="proc-grid-sub" style="color:var(--border)">품목 없음</div>')
-      +'<span class="proc-grid-drag">☰</span>';
+      +(itemCount
+        ?'<div class="proc-grid-sub">품목 '+itemCount+'개</div>'
+        :'<div class="proc-grid-sub" style="color:var(--border)">−</div>')
+      +'<div class="proc-grid-drag">☰</div>';
     grid.appendChild(card);
+
+    // 아코디언 (3열 전체 차지)
+    if(isOpen){
+      var acc=document.createElement('div');
+      acc.className='proc-accordion open';
+      acc.dataset.accPi=pi;
+      var itemsHtml=(p.items&&p.items.length)
+        ?p.items.map(function(item,ii){
+          return '<div class="proc-acc-item">'
+            +'<span style="flex:1">'+item.name+(item.unit?' <span style="opacity:.6;font-size:11px">'+item.unit+'</span>':'')+'</span>'
+            +'<button class="proc-acc-del" data-acc-pi="'+pi+'" data-acc-ii="'+ii+'">✕</button>'
+            +'</div>';
+        }).join('')
+        :'<div style="font-size:12px;color:var(--muted);padding:4px 0">품목이 없어요</div>';
+      acc.innerHTML=
+        itemsHtml
+        +'<div class="proc-acc-add-row">'
+          +'<input class="proc-acc-inp" id="accInp-'+pi+'" placeholder="품목명" type="text">'
+          +'<input class="proc-acc-inp" id="accUnit-'+pi+'" placeholder="단위" type="text" style="width:60px;flex:none">'
+          +'<button class="proc-acc-btn" data-acc-add="'+pi+'">추가</button>'
+        +'</div>';
+      grid.appendChild(acc);
+    }
   });
 
-  el.innerHTML='';
   el.appendChild(grid);
 
-  // 카드 탭 → 수정 모달
+  // ── 이벤트 바인딩 ──
+
+  // 카드 탭 → 아코디언 토글 (스크롤 vs 탭 구분)
   grid.querySelectorAll('.proc-grid-card').forEach(function(card){
-    var tapStart=0;
-    card.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
+    var startX=0, startY=0;
+    card.addEventListener('touchstart',function(e){
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+    },{passive:true});
     card.addEventListener('touchend',function(e){
-      if(Date.now()-tapStart>400)return;
+      var dx=Math.abs(e.changedTouches[0].clientX-startX);
+      var dy=Math.abs(e.changedTouches[0].clientY-startY);
+      if(dx>8||dy>8)return; // 스크롤이면 무시
+      if(e.target.classList.contains('proc-grid-color'))return;
+      if(e.target.classList.contains('proc-grid-edit'))return;
       if(e.target.classList.contains('proc-grid-del'))return;
       if(e.target.classList.contains('proc-grid-drag'))return;
       e.preventDefault();
-      openProcessModal(parseInt(this.dataset.pi));
+      var pi=parseInt(this.dataset.pi);
+      openProcIdx=(openProcIdx===pi)?-1:pi;
+      renderProcessList();
     });
     card.addEventListener('click',function(e){
+      if(e.target.classList.contains('proc-grid-color'))return;
+      if(e.target.classList.contains('proc-grid-edit'))return;
       if(e.target.classList.contains('proc-grid-del'))return;
       if(e.target.classList.contains('proc-grid-drag'))return;
-      openProcessModal(parseInt(this.dataset.pi));
+      var pi=parseInt(this.dataset.pi);
+      openProcIdx=(openProcIdx===pi)?-1:pi;
+      renderProcessList();
     });
   });
 
-  // 색상 점 클릭 → 팝업
-  grid.querySelectorAll('.proc-grid-color').forEach(function(dot){
+  // 색상 점 → 팝업
+  grid.querySelectorAll('[data-color-pi]').forEach(function(dot){
     dot.addEventListener('click',function(e){
       e.stopPropagation();
-      openColorPopup(parseInt(this.closest('.proc-grid-card').dataset.pi));
+      openColorPopup(parseInt(this.dataset.colorPi));
+    });
+  });
+
+  // ✏️ 수정 버튼 → 모달
+  grid.querySelectorAll('[data-edit-pi]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      openProcessModal(parseInt(this.dataset.editPi));
     });
   });
 
   // 삭제
-  grid.querySelectorAll('.proc-grid-del').forEach(function(btn){
+  grid.querySelectorAll('[data-del-proc]').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
-      deleteProcess(parseInt(this.dataset.delProc||this.getAttribute('data-del-proc')));
+      deleteProcess(parseInt(this.getAttribute('data-del-proc')));
     });
   });
 
-  // 드래그 (☰ 핸들 기준)
+  // 아코디언 품목 삭제
+  grid.querySelectorAll('.proc-acc-del').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteProcessItem(parseInt(this.dataset.accPi),parseInt(this.dataset.accIi));
+      renderProcessList();
+    });
+  });
+
+  // 아코디언 품목 추가
+  grid.querySelectorAll('[data-acc-add]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var pi=parseInt(this.dataset.accAdd);
+      var nameInp=document.getElementById('accInp-'+pi);
+      var unitInp=document.getElementById('accUnit-'+pi);
+      var name=nameInp?nameInp.value.trim():'';
+      if(!name){showToast('품목명을 입력해주세요');return;}
+      var unit=unitInp?unitInp.value.trim():'';
+      if(!processes[pi].items)processes[pi].items=[];
+      processes[pi].items.push({name:name,unit:unit});
+      saveSettings().then(function(){
+        openProcIdx=pi;
+        renderProcessList();
+        renderProcessSelect();
+        showToast('품목 추가됐어요');
+      });
+    });
+  });
+
+  // 아코디언 입력 엔터키
+  grid.querySelectorAll('.proc-acc-inp').forEach(function(inp){
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){
+        var addBtn=this.closest('.proc-accordion').querySelector('[data-acc-add]');
+        if(addBtn)addBtn.click();
+      }
+    });
+  });
+
+  // 드래그
   initDragList(grid, processes, 'processes', function(){
+    openProcIdx=-1;
     saveSettings().then(function(){renderProcessList();renderProcessSelect();});
   });
 }
