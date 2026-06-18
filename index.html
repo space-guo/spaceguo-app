@@ -1878,8 +1878,18 @@ function renderSiteList(){
       +'</div>';
   }).join('');
   el.querySelectorAll('.site-card').forEach(function(card){
+    var tapStart=0;
+    card.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
+    card.addEventListener('touchend',function(e){
+      if(Date.now()-tapStart>400)return; // 드래그
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      e.preventDefault();
+      openSiteEditModal(parseInt(this.dataset.siteIdx));
+    });
     card.addEventListener('click',function(e){
       if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
       openSiteEditModal(parseInt(this.dataset.siteIdx));
     });
   });
@@ -2014,22 +2024,37 @@ function renderCardList(){
   var el=document.getElementById('cardList');
   if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
   el.innerHTML=cards.map(function(c,i){
-    return '<div class="site-item drag-item">'
-      
+    return '<div class="site-item drag-item" data-card-idx="'+i+'">'
+      +'<span class="drag-handle">☰</span>'
       +'<div style="flex:1">'
       +'<div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div>'
       +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px">'
-      +'<button class="proc-btn" data-edit-card="'+i+'">수정</button>'
       +'<button class="site-del" data-del-card="'+i+'">✕</button>'
-      +'</div></div>';
+      +'</div>';
   }).join('');
-  el.querySelectorAll('[data-edit-card]').forEach(function(btn){
-    btn.addEventListener('click',function(){openCardModal(parseInt(this.getAttribute('data-edit-card')));});
+  // 카드 탭 → 수정 모달
+  el.querySelectorAll('.site-item').forEach(function(item){
+    var tapStart=0;
+    item.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
+    item.addEventListener('touchend',function(e){
+      if(Date.now()-tapStart>400)return;
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      e.preventDefault();
+      openCardModal(parseInt(this.dataset.cardIdx));
+    });
+    item.addEventListener('click',function(e){
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      openCardModal(parseInt(this.dataset.cardIdx));
+    });
   });
   el.querySelectorAll('[data-del-card]').forEach(function(btn){
-    btn.addEventListener('click',function(){deleteCard(parseInt(this.getAttribute('data-del-card')));});
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteCard(parseInt(this.getAttribute('data-del-card')));
+    });
   });
   initDragList(el, cards, 'cards', function(){
     saveSettings().then(function(){renderCardList();renderCardChips();});
@@ -2084,22 +2109,37 @@ function renderAccountList(){
   if(!el)return;
   if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
   el.innerHTML=accounts.map(function(a,i){
-    return '<div class="site-item drag-item">'
-      
+    return '<div class="site-item drag-item" data-acc-idx="'+i+'">'
+      +'<span class="drag-handle">☰</span>'
       +'<div style="flex:1">'
       +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
       +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px">'
-      +'<button class="proc-btn" data-edit-acc="'+i+'">수정</button>'
       +'<button class="site-del" data-del-acc="'+i+'">✕</button>'
-      +'</div></div>';
+      +'</div>';
   }).join('');
-  el.querySelectorAll('[data-edit-acc]').forEach(function(btn){
-    btn.addEventListener('click',function(){openAccountModal(parseInt(this.getAttribute('data-edit-acc')));});
+  // 계좌 탭 → 수정 모달
+  el.querySelectorAll('.site-item').forEach(function(item){
+    var tapStart=0;
+    item.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
+    item.addEventListener('touchend',function(e){
+      if(Date.now()-tapStart>400)return;
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      e.preventDefault();
+      openAccountModal(parseInt(this.dataset.accIdx));
+    });
+    item.addEventListener('click',function(e){
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      openAccountModal(parseInt(this.dataset.accIdx));
+    });
   });
   el.querySelectorAll('[data-del-acc]').forEach(function(btn){
-    btn.addEventListener('click',function(){deleteAccount(parseInt(this.getAttribute('data-del-acc')));});
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteAccount(parseInt(this.getAttribute('data-del-acc')));
+    });
   });
   initDragList(el, accounts, 'accounts', function(){
     saveSettings().then(function(){renderAccountList();renderAccountChips();});
@@ -3911,6 +3951,62 @@ function closeModalShowWithHistory(modalId){
     modalStack.pop();
     history.go(-1);
   }
+}
+
+// ── SITE EDIT ──
+var editingSiteIdx=-1, editingSiteStatus='ongoing';
+function openSiteEditModal(i){
+  editingSiteIdx=i;
+  var s=sites[i];
+  if(typeof s==='string') s={name:s,status:'ongoing',customer:'',phone:'',address:'',apt:'',dongho:'',commonPw:'',unitPw:''};
+  editingSiteStatus=s.status||'ongoing';
+  document.getElementById('siteEditModalTitle').textContent='현장 정보 수정';
+  document.getElementById('siteEditInp').value=s.name||'';
+  document.getElementById('siteCustomerInp').value=s.customer||'';
+  document.getElementById('sitePhoneInp').value=s.phone||'';
+  document.getElementById('siteAddressInp').value=s.address||'';
+  document.getElementById('siteAptInp').value=s.apt||'';
+  var dongho=(s.dongho||'').split('/');
+  document.getElementById('siteDongInp').value=dongho[0]||'';
+  document.getElementById('siteHoInp').value=dongho[1]||'';
+  document.getElementById('siteCommonPwInp').value=s.commonPw||'';
+  document.getElementById('siteUnitPwInp').value=s.unitPw||'';
+  var statusClass={meeting:'active-meeting',before:'active-before',ongoing:'active-ongoing',done:'active-done'};
+  document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(btn){
+    btn.className='site-status-btn'+(btn.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
+    btn.onclick=function(){
+      editingSiteStatus=this.dataset.status;
+      document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(b){
+        b.className='site-status-btn'+(b.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
+      });
+    };
+  });
+  document.getElementById('siteEditModal').style.display='flex';
+  pushModalState('siteEditModal');
+}
+function closeSiteEditModal(){
+  document.getElementById('siteEditModal').style.display='none';
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='siteEditModal'){modalStack.pop();history.go(-1);}
+}
+function saveSiteEdit(){
+  var name=document.getElementById('siteEditInp').value.trim();
+  if(!name){showToast('현장명을 입력해주세요');return;}
+  var dong=document.getElementById('siteDongInp').value.trim();
+  var ho=document.getElementById('siteHoInp').value.trim();
+  sites[editingSiteIdx]={
+    name:name,
+    status:editingSiteStatus,
+    customer:document.getElementById('siteCustomerInp').value.trim(),
+    phone:document.getElementById('sitePhoneInp').value.trim(),
+    address:document.getElementById('siteAddressInp').value.trim(),
+    apt:document.getElementById('siteAptInp').value.trim(),
+    dongho:dong&&ho?dong+'/'+ho:(dong||ho||''),
+    commonPw:document.getElementById('siteCommonPwInp').value.trim(),
+    unitPw:document.getElementById('siteUnitPwInp').value.trim()
+  };
+  saveSettings().then(function(){
+    closeSiteEditModal();renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 정보 저장됐어요');
+  });
 }
 // ── TOAST ──
 function showToast(msg){
