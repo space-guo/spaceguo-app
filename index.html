@@ -562,6 +562,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
+<div id="viewContainer">
 <!-- INPUT -->
 <div class="view active" id="view-input">
 
@@ -1037,6 +1038,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 
 
+</div>
+
 <!-- NOTIF MODAL -->
 <div class="modal-overlay" id="notifModal" onclick="if(event.target===this)closeNotifModal()" style="display:none">
   <div class="modal-inner" style="max-height:90vh;overflow-y:auto;padding:0">
@@ -1323,9 +1326,138 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div class="toast" id="toast"></div>
 
 <!-- Firebase compat (전역 방식) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
+// ── SWIPE NAVIGATION ──
+(function(){
+  var TAB_ORDER=['input','list','sch','dash','settings'];
+  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
+
+  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
+    // 모달 열려있으면 무시
+    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
+    for(var i=0;i<modals.length;i++){
+      var s=window.getComputedStyle(modals[i]);
+      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
+    }
+    swipeStartX=e.touches[0].clientX;
+    swipeStartY=e.touches[0].clientY;
+    swipeStartTime=Date.now();
+  },{passive:true});
+
+  document.getElementById('viewContainer').addEventListener('touchend',function(e){
+    if(!swipeStartX)return;
+    var dx=e.changedTouches[0].clientX-swipeStartX;
+    var dy=e.changedTouches[0].clientY-swipeStartY;
+    var dt=Date.now()-swipeStartTime;
+    swipeStartX=0;
+
+    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
+    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
+
+    var curTab=document.querySelector('.view.active');
+    if(!curTab)return;
+    var curId=curTab.id.replace('view-','');
+    var curIdx=TAB_ORDER.indexOf(curId);
+
+    if(dx<0&&curIdx<TAB_ORDER.length-1){
+      // 왼쪽 스와이프 → 다음 탭
+      switchTab(TAB_ORDER[curIdx+1],'right');
+    } else if(dx>0&&curIdx>0){
+      // 오른쪽 스와이프 → 이전 탭
+      switchTab(TAB_ORDER[curIdx-1],'left');
+    }
+  },{passive:true});
+})();
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js">
+// ── SWIPE NAVIGATION ──
+(function(){
+  var TAB_ORDER=['input','list','sch','dash','settings'];
+  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
+
+  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
+    // 모달 열려있으면 무시
+    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
+    for(var i=0;i<modals.length;i++){
+      var s=window.getComputedStyle(modals[i]);
+      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
+    }
+    swipeStartX=e.touches[0].clientX;
+    swipeStartY=e.touches[0].clientY;
+    swipeStartTime=Date.now();
+  },{passive:true});
+
+  document.getElementById('viewContainer').addEventListener('touchend',function(e){
+    if(!swipeStartX)return;
+    var dx=e.changedTouches[0].clientX-swipeStartX;
+    var dy=e.changedTouches[0].clientY-swipeStartY;
+    var dt=Date.now()-swipeStartTime;
+    swipeStartX=0;
+
+    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
+    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
+
+    var curTab=document.querySelector('.view.active');
+    if(!curTab)return;
+    var curId=curTab.id.replace('view-','');
+    var curIdx=TAB_ORDER.indexOf(curId);
+
+    if(dx<0&&curIdx<TAB_ORDER.length-1){
+      // 왼쪽 스와이프 → 다음 탭
+      switchTab(TAB_ORDER[curIdx+1],'right');
+    } else if(dx>0&&curIdx>0){
+      // 오른쪽 스와이프 → 이전 탭
+      switchTab(TAB_ORDER[curIdx-1],'left');
+    }
+  },{passive:true});
+})();
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js">
+// ── SWIPE NAVIGATION ──
+(function(){
+  var TAB_ORDER=['input','list','sch','dash','settings'];
+  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
+
+  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
+    // 모달 열려있으면 무시
+    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
+    for(var i=0;i<modals.length;i++){
+      var s=window.getComputedStyle(modals[i]);
+      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
+    }
+    swipeStartX=e.touches[0].clientX;
+    swipeStartY=e.touches[0].clientY;
+    swipeStartTime=Date.now();
+  },{passive:true});
+
+  document.getElementById('viewContainer').addEventListener('touchend',function(e){
+    if(!swipeStartX)return;
+    var dx=e.changedTouches[0].clientX-swipeStartX;
+    var dy=e.changedTouches[0].clientY-swipeStartY;
+    var dt=Date.now()-swipeStartTime;
+    swipeStartX=0;
+
+    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
+    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
+
+    var curTab=document.querySelector('.view.active');
+    if(!curTab)return;
+    var curId=curTab.id.replace('view-','');
+    var curIdx=TAB_ORDER.indexOf(curId);
+
+    if(dx<0&&curIdx<TAB_ORDER.length-1){
+      // 왼쪽 스와이프 → 다음 탭
+      switchTab(TAB_ORDER[curIdx+1],'right');
+    } else if(dx>0&&curIdx>0){
+      // 오른쪽 스와이프 → 이전 탭
+      switchTab(TAB_ORDER[curIdx-1],'left');
+    }
+  },{passive:true});
+})();
+
+</script>
 
 <script>
 firebase.initializeApp({
@@ -3930,25 +4062,42 @@ function renderCalDetail(dateStr){
 }
 
 // ── TABS ──
-function switchTab(tab){
-  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('view-'+tab).classList.add('active');
-  var tabEl=document.getElementById('tab-'+tab);
-  if(tabEl)tabEl.classList.add('active');
-  document.getElementById('incomeFab').style.display=tab==='dash'?'block':'none';
-  if(tab==='input'){setTimeout(initDatePicker,0);}
-  if(tab==='list'){
-    calYear=new Date().getFullYear();calMonth=new Date().getMonth();
-    renderCal();renderFilterBar();renderList();
+function switchTab(tab, direction){
+  var TAB_ORDER=['input','list','sch','dash','settings'];
+  var curTab=document.querySelector('.view.active');
+  var curId=curTab?curTab.id.replace('view-',''):'';
+  var curIdx=TAB_ORDER.indexOf(curId);
+  var nextIdx=TAB_ORDER.indexOf(tab);
+
+  // 방향 결정 (명시적으로 전달받거나 인덱스로 판단)
+  var dir=direction||(nextIdx>curIdx?'right':'left');
+
+  // 현재 뷰 슬라이드 아웃
+  if(curTab&&curId!==tab){
+    curTab.classList.add(dir==='right'?'slide-out-left':'slide-out-right');
+    setTimeout(function(){
+      curTab.classList.remove('active','slide-out-left','slide-out-right');
+    },220);
   }
-  if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
-  if(tab==='dash'){renderDash();}
-  if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
+
+  // 새 뷰 슬라이드 인
+  setTimeout(function(){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    var nextView=document.getElementById('view-'+tab);
+    if(nextView){
+      nextView.classList.add('active', dir==='right'?'slide-in-right':'slide-in-left');
+      setTimeout(function(){nextView.classList.remove('slide-in-right','slide-in-left');},220);
+    }
+    var tabEl=document.getElementById('tab-'+tab);
+    if(tabEl){tabEl.classList.add('active');tabEl.scrollIntoView({inline:'center',behavior:'smooth'});}
+    // 탭별 렌더링
+    if(tab==='list'){renderCalendar();renderList();}
+    if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
+    if(tab==='dash'){renderDash();}
+    if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
+  }, curId===tab?0:50);
 }
 
-
-// ── NOTIF MODAL ──
 function openNotifModal(){
   document.getElementById('notifModal').style.display='flex';
   pushModalState('notifModal');
@@ -4301,6 +4450,49 @@ function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2200);
 }
+
+// ── SWIPE NAVIGATION ──
+(function(){
+  var TAB_ORDER=['input','list','sch','dash','settings'];
+  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
+
+  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
+    // 모달 열려있으면 무시
+    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
+    for(var i=0;i<modals.length;i++){
+      var s=window.getComputedStyle(modals[i]);
+      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
+    }
+    swipeStartX=e.touches[0].clientX;
+    swipeStartY=e.touches[0].clientY;
+    swipeStartTime=Date.now();
+  },{passive:true});
+
+  document.getElementById('viewContainer').addEventListener('touchend',function(e){
+    if(!swipeStartX)return;
+    var dx=e.changedTouches[0].clientX-swipeStartX;
+    var dy=e.changedTouches[0].clientY-swipeStartY;
+    var dt=Date.now()-swipeStartTime;
+    swipeStartX=0;
+
+    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
+    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
+
+    var curTab=document.querySelector('.view.active');
+    if(!curTab)return;
+    var curId=curTab.id.replace('view-','');
+    var curIdx=TAB_ORDER.indexOf(curId);
+
+    if(dx<0&&curIdx<TAB_ORDER.length-1){
+      // 왼쪽 스와이프 → 다음 탭
+      switchTab(TAB_ORDER[curIdx+1],'right');
+    } else if(dx>0&&curIdx>0){
+      // 오른쪽 스와이프 → 이전 탭
+      switchTab(TAB_ORDER[curIdx-1],'left');
+    }
+  },{passive:true});
+})();
+
 </script>
 </body>
 </html>
