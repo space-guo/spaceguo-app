@@ -981,7 +981,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <button class="modal-save" onclick="saveSiteEdit()">저장</button>
     </div>
     <button class="site-share-btn kakao" onclick="shareSiteKakao()">
-      💬 카카오톡으로 공유
+      💬 공유 (카카오톡 / 메시지)
     </button>
     <button class="site-share-btn copy" onclick="copySiteInfo()">
       📋 클립보드 복사
@@ -4132,20 +4132,36 @@ function fallbackCopy(text){
 function shareSiteKakao(){
   var text=buildSiteText();
   if(!text){showToast('현장 정보가 없어요');return;}
-  // 클립보드에도 복사
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).catch(function(){});
+
+  // 1. 클립보드 복사 (항상 먼저)
+  var copied=false;
+  function tryOpen(){
+    // 2. Web Share API (Android Chrome/삼성인터넷 지원)
+    if(navigator.share){
+      navigator.share({text:text}).catch(function(e){
+        // 사용자가 취소한 경우 무시
+        if(e.name!=='AbortError') showToast('공유 실패: '+e.message);
+      });
+    } else {
+      // 3. Web Share 없으면 카카오톡 URL Scheme 시도
+      var encoded=encodeURIComponent(text);
+      window.location.href='kakaotalk://send?text='+encoded;
+      setTimeout(function(){
+        showToast(copied?'📋 복사됐어요. 카카오톡에 붙여넣기 해주세요':'카카오톡이 없으면 클립보드 복사를 이용해주세요');
+      },1200);
+    }
   }
-  // 카카오톡 URL Scheme (모바일에서만 작동)
-  var encoded=encodeURIComponent(text);
-  var kakaoUrl='kakaotalk://send?text='+encoded;
-  var a=document.createElement('a');
-  a.href=kakaoUrl;
-  a.click();
-  // 앱이 없는 경우를 위해 1초 후 안내
-  setTimeout(function(){
-    showToast('카카오톡이 열리지 않으면 클립보드에서 붙여넣기 하세요');
-  },1500);
+
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      copied=true;
+      showToast('📋 클립보드 복사 완료');
+      setTimeout(tryOpen, 300);
+    }).catch(function(){tryOpen();});
+  } else {
+    fallbackCopy(text);
+    tryOpen();
+  }
 }
 // ── SITE EDIT ──
 var editingSiteIdx=-1, editingSiteStatus='ongoing';
