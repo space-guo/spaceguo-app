@@ -968,6 +968,27 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="field-row"><div class="field-label">전화번호</div><input class="field-input" id="sitePhoneInp" type="tel" placeholder="010-0000-0000"></div>
     <div class="field-row"><div class="field-label">주소</div><input class="field-input" id="siteAddressInp" placeholder="예: 서울시 광진구 자양동"></div>
     <div class="field-row"><div class="field-label">아파트명</div><input class="field-input" id="siteAptInp" placeholder="예: 자이아파트"></div>
+    <div class="field-row">
+      <div class="field-label">공사 기간</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="field-input" id="siteStartDateInp" type="date" style="flex:1">
+        <span style="color:var(--muted);font-size:13px;flex-shrink:0">~</span>
+        <input class="field-input" id="siteEndDateInp" type="date" style="flex:1">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">면적</div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;position:relative">
+          <input class="field-input" id="siteSqmInp" type="tel" inputmode="decimal" placeholder="0.00" style="width:100%;padding-right:32px" oninput="syncPyeong(this.value)">
+          <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">㎡</span>
+        </div>
+        <div style="flex:1;position:relative">
+          <input class="field-input" id="sitePyeongInp" type="tel" inputmode="decimal" placeholder="0.00" style="width:100%;padding-right:32px" oninput="syncSqm(this.value)">
+          <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">평</span>
+        </div>
+      </div>
+    </div>
     <div class="field-row"><div class="field-label">동 / 호수</div>
       <div style="display:flex;gap:8px">
         <input class="field-input" id="siteDongInp" placeholder="동" style="flex:1">
@@ -1941,7 +1962,7 @@ function renderSiteList(){
       +'<span class="site-name">'+name+'</span>'
       +'<span class="site-status-badge '+sc+'">'+sl+'</span>'
       +'</div>'
-      +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+'</div>':'')
+      +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+(s.pyeong?' · '+s.pyeong+'평':'')+'</div>':'')
       +'</div>'
       +'<button class="site-del" data-del-site="'+i+'" onclick="event.stopPropagation()">✕</button>'
       +'</div>';
@@ -4082,25 +4103,59 @@ function closeModalShowWithHistory(modalId){
 }
 
 
+
+// ── 평↔㎡ 변환 ──
+function syncPyeong(sqmVal){
+  var sqm=parseFloat(sqmVal);
+  var pyeongEl=document.getElementById('sitePyeongInp');
+  if(!pyeongEl)return;
+  if(isNaN(sqm)||sqmVal===''){pyeongEl.value='';return;}
+  pyeongEl.value=Math.round(sqm/3.3058*100)/100;
+}
+function syncSqm(pyeongVal){
+  var pyeong=parseFloat(pyeongVal);
+  var sqmEl=document.getElementById('siteSqmInp');
+  if(!sqmEl)return;
+  if(isNaN(pyeong)||pyeongVal===''){sqmEl.value='';return;}
+  sqmEl.value=Math.round(pyeong*3.3058*100)/100;
+}
 // ── SITE SHARE ──
 function buildSiteText(){
-  var s=sites[editingSiteIdx];
-  if(!s)return '';
-  if(typeof s==='string')return s;
+  // 모달 입력값 직접 읽기 (저장 전이어도 현재 입력 내용 반영)
   var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
+  var name    =(document.getElementById('siteEditInp')||{}).value||'';
+  var customer=(document.getElementById('siteCustomerInp')||{}).value||'';
+  var phone   =(document.getElementById('sitePhoneInp')||{}).value||'';
+  var address =(document.getElementById('siteAddressInp')||{}).value||'';
+  var apt     =(document.getElementById('siteAptInp')||{}).value||'';
+  var dong    =(document.getElementById('siteDongInp')||{}).value||'';
+  var ho      =(document.getElementById('siteHoInp')||{}).value||'';
+  var commonPw=(document.getElementById('siteCommonPwInp')||{}).value||'';
+  var unitPw  =(document.getElementById('siteUnitPwInp')||{}).value||'';
+  var status  =editingSiteStatus||'ongoing';
+  var dongho  =dong&&ho?dong+'동 '+ho+'호':(dong?dong+'동':ho?ho+'호':'');
+  if(!name){showToast('현장명이 없어요');return '';}
   var lines=[];
   lines.push('📍 현장 정보');
   lines.push('━━━━━━━━━━━━━━');
-  if(s.name)    lines.push('🏠 현장명: '+s.name);
-  if(s.status)  lines.push('📌 상태: '+(statusMap[s.status]||s.status));
-  if(s.customer)lines.push('👤 고객명: '+s.customer);
-  if(s.phone)   lines.push('📞 전화번호: '+s.phone);
-  if(s.address) lines.push('🗺 주소: '+s.address);
-  if(s.apt)     lines.push('🏢 아파트: '+s.apt);
-  if(s.dongho)  lines.push('🚪 동/호수: '+s.dongho);
-  lines.push('━━━━━━━━━━━━━━');
-  if(s.commonPw)lines.push('🔑 공용 비번: '+s.commonPw);
-  if(s.unitPw)  lines.push('🔐 세대 비번: '+s.unitPw);
+  lines.push('🏠 현장명: '+name);
+  lines.push('📌 상태: '+(statusMap[status]||status));
+  if(customer) lines.push('👤 고객명: '+customer);
+  if(phone)    lines.push('📞 전화번호: '+phone);
+  if(address)  lines.push('🗺 주소: '+address);
+  if(apt)      lines.push('🏢 아파트: '+apt);
+  if(dongho)   lines.push('🚪 동/호수: '+dongho);
+  var startDate=(document.getElementById('siteStartDateInp')||{}).value||'';
+  var endDate  =(document.getElementById('siteEndDateInp')||{}).value||'';
+  var sqm      =(document.getElementById('siteSqmInp')||{}).value||'';
+  var pyeong   =(document.getElementById('sitePyeongInp')||{}).value||'';
+  if(startDate||endDate) lines.push('📅 공사기간: '+(startDate||'?')+' ~ '+(endDate||'?'));
+  if(sqm||pyeong)        lines.push('📐 면적: '+(sqm?sqm+'㎡':'')+(sqm&&pyeong?' / ':' ')+(pyeong?pyeong+'평':''));
+  if(commonPw||unitPw){
+    lines.push('━━━━━━━━━━━━━━');
+    if(commonPw) lines.push('🔑 공용 비번: '+commonPw);
+    if(unitPw)   lines.push('🔐 세대 비번: '+unitPw);
+  }
   return lines.join('\n');
 }
 
@@ -4179,6 +4234,10 @@ function openSiteEditModal(i){
   var dongho=(s.dongho||'').split('/');
   document.getElementById('siteDongInp').value=dongho[0]||'';
   document.getElementById('siteHoInp').value=dongho[1]||'';
+  document.getElementById('siteStartDateInp').value=s.startDate||'';
+  document.getElementById('siteEndDateInp').value=s.endDate||'';
+  document.getElementById('siteSqmInp').value=s.sqm||'';
+  document.getElementById('sitePyeongInp').value=s.pyeong||'';
   document.getElementById('siteCommonPwInp').value=s.commonPw||'';
   document.getElementById('siteUnitPwInp').value=s.unitPw||'';
   var statusClass={meeting:'active-meeting',before:'active-before',ongoing:'active-ongoing',done:'active-done'};
@@ -4211,6 +4270,10 @@ function saveSiteEdit(){
     address:document.getElementById('siteAddressInp').value.trim(),
     apt:document.getElementById('siteAptInp').value.trim(),
     dongho:dong&&ho?dong+'/'+ho:(dong||ho||''),
+    startDate:document.getElementById('siteStartDateInp').value||'',
+    endDate:document.getElementById('siteEndDateInp').value||'',
+    sqm:document.getElementById('siteSqmInp').value.trim(),
+    pyeong:document.getElementById('sitePyeongInp').value.trim(),
     commonPw:document.getElementById('siteCommonPwInp').value.trim(),
     unitPw:document.getElementById('siteUnitPwInp').value.trim()
   };
