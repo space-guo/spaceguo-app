@@ -510,6 +510,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .proc-acc-inp{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px;outline:none}
 .proc-acc-inp:focus{border-color:var(--accent)}
 .proc-acc-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:12px;font-weight:700;padding:7px 12px;cursor:pointer}
+
+/* ── SITE SHARE ── */
+.site-share-btn{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;font-weight:700;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+.site-share-btn.kakao{background:#FEE500;border-color:#FEE500;color:#191919}
+.site-share-btn.copy{background:var(--surface2);border-color:var(--border);color:var(--text)}
 </style>
 </head>
 <body>
@@ -975,6 +980,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
       <button class="modal-save" onclick="saveSiteEdit()">저장</button>
     </div>
+    <button class="site-share-btn kakao" onclick="shareSiteKakao()">
+      💬 카카오톡으로 공유
+    </button>
+    <button class="site-share-btn copy" onclick="copySiteInfo()">
+      📋 클립보드 복사
+    </button>
   </div>
 </div>
 
@@ -4070,6 +4081,72 @@ function closeModalShowWithHistory(modalId){
   }
 }
 
+
+// ── SITE SHARE ──
+function buildSiteText(){
+  var s=sites[editingSiteIdx];
+  if(!s)return '';
+  if(typeof s==='string')return s;
+  var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
+  var lines=[];
+  lines.push('📍 현장 정보');
+  lines.push('━━━━━━━━━━━━━━');
+  if(s.name)    lines.push('🏠 현장명: '+s.name);
+  if(s.status)  lines.push('📌 상태: '+(statusMap[s.status]||s.status));
+  if(s.customer)lines.push('👤 고객명: '+s.customer);
+  if(s.phone)   lines.push('📞 전화번호: '+s.phone);
+  if(s.address) lines.push('🗺 주소: '+s.address);
+  if(s.apt)     lines.push('🏢 아파트: '+s.apt);
+  if(s.dongho)  lines.push('🚪 동/호수: '+s.dongho);
+  lines.push('━━━━━━━━━━━━━━');
+  if(s.commonPw)lines.push('🔑 공용 비번: '+s.commonPw);
+  if(s.unitPw)  lines.push('🔐 세대 비번: '+s.unitPw);
+  return lines.join('\n');
+}
+
+function copySiteInfo(){
+  var text=buildSiteText();
+  if(!text){showToast('현장 정보가 없어요');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      showToast('✓ 클립보드에 복사됐어요');
+    }).catch(function(){
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();ta.select();
+  try{document.execCommand('copy');showToast('✓ 클립보드에 복사됐어요');}
+  catch(e){showToast('복사 실패 - 직접 선택해주세요');}
+  document.body.removeChild(ta);
+}
+
+function shareSiteKakao(){
+  var text=buildSiteText();
+  if(!text){showToast('현장 정보가 없어요');return;}
+  // 클립보드에도 복사
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(function(){});
+  }
+  // 카카오톡 URL Scheme (모바일에서만 작동)
+  var encoded=encodeURIComponent(text);
+  var kakaoUrl='kakaotalk://send?text='+encoded;
+  var a=document.createElement('a');
+  a.href=kakaoUrl;
+  a.click();
+  // 앱이 없는 경우를 위해 1초 후 안내
+  setTimeout(function(){
+    showToast('카카오톡이 열리지 않으면 클립보드에서 붙여넣기 하세요');
+  },1500);
+}
 // ── SITE EDIT ──
 var editingSiteIdx=-1, editingSiteStatus='ongoing';
 function openSiteEditModal(i){
