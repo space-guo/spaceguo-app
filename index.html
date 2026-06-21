@@ -1327,136 +1327,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <!-- Firebase compat (전역 방식) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
-// ── SWIPE NAVIGATION ──
-(function(){
-  var TAB_ORDER=['input','list','sch','dash','settings'];
-  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
-
-  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
-    // 모달 열려있으면 무시
-    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
-    for(var i=0;i<modals.length;i++){
-      var s=window.getComputedStyle(modals[i]);
-      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
-    }
-    swipeStartX=e.touches[0].clientX;
-    swipeStartY=e.touches[0].clientY;
-    swipeStartTime=Date.now();
-  },{passive:true});
-
-  document.getElementById('viewContainer').addEventListener('touchend',function(e){
-    if(!swipeStartX)return;
-    var dx=e.changedTouches[0].clientX-swipeStartX;
-    var dy=e.changedTouches[0].clientY-swipeStartY;
-    var dt=Date.now()-swipeStartTime;
-    swipeStartX=0;
-
-    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
-    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
-
-    var curTab=document.querySelector('.view.active');
-    if(!curTab)return;
-    var curId=curTab.id.replace('view-','');
-    var curIdx=TAB_ORDER.indexOf(curId);
-
-    if(dx<0&&curIdx<TAB_ORDER.length-1){
-      // 왼쪽 스와이프 → 다음 탭
-      switchTab(TAB_ORDER[curIdx+1],'right');
-    } else if(dx>0&&curIdx>0){
-      // 오른쪽 스와이프 → 이전 탭
-      switchTab(TAB_ORDER[curIdx-1],'left');
-    }
-  },{passive:true});
-})();
-
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js">
-// ── SWIPE NAVIGATION ──
-(function(){
-  var TAB_ORDER=['input','list','sch','dash','settings'];
-  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
-
-  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
-    // 모달 열려있으면 무시
-    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
-    for(var i=0;i<modals.length;i++){
-      var s=window.getComputedStyle(modals[i]);
-      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
-    }
-    swipeStartX=e.touches[0].clientX;
-    swipeStartY=e.touches[0].clientY;
-    swipeStartTime=Date.now();
-  },{passive:true});
-
-  document.getElementById('viewContainer').addEventListener('touchend',function(e){
-    if(!swipeStartX)return;
-    var dx=e.changedTouches[0].clientX-swipeStartX;
-    var dy=e.changedTouches[0].clientY-swipeStartY;
-    var dt=Date.now()-swipeStartTime;
-    swipeStartX=0;
-
-    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
-    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
-
-    var curTab=document.querySelector('.view.active');
-    if(!curTab)return;
-    var curId=curTab.id.replace('view-','');
-    var curIdx=TAB_ORDER.indexOf(curId);
-
-    if(dx<0&&curIdx<TAB_ORDER.length-1){
-      // 왼쪽 스와이프 → 다음 탭
-      switchTab(TAB_ORDER[curIdx+1],'right');
-    } else if(dx>0&&curIdx>0){
-      // 오른쪽 스와이프 → 이전 탭
-      switchTab(TAB_ORDER[curIdx-1],'left');
-    }
-  },{passive:true});
-})();
-
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js">
-// ── SWIPE NAVIGATION ──
-(function(){
-  var TAB_ORDER=['input','list','sch','dash','settings'];
-  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
-
-  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
-    // 모달 열려있으면 무시
-    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
-    for(var i=0;i<modals.length;i++){
-      var s=window.getComputedStyle(modals[i]);
-      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
-    }
-    swipeStartX=e.touches[0].clientX;
-    swipeStartY=e.touches[0].clientY;
-    swipeStartTime=Date.now();
-  },{passive:true});
-
-  document.getElementById('viewContainer').addEventListener('touchend',function(e){
-    if(!swipeStartX)return;
-    var dx=e.changedTouches[0].clientX-swipeStartX;
-    var dy=e.changedTouches[0].clientY-swipeStartY;
-    var dt=Date.now()-swipeStartTime;
-    swipeStartX=0;
-
-    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
-    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
-
-    var curTab=document.querySelector('.view.active');
-    if(!curTab)return;
-    var curId=curTab.id.replace('view-','');
-    var curIdx=TAB_ORDER.indexOf(curId);
-
-    if(dx<0&&curIdx<TAB_ORDER.length-1){
-      // 왼쪽 스와이프 → 다음 탭
-      switchTab(TAB_ORDER[curIdx+1],'right');
-    } else if(dx>0&&curIdx>0){
-      // 오른쪽 스와이프 → 이전 탭
-      switchTab(TAB_ORDER[curIdx-1],'left');
-    }
-  },{passive:true});
-})();
-
 </script>
 
 <script>
@@ -1575,7 +1449,7 @@ function subscribeRecords(){
   unsubRec=db.collection('expenses').orderBy('date','desc').onSnapshot(function(snap){
     records=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     updateHeaderTotal();
-    if(document.getElementById('view-list').classList.contains('active'))renderList();
+    renderList();
     if(document.getElementById('view-dash').classList.contains('active'))renderDash();
   });
 }
@@ -3368,6 +3242,34 @@ function closeChecklistModal(){
 
 // checklistNewInp 엔터키
 document.addEventListener('DOMContentLoaded',function(){
+  // ── 스와이프 네비게이션 초기화 ──
+  var TAB_ORDER_SW=['input','list','sch','dash','settings'];
+  var swStartX=0,swStartY=0,swStartTime=0;
+  var vc=document.getElementById('viewContainer');
+  if(vc){
+    vc.addEventListener('touchstart',function(e){
+      var openModal=document.querySelector('.modal-overlay[style*="flex"], .daily-modal-overlay.show, .color-popup-overlay.show');
+      if(openModal)return;
+      if(modalStack&&modalStack.length>0)return;
+      swStartX=e.touches[0].clientX;
+      swStartY=e.touches[0].clientY;
+      swStartTime=Date.now();
+    },{passive:true});
+    vc.addEventListener('touchend',function(e){
+      if(!swStartX)return;
+      var dx=e.changedTouches[0].clientX-swStartX;
+      var dy=e.changedTouches[0].clientY-swStartY;
+      var dt=Date.now()-swStartTime;
+      swStartX=0;
+      if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.7||dt>400)return;
+      var curEl=document.querySelector('.view.active');
+      if(!curEl)return;
+      var curId=curEl.id.replace('view-','');
+      var curIdx=TAB_ORDER_SW.indexOf(curId);
+      if(dx<0&&curIdx<TAB_ORDER_SW.length-1)switchTab(TAB_ORDER_SW[curIdx+1],'right');
+      else if(dx>0&&curIdx>0)switchTab(TAB_ORDER_SW[curIdx-1],'left');
+    },{passive:true});
+  }
   var inp=document.getElementById('checklistNewInp');
   if(inp){inp.addEventListener('keydown',function(e){if(e.key==='Enter')addCheckItem();});}
 });
@@ -4456,48 +4358,6 @@ function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2200);
 }
-
-// ── SWIPE NAVIGATION ──
-(function(){
-  var TAB_ORDER=['input','list','sch','dash','settings'];
-  var swipeStartX=0, swipeStartY=0, swipeStartTime=0;
-
-  document.getElementById('viewContainer').addEventListener('touchstart',function(e){
-    // 모달 열려있으면 무시
-    var modals=document.querySelectorAll('.modal-overlay, .daily-modal-overlay, .color-popup-overlay');
-    for(var i=0;i<modals.length;i++){
-      var s=window.getComputedStyle(modals[i]);
-      if(s.display!=='none'||(modals[i].classList&&modals[i].classList.contains('show')))return;
-    }
-    swipeStartX=e.touches[0].clientX;
-    swipeStartY=e.touches[0].clientY;
-    swipeStartTime=Date.now();
-  },{passive:true});
-
-  document.getElementById('viewContainer').addEventListener('touchend',function(e){
-    if(!swipeStartX)return;
-    var dx=e.changedTouches[0].clientX-swipeStartX;
-    var dy=e.changedTouches[0].clientY-swipeStartY;
-    var dt=Date.now()-swipeStartTime;
-    swipeStartX=0;
-
-    // 수평 스와이프 조건: 수평 이동 > 60px, 수직 이동 < 수평의 60%, 시간 < 400ms
-    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6||dt>400)return;
-
-    var curTab=document.querySelector('.view.active');
-    if(!curTab)return;
-    var curId=curTab.id.replace('view-','');
-    var curIdx=TAB_ORDER.indexOf(curId);
-
-    if(dx<0&&curIdx<TAB_ORDER.length-1){
-      // 왼쪽 스와이프 → 다음 탭
-      switchTab(TAB_ORDER[curIdx+1],'right');
-    } else if(dx>0&&curIdx>0){
-      // 오른쪽 스와이프 → 이전 탭
-      switchTab(TAB_ORDER[curIdx-1],'left');
-    }
-  },{passive:true});
-})();
 
 </script>
 </body>
