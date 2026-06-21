@@ -4064,38 +4064,44 @@ function renderCalDetail(dateStr){
 // ── TABS ──
 function switchTab(tab, direction){
   var TAB_ORDER=['input','list','sch','dash','settings'];
-  var curTab=document.querySelector('.view.active');
-  var curId=curTab?curTab.id.replace('view-',''):'';
+  var curEl=document.querySelector('.view.active');
+  var curId=curEl?curEl.id.replace('view-',''):'';
+  if(curId===tab)return;
+
   var curIdx=TAB_ORDER.indexOf(curId);
   var nextIdx=TAB_ORDER.indexOf(tab);
-
-  // 방향 결정 (명시적으로 전달받거나 인덱스로 판단)
   var dir=direction||(nextIdx>curIdx?'right':'left');
 
-  // 현재 뷰 슬라이드 아웃
-  if(curTab&&curId!==tab){
-    curTab.classList.add(dir==='right'?'slide-out-left':'slide-out-right');
+  var nextEl=document.getElementById('view-'+tab);
+  if(!nextEl)return;
+
+  // 탭 버튼 업데이트
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  var tabEl=document.getElementById('tab-'+tab);
+  if(tabEl){tabEl.classList.add('active');tabEl.scrollIntoView({inline:'center',behavior:'smooth'});}
+
+  // 다음 뷰 즉시 활성화 (렌더링 먼저)
+  nextEl.classList.add('active');
+
+  // 탭별 데이터 렌더링 (active 된 직후)
+  if(tab==='list'){renderCalendar();renderList();}
+  else if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
+  else if(tab==='dash'){renderDash();}
+  else if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
+
+  // 맨 위로 스크롤
+  nextEl.scrollTop=0;
+  window.scrollTo(0,0);
+
+  // 슬라이드 애니메이션
+  if(curEl){
+    curEl.classList.add(dir==='right'?'slide-out-left':'slide-out-right');
+    nextEl.classList.add(dir==='right'?'slide-in-right':'slide-in-left');
     setTimeout(function(){
-      curTab.classList.remove('active','slide-out-left','slide-out-right');
+      curEl.classList.remove('active','slide-out-left','slide-out-right');
+      nextEl.classList.remove('slide-in-right','slide-in-left');
     },220);
   }
-
-  // 새 뷰 슬라이드 인
-  setTimeout(function(){
-    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-    var nextView=document.getElementById('view-'+tab);
-    if(nextView){
-      nextView.classList.add('active', dir==='right'?'slide-in-right':'slide-in-left');
-      setTimeout(function(){nextView.classList.remove('slide-in-right','slide-in-left');},220);
-    }
-    var tabEl=document.getElementById('tab-'+tab);
-    if(tabEl){tabEl.classList.add('active');tabEl.scrollIntoView({inline:'center',behavior:'smooth'});}
-    // 탭별 렌더링
-    if(tab==='list'){renderCalendar();renderList();}
-    if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
-    if(tab==='dash'){renderDash();}
-    if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
-  }, curId===tab?0:50);
 }
 
 function openNotifModal(){
