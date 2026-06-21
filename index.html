@@ -968,6 +968,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="field-row"><div class="field-label">전화번호</div><input class="field-input" id="sitePhoneInp" type="tel" placeholder="010-0000-0000"></div>
     <div class="field-row"><div class="field-label">주소</div><input class="field-input" id="siteAddressInp" placeholder="예: 서울시 광진구 자양동"></div>
     <div class="field-row"><div class="field-label">아파트명</div><input class="field-input" id="siteAptInp" placeholder="예: 자이아파트"></div>
+    <div class="field-row"><div class="field-label">동 / 호수</div>
+      <div style="display:flex;gap:8px">
+        <input class="field-input" id="siteDongInp" placeholder="동" style="flex:1">
+        <input class="field-input" id="siteHoInp" placeholder="호수" style="flex:1">
+      </div>
+    </div>
     <div class="field-row">
       <div class="field-label">공사 기간</div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -987,12 +993,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <input class="field-input" id="sitePyeongInp" type="tel" inputmode="decimal" placeholder="0.00" style="width:100%;padding-right:32px" oninput="syncSqm(this.value)">
           <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">평</span>
         </div>
-      </div>
-    </div>
-    <div class="field-row"><div class="field-label">동 / 호수</div>
-      <div style="display:flex;gap:8px">
-        <input class="field-input" id="siteDongInp" placeholder="동" style="flex:1">
-        <input class="field-input" id="siteHoInp" placeholder="호수" style="flex:1">
       </div>
     </div>
     <div class="field-row"><div class="field-label">공용 비밀번호</div><input class="field-input" id="siteCommonPwInp" type="tel" placeholder="예: 1234#"></div>
