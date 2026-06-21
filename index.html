@@ -1455,11 +1455,25 @@ function renderPendingSection(){
       db.collection('sms_pending').doc(id).delete().then(function(){showToast('알림 삭제됐어요');});
     });
   });
-  // 카드 탭 이벤트
+  // 카드 탭 이벤트 (touchend + isScrolling 가드)
   listEl.querySelectorAll('.pending-card').forEach(function(card){
+    card.addEventListener('touchend',function(e){
+      if(isScrolling)return;
+      if(e.target.classList.contains('pending-del-btn'))return;
+      var area=this.querySelector('.pending-apply-area');
+      if(!area)return;
+      var id=area.dataset.pid;
+      var amount=parseInt(area.dataset.amount);
+      var vendor=decodeURIComponent(area.dataset.vendor);
+      var dateStr=decodeURIComponent(area.dataset.date);
+      var cardnum=decodeURIComponent(area.dataset.cardnum);
+      applyPending(id,amount,vendor,dateStr,cardnum);
+    },{passive:true});
+    // PC용 click
     card.addEventListener('click',function(e){
       if(e.target.classList.contains('pending-del-btn'))return;
       var area=this.querySelector('.pending-apply-area');
+      if(!area)return;
       var id=area.dataset.pid;
       var amount=parseInt(area.dataset.amount);
       var vendor=decodeURIComponent(area.dataset.vendor);
@@ -1904,20 +1918,12 @@ function renderSiteList(){
       +'</div>';
   }).join('');
   el.querySelectorAll('.site-card').forEach(function(card){
-    var tapStart=0;
-    card.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
     card.addEventListener('touchend',function(e){
-      if(Date.now()-tapStart>400)return; // 드래그
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      e.preventDefault();
-      openSiteEditModal(parseInt(this.dataset.siteIdx));
-    });
-    card.addEventListener('click',function(e){
+      if(isScrolling)return;
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
       openSiteEditModal(parseInt(this.dataset.siteIdx));
-    });
+    },{passive:true});
   });
   el.querySelectorAll('[data-del-site]').forEach(function(btn){
     btn.addEventListener('click',function(e){
@@ -1944,7 +1950,10 @@ function deleteSite(i){
 function renderFilterBar(){
   var bar=document.getElementById('filterBar');
   bar.innerHTML='<button class="filter-chip '+(currentFilter==='전체'?'active':'')+'" onclick="setFilter(\'전체\',this)">전체</button>';
-  sites.forEach(function(s){bar.innerHTML+='<button class="filter-chip '+(currentFilter===s?'active':'')+'" onclick="setFilter(\''+s+'\',this)">'+s+'</button>';});
+  sites.forEach(function(s){
+    var name=typeof s==='object'?s.name:s;
+    bar.innerHTML+='<button class="filter-chip '+(currentFilter===name?'active':'')+'" onclick="setFilter(\''+name+'\',this)">'+name+'</button>';
+  });
 }
 function setFilter(f,btn){
   currentFilter=f;
@@ -2061,20 +2070,12 @@ function renderCardList(){
   }).join('');
   // 카드 탭 → 수정 모달
   el.querySelectorAll('.site-item').forEach(function(item){
-    var tapStart=0;
-    item.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
     item.addEventListener('touchend',function(e){
-      if(Date.now()-tapStart>400)return;
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      e.preventDefault();
-      openCardModal(parseInt(this.dataset.cardIdx));
-    });
-    item.addEventListener('click',function(e){
+      if(isScrolling)return;
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
       openCardModal(parseInt(this.dataset.cardIdx));
-    });
+    },{passive:true});
   });
   el.querySelectorAll('[data-del-card]').forEach(function(btn){
     btn.addEventListener('click',function(e){
@@ -2146,20 +2147,12 @@ function renderAccountList(){
   }).join('');
   // 계좌 탭 → 수정 모달
   el.querySelectorAll('.site-item').forEach(function(item){
-    var tapStart=0;
-    item.addEventListener('touchstart',function(){tapStart=Date.now();},{passive:true});
     item.addEventListener('touchend',function(e){
-      if(Date.now()-tapStart>400)return;
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      e.preventDefault();
-      openAccountModal(parseInt(this.dataset.accIdx));
-    });
-    item.addEventListener('click',function(e){
+      if(isScrolling)return;
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
       openAccountModal(parseInt(this.dataset.accIdx));
-    });
+    },{passive:true});
   });
   el.querySelectorAll('[data-del-acc]').forEach(function(btn){
     btn.addEventListener('click',function(e){
@@ -2360,24 +2353,13 @@ function renderProcessList(){
   // 카드 탭 → 아코디언 토글 (스크롤 vs 탭 구분)
   grid.querySelectorAll('.proc-grid-card').forEach(function(card){
     var startX=0, startY=0;
+    var startX=0,startY=0;
     card.addEventListener('touchstart',function(e){
       startX=e.touches[0].clientX;
       startY=e.touches[0].clientY;
     },{passive:true});
     card.addEventListener('touchend',function(e){
-      var dx=Math.abs(e.changedTouches[0].clientX-startX);
-      var dy=Math.abs(e.changedTouches[0].clientY-startY);
-      if(dx>8||dy>8)return; // 스크롤이면 무시
-      if(e.target.classList.contains('proc-grid-color'))return;
-      if(e.target.classList.contains('proc-grid-edit'))return;
-      if(e.target.classList.contains('proc-grid-del'))return;
-      if(e.target.classList.contains('proc-grid-drag'))return;
-      e.preventDefault();
-      var pi=parseInt(this.dataset.pi);
-      openProcIdx=(openProcIdx===pi)?-1:pi;
-      renderProcessList();
-    });
-    card.addEventListener('click',function(e){
+      if(isScrolling)return;
       if(e.target.classList.contains('proc-grid-color'))return;
       if(e.target.classList.contains('proc-grid-edit'))return;
       if(e.target.classList.contains('proc-grid-del'))return;
@@ -2385,7 +2367,7 @@ function renderProcessList(){
       var pi=parseInt(this.dataset.pi);
       openProcIdx=(openProcIdx===pi)?-1:pi;
       renderProcessList();
-    });
+    },{passive:true});
   });
 
   // 색상 점 → 팝업
@@ -4125,6 +4107,21 @@ function saveSiteEdit(){
     closeSiteEditModal();renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 정보 저장됐어요');
   });
 }
+
+// ── SCROLL GUARD ──
+// touchmove가 한 번이라도 발생하면 isScrolling=true
+// touchend 이후 리셋
+var isScrolling = false;
+var scrollTimer = null;
+document.addEventListener('touchmove', function(){
+  isScrolling = true;
+  clearTimeout(scrollTimer);
+}, {passive: true});
+document.addEventListener('touchend', function(){
+  scrollTimer = setTimeout(function(){ isScrolling = false; }, 50);
+}, {passive: true});
+
+function isTap(){ return !isScrolling; }
 // ── TOAST ──
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
