@@ -3266,8 +3266,13 @@ document.addEventListener('DOMContentLoaded',function(){
       if(!curEl)return;
       var curId=curEl.id.replace('view-','');
       var curIdx=TAB_ORDER_SW.indexOf(curId);
-      if(dx<0&&curIdx<TAB_ORDER_SW.length-1)switchTab(TAB_ORDER_SW[curIdx+1]);
-      else if(dx>0&&curIdx>0)switchTab(TAB_ORDER_SW[curIdx-1]);
+      if(dx<0&&curIdx<TAB_ORDER_SW.length-1){
+        e.preventDefault&&e.preventDefault();
+        switchTab(TAB_ORDER_SW[curIdx+1]);
+      } else if(dx>0&&curIdx>0){
+        e.preventDefault&&e.preventDefault();
+        switchTab(TAB_ORDER_SW[curIdx-1]);
+      }
     },{passive:true});
   }
   var inp=document.getElementById('checklistNewInp');
@@ -3978,9 +3983,16 @@ function switchTab(tab){
   var nextView=document.getElementById('view-'+tab);
   if(nextView){
     nextView.classList.add('active');
-    nextView.scrollTop=0;
   }
-  window.scrollTo(0,0);
+  // 모든 스크롤 위치 맨 위로
+  requestAnimationFrame(function(){
+    window.scrollTo({top:0,behavior:'instant'});
+    document.documentElement.scrollTop=0;
+    document.body.scrollTop=0;
+    if(nextView)nextView.scrollTop=0;
+    var vc=document.getElementById('viewContainer');
+    if(vc)vc.scrollTop=0;
+  });
   var tabEl=document.getElementById('tab-'+tab);
   if(tabEl){
     tabEl.classList.add('active');
