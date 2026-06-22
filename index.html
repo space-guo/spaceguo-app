@@ -1092,6 +1092,22 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="field-row"><div class="field-label">이메일</div><input class="field-input" id="vendorEmailInp" type="email" placeholder="example@email.com"></div>
     <div class="field-row"><div class="field-label">사업자등록번호</div><input class="field-input" id="vendorBizInp" type="tel" placeholder="000-00-00000"></div>
     <div class="field-row"><div class="field-label">주민등록번호 (선택)</div><input class="field-input" id="vendorIdInp" type="tel" placeholder="000000-0000000"></div>
+    <div class="field-row"><div class="field-label">담당 공정</div><select class="field-select" id="vendorProcInp"><option value="">선택 안 함</option></select></div>
+    <div class="field-row"><div class="field-label">은행 / 계좌번호</div>
+      <div style="display:flex;gap:6px">
+        <select class="field-select" id="vendorBankInp" style="flex:1;min-width:0">
+          <option value="">은행 선택</option>
+          <option>국민은행</option><option>신한은행</option><option>우리은행</option>
+          <option>하나은행</option><option>농협은행</option><option>기업은행</option>
+          <option>카카오뱅크</option><option>케이뱅크</option><option>토스뱅크</option>
+          <option>SC제일은행</option><option>씨티은행</option><option>부산은행</option>
+          <option>대구은행</option><option>경남은행</option><option>광주은행</option>
+          <option>전북은행</option><option>제주은행</option><option>수협은행</option>
+          <option>우체국</option><option>새마을금고</option><option>신협</option>
+        </select>
+        <input class="field-input" id="vendorAccountInp" type="tel" placeholder="계좌번호" style="flex:1.4;min-width:0">
+      </div>
+    </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeVendorModal()">취소</button>
       <button class="modal-save" onclick="saveVendorModal()">저장</button>
@@ -3301,7 +3317,9 @@ function renderVendorMgmtList(){
       +'<div class="vendor-card-sub">'
       +(v.phone?'📞 '+v.phone+'<br>':'')
       +(v.email?'✉️ '+v.email+'<br>':'')
-      +(v.biz?'사업자: '+v.biz:'')
+      +(v.biz?'사업자: '+v.biz+'<br>':'')
+      +(v.proc?'🔧 '+v.proc+'<br>':'')
+      +(v.bank&&v.account?'🏦 '+v.bank+' '+v.account:v.bank?'🏦 '+v.bank:'')
       +'</div>'
       +'</div>';
   }).join('');
@@ -3330,6 +3348,16 @@ function openVendorModal(id){
   var isEdit=!!id;
   document.getElementById('vendorModalTitle').textContent=isEdit?'거래처 수정':'거래처 추가';
   document.getElementById('vendorDeleteBtn').style.display=isEdit?'block':'none';
+  // 공정 드롭다운 채우기
+  var procSel=document.getElementById('vendorProcInp');
+  procSel.innerHTML='<option value="">선택 안 함</option>';
+  if(typeof processes!=='undefined'){
+    processes.forEach(function(p){
+      var o=document.createElement('option');
+      o.value=p.name;o.textContent=p.name;
+      procSel.appendChild(o);
+    });
+  }
   if(isEdit){
     var v=vendors.find(function(x){return x.id===id;});
     if(!v)return;
@@ -3339,10 +3367,15 @@ function openVendorModal(id){
     document.getElementById('vendorEmailInp').value=v.email||'';
     document.getElementById('vendorBizInp').value=v.biz||'';
     document.getElementById('vendorIdInp').value=v.idnum||'';
+    document.getElementById('vendorProcInp').value=v.proc||'';
+    document.getElementById('vendorBankInp').value=v.bank||'';
+    document.getElementById('vendorAccountInp').value=v.account||'';
   } else {
-    ['vendorCompanyInp','vendorNameInp','vendorPhoneInp','vendorEmailInp','vendorBizInp','vendorIdInp'].forEach(function(id){
-      document.getElementById(id).value='';
+    ['vendorCompanyInp','vendorNameInp','vendorPhoneInp','vendorEmailInp','vendorBizInp','vendorIdInp','vendorAccountInp'].forEach(function(fid){
+      document.getElementById(fid).value='';
     });
+    document.getElementById('vendorProcInp').value='';
+    document.getElementById('vendorBankInp').value='';
   }
   document.getElementById('vendorModal').style.display='flex';
   pushModalState('vendorModal');
@@ -3361,6 +3394,9 @@ function saveVendorModal(){
     email:document.getElementById('vendorEmailInp').value.trim(),
     biz:document.getElementById('vendorBizInp').value.trim(),
     idnum:document.getElementById('vendorIdInp').value.trim(),
+    proc:document.getElementById('vendorProcInp').value,
+    bank:document.getElementById('vendorBankInp').value,
+    account:document.getElementById('vendorAccountInp').value.trim(),
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
   setSyncStatus('saving');
