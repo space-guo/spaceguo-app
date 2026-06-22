@@ -3999,7 +3999,7 @@ function switchTab(tab){
     tabEl.scrollIntoView({inline:'center',behavior:'smooth'});
   }
   // 탭별 렌더링
-  if(tab==='list'){renderCalendar();renderList();}
+  if(tab==='list'){renderCal();renderList();}
   else if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
   else if(tab==='dash'){renderDash();}
   else if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
