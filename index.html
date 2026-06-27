@@ -1174,6 +1174,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="field-row"><div class="field-label">자재명 (필수)</div><input class="field-input" id="orderNameInp" placeholder="예: 시멘트, 타일, 합판"></div>
     <div class="field-row"><div class="field-label">수량 / 단위</div><div style="display:flex;gap:8px"><input class="field-input" id="orderQtyInp" type="tel" inputmode="decimal" placeholder="0" style="flex:1"><input class="field-input" id="orderUnitInp" placeholder="개, 포, m²" style="flex:1"></div></div>
     <div class="field-row"><div class="field-label">금액 (원)</div><input class="field-input" id="orderAmountInp" type="tel" inputmode="numeric" placeholder="0"></div>
+    <div class="field-row"><div class="field-label">공정</div><select class="field-select" id="orderProcInp"><option value="">선택 안 함</option></select></div>
     <div class="field-row"><div class="field-label">거래처</div><select class="field-select" id="orderVendorInp"><option value="">선택 안 함</option></select></div>
     <div class="field-row"><div class="field-label">발주일</div><input class="field-input" id="orderDateInp" type="date"></div>
     <div class="field-row"><div class="field-label">납품 예정일</div><input class="field-input" id="orderDeliveryInp" type="date"></div>
@@ -3287,6 +3288,32 @@ function closeChecklistModal(){
 
 // checklistNewInp 엔터키
 document.addEventListener('DOMContentLoaded',function(){
+  // ── 스와이프 네비게이션 ──
+  var TAB_ORDER_SW=['input','list','sch','order','dash'];
+  var swStartX=0,swStartY=0,swStartTime=0;
+  var vc=document.getElementById('viewContainer');
+  if(vc){
+    vc.addEventListener('touchstart',function(e){
+      if(modalStack&&modalStack.length>0)return;
+      swStartX=e.touches[0].clientX;
+      swStartY=e.touches[0].clientY;
+      swStartTime=Date.now();
+    },{passive:true});
+    vc.addEventListener('touchend',function(e){
+      if(!swStartX)return;
+      var dx=e.changedTouches[0].clientX-swStartX;
+      var dy=e.changedTouches[0].clientY-swStartY;
+      var dt=Date.now()-swStartTime;
+      swStartX=0;
+      if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.7||dt>400)return;
+      var curEl=document.querySelector('.view.active');
+      if(!curEl)return;
+      var curId=curEl.id.replace('view-','');
+      var curIdx=TAB_ORDER_SW.indexOf(curId);
+      if(dx<0&&curIdx<TAB_ORDER_SW.length-1)switchTab(TAB_ORDER_SW[curIdx+1]);
+      else if(dx>0&&curIdx>0)switchTab(TAB_ORDER_SW[curIdx-1]);
+    },{passive:true});
+  }
   var inp=document.getElementById('checklistNewInp');
   if(inp){inp.addEventListener('keydown',function(e){if(e.key==='Enter')addCheckItem();});}
 });
@@ -4400,7 +4427,7 @@ function renderOrderList(){
   var sC={pending:'var(--accent2)',ordered:'var(--blue)',arrived:'var(--green)'};
   el.innerHTML=filtered.map(function(o){
     var st=o.status||'pending';
-    return '<div class="site-card" data-oid="'+o.id+'" style="cursor:pointer;margin-bottom:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:13px;font-weight:800">'+o.name+'</span><span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:'+sC[st]+'30;color:'+sC[st]+'">'+sL[st]+'</span></div><div style="font-size:11px;color:var(--muted)">'+(o.site?'📍 '+o.site+' · ':'')+( o.qty?o.qty+(o.unit?' '+o.unit:'')+'  ':'')+( o.amount?'₩'+parseInt(o.amount).toLocaleString():'')+'</div>'+(o.vendor?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👷 '+o.vendor+'</div>':'')+(o.delivery?'<div style="font-size:11px;color:var(--muted);margin-top:2px">📅 납품예정: '+o.delivery+'</div>':'')+(o.memo?'<div style="font-size:11px;color:var(--muted);margin-top:2px">💬 '+o.memo+'</div>':'')+'</div></div>';
+    return '<div class="site-card" data-oid="'+o.id+'" style="cursor:pointer;margin-bottom:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:13px;font-weight:800">'+o.name+'</span><span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:'+sC[st]+'30;color:'+sC[st]+'">'+sL[st]+'</span></div><div style="font-size:11px;color:var(--muted)">'+(o.site?'📍 '+o.site+(o.proc?' · 📦 '+o.proc:''):'')+' · '+( o.qty?o.qty+(o.unit?' '+o.unit:'')+'  ':'')+( o.amount?'₩'+parseInt(o.amount).toLocaleString():'')+'</div>'+(o.vendor?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👷 '+o.vendor+'</div>':'')+(o.delivery?'<div style="font-size:11px;color:var(--muted);margin-top:2px">📅 납품예정: '+o.delivery+'</div>':'')+(o.memo?'<div style="font-size:11px;color:var(--muted);margin-top:2px">💬 '+o.memo+'</div>':'')+'</div></div>';
   }).join('');
   el.querySelectorAll('.site-card').forEach(function(card){
     card.addEventListener('touchend',function(e){if(isScrolling)return;openOrderModalEdit(this.dataset.oid);},{passive:true});
@@ -4422,6 +4449,9 @@ function openOrderModal(){
   var sel=document.getElementById('orderSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
   sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
+  var psel=document.getElementById('orderProcInp');
+  psel.innerHTML='<option value="">선택 안 함</option>';
+  processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;psel.appendChild(o);});
   var vsel=document.getElementById('orderVendorInp');
   vsel.innerHTML='<option value="">선택 안 함</option>';
   vendors.forEach(function(v){var vn=v.company+(v.name?' ('+v.name+')':'');var o=document.createElement('option');o.value=vn;o.textContent=vn;vsel.appendChild(o);});
@@ -4440,6 +4470,9 @@ function openOrderModalEdit(id){
   var sel=document.getElementById('orderSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
   sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var opt=document.createElement('option');opt.value=name;opt.textContent=name;if(name===o.site)opt.selected=true;sel.appendChild(opt);});
+  var psel=document.getElementById('orderProcInp');
+  psel.innerHTML='<option value="">선택 안 함</option>';
+  processes.forEach(function(p){var opt=document.createElement('option');opt.value=p.name;opt.textContent=p.name;if(p.name===o.proc)opt.selected=true;psel.appendChild(opt);});
   var vsel=document.getElementById('orderVendorInp');
   vsel.innerHTML='<option value="">선택 안 함</option>';
   vendors.forEach(function(v){var vn=v.company+(v.name?' ('+v.name+')':'');var opt=document.createElement('option');opt.value=vn;opt.textContent=vn;if(vn===o.vendor)opt.selected=true;vsel.appendChild(opt);});
@@ -4461,7 +4494,7 @@ function closeOrderModal(){
 function saveOrderModal(){
   var name=document.getElementById('orderNameInp').value.trim();
   if(!name){showToast('자재명을 입력해주세요');return;}
-  var data={site:document.getElementById('orderSiteInp').value,name:name,qty:document.getElementById('orderQtyInp').value.trim(),unit:document.getElementById('orderUnitInp').value.trim(),amount:document.getElementById('orderAmountInp').value.trim(),vendor:document.getElementById('orderVendorInp').value,date:document.getElementById('orderDateInp').value,delivery:document.getElementById('orderDeliveryInp').value,memo:document.getElementById('orderMemoInp').value.trim(),status:orderStatus,ts:firebase.firestore.FieldValue.serverTimestamp()};
+  var data={site:document.getElementById('orderSiteInp').value,proc:document.getElementById('orderProcInp').value,name:name,qty:document.getElementById('orderQtyInp').value.trim(),unit:document.getElementById('orderUnitInp').value.trim(),amount:document.getElementById('orderAmountInp').value.trim(),vendor:document.getElementById('orderVendorInp').value,date:document.getElementById('orderDateInp').value,delivery:document.getElementById('orderDeliveryInp').value,memo:document.getElementById('orderMemoInp').value.trim(),status:orderStatus,ts:firebase.firestore.FieldValue.serverTimestamp()};
   setSyncStatus('saving');
   var p=editingOrderId?db.collection('orders').doc(editingOrderId).update(data):db.collection('orders').add(data);
   p.then(function(){closeOrderModal();setSyncStatus('ok');showToast(editingOrderId?'✓ 발주 수정됐어요':'✓ 발주 추가됐어요');}).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
