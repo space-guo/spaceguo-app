@@ -776,10 +776,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 </div>
 
 <!-- DASHBOARD -->
-<div class="view" id="view-dash">
-  <div class="dash-period" id="dashPeriod"></div>
-  <div id="dashContent"><div class="loading"><div class="spinner"></div>계산 중...</div></div>
-</div>
+
 
 <!-- ORDER -->
 <div class="view" id="view-order">
@@ -794,6 +791,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <button class="notif-filter-btn" onclick="setOrderFilter('arrived',this)">입고완료</button>
   </div>
   <div id="orderList"></div>
+</div>
+
+<div class="view" id="view-dash">
+  <div class="dash-period" id="dashPeriod"></div>
+  <div id="dashContent"><div class="loading"><div class="spinner"></div>계산 중...</div></div>
 </div>
 
 
@@ -1171,10 +1173,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <button onclick="closeOrderModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
     </div>
     <div class="field-row"><div class="field-label">현장</div><select class="field-select" id="orderSiteInp"></select></div>
+    <div class="field-row"><div class="field-label">공정</div><select class="field-select" id="orderProcInp"><option value="">선택 안 함</option></select></div>
     <div class="field-row"><div class="field-label">자재명 (필수)</div><input class="field-input" id="orderNameInp" placeholder="예: 시멘트, 타일, 합판"></div>
     <div class="field-row"><div class="field-label">수량 / 단위</div><div style="display:flex;gap:8px"><input class="field-input" id="orderQtyInp" type="tel" inputmode="decimal" placeholder="0" style="flex:1"><input class="field-input" id="orderUnitInp" placeholder="개, 포, m²" style="flex:1"></div></div>
     <div class="field-row"><div class="field-label">금액 (원)</div><input class="field-input" id="orderAmountInp" type="tel" inputmode="numeric" placeholder="0"></div>
-    <div class="field-row"><div class="field-label">공정</div><select class="field-select" id="orderProcInp"><option value="">선택 안 함</option></select></div>
     <div class="field-row"><div class="field-label">거래처</div><select class="field-select" id="orderVendorInp"><option value="">선택 안 함</option></select></div>
     <div class="field-row"><div class="field-label">발주일</div><input class="field-input" id="orderDateInp" type="date"></div>
     <div class="field-row"><div class="field-label">납품 예정일</div><input class="field-input" id="orderDeliveryInp" type="date"></div>
