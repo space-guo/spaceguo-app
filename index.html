@@ -550,15 +550,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <span class="today-total" id="headerTotal"></span>
       <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
       <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()">🔔<span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
-      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      <button class="logout-btn" onclick="openSettingsModal()" style="font-size:18px;padding:4px 8px">⚙️</button>
     </div>
   </div>
   <div class="tab-bar">
     <button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
     <button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
     <button class="tab" id="tab-sch" onclick="switchTab('sch')">공정표</button>
+    <button class="tab" id="tab-order" onclick="switchTab('order')">발주</button>
     <button class="tab" id="tab-dash" onclick="switchTab('dash')">손익</button>
-    <button class="tab" id="tab-settings" onclick="switchTab('settings')">설정</button>
   </div>
 </div>
 
@@ -781,7 +781,31 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div id="dashContent"><div class="loading"><div class="spinner"></div>계산 중...</div></div>
 </div>
 
-<!-- SETTINGS -->
+<!-- ORDER (발주) -->
+<div class="view" id="view-order">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <select class="field-select" id="orderSiteFilter" onchange="renderOrderList()" style="flex:1;margin-right:8px"></select>
+    <button class="add-item-btn" onclick="openOrderModal()">＋ 발주 추가</button>
+  </div>
+  <div id="orderStatusTabs" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="notif-filter-btn active" data-ostatus="all" onclick="setOrderFilter('all',this)">전체</button>
+    <button class="notif-filter-btn" data-ostatus="pending" onclick="setOrderFilter('pending',this)">발주중</button>
+    <button class="notif-filter-btn" data-ostatus="ordered" onclick="setOrderFilter('ordered',this)">발주완료</button>
+    <button class="notif-filter-btn" data-ostatus="arrived" onclick="setOrderFilter('arrived',this)">입고완료</button>
+  </div>
+  <div id="orderList"></div>
+</div>
+
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettingsModal()" style="display:none">
+  <div class="modal-inner" style="max-height:92vh;overflow-y:auto;padding:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px;position:sticky;top:0;background:var(--surface);z-index:1;border-bottom:1px solid var(--border)">
+      <div style="font-size:16px;font-weight:900">⚙️ 설정</div>
+      <button onclick="closeSettingsModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px">
+
 <div class="view" id="view-settings">
   <div class="settings-title">현장 목록</div>
   <div class="site-list" id="siteList"></div>
@@ -1092,29 +1116,56 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="field-row"><div class="field-label">이메일</div><input class="field-input" id="vendorEmailInp" type="email" placeholder="example@email.com"></div>
     <div class="field-row"><div class="field-label">사업자등록번호</div><input class="field-input" id="vendorBizInp" type="tel" placeholder="000-00-00000"></div>
     <div class="field-row"><div class="field-label">주민등록번호 (선택)</div><input class="field-input" id="vendorIdInp" type="tel" placeholder="000000-0000000"></div>
-    <div class="field-row"><div class="field-label">담당 공정</div><select class="field-select" id="vendorProcInp"><option value="">선택 안 함</option></select></div>
-    <div class="field-row"><div class="field-label">은행 / 계좌번호</div>
-      <div style="display:flex;gap:6px">
-        <select class="field-select" id="vendorBankInp" style="flex:1;min-width:0">
-          <option value="">은행 선택</option>
-          <option>국민은행</option><option>신한은행</option><option>우리은행</option>
-          <option>하나은행</option><option>농협은행</option><option>기업은행</option>
-          <option>카카오뱅크</option><option>케이뱅크</option><option>토스뱅크</option>
-          <option>SC제일은행</option><option>씨티은행</option><option>부산은행</option>
-          <option>대구은행</option><option>경남은행</option><option>광주은행</option>
-          <option>전북은행</option><option>제주은행</option><option>수협은행</option>
-          <option>우체국</option><option>새마을금고</option><option>신협</option>
-        </select>
-        <input class="field-input" id="vendorAccountInp" type="tel" placeholder="계좌번호" style="flex:1.4;min-width:0">
-      </div>
-    </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeVendorModal()">취소</button>
       <button class="modal-save" onclick="saveVendorModal()">저장</button>
     </div>
     <button id="vendorDeleteBtn" style="display:none;width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px" onclick="deleteVendorItem()">🗑 삭제</button>
   </div>
+
+      <div class="section-divider"></div>
+      <button onclick="doLogout()" style="width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:14px;cursor:pointer;margin-top:8px">로그아웃</button>
+    </div>
+  </div>
 </div>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="orderModal" onclick="if(event.target===this)closeOrderModal()" style="display:none">
+  <div class="modal-inner" style="max-height:88vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="orderModalTitle">발주 추가</div>
+      <button onclick="closeOrderModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="field-row"><div class="field-label">현장</div><select class="field-select" id="orderSiteInp"></select></div>
+    <div class="field-row"><div class="field-label">자재명 (필수)</div><input class="field-input" id="orderNameInp" placeholder="예: 시멘트, 타일, 합판"></div>
+    <div class="field-row">
+      <div class="field-label">수량 / 단위</div>
+      <div style="display:flex;gap:8px">
+        <input class="field-input" id="orderQtyInp" type="tel" inputmode="decimal" placeholder="0" style="flex:1">
+        <input class="field-input" id="orderUnitInp" placeholder="개, 포, m²" style="flex:1">
+      </div>
+    </div>
+    <div class="field-row"><div class="field-label">금액 (원)</div><input class="field-input" id="orderAmountInp" type="tel" inputmode="numeric" placeholder="0"></div>
+    <div class="field-row"><div class="field-label">거래처</div><select class="field-select" id="orderVendorInp"><option value="">선택 안 함</option></select></div>
+    <div class="field-row"><div class="field-label">발주일</div><input class="field-input" id="orderDateInp" type="date"></div>
+    <div class="field-row"><div class="field-label">납품 예정일</div><input class="field-input" id="orderDeliveryInp" type="date"></div>
+    <div class="field-row">
+      <div class="field-label">상태</div>
+      <div style="display:flex;gap:6px">
+        <button class="site-status-btn active-ongoing" data-ostatus="pending" id="ostBtn-pending" onclick="selectOrderStatus('pending')">발주중</button>
+        <button class="site-status-btn" data-ostatus="ordered" id="ostBtn-ordered" onclick="selectOrderStatus('ordered')">발주완료</button>
+        <button class="site-status-btn" data-ostatus="arrived" id="ostBtn-arrived" onclick="selectOrderStatus('arrived')">입고완료</button>
+      </div>
+    </div>
+    <div class="field-row"><div class="field-label">메모</div><textarea class="field-input" id="orderMemoInp" rows="3" placeholder="특이사항 메모..." style="resize:none"></textarea></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeOrderModal()">취소</button>
+      <button class="modal-save" onclick="saveOrderModal()">저장</button>
+    </div>
+    <button id="orderDeleteBtn" style="display:none;width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px" onclick="deleteOrder()">🗑 삭제</button>
+  </div>
+</div>
+
 <!-- JOURNAL MODAL -->
 <div class="modal-overlay" id="journalModal" onclick="if(event.target===this)closeJournalModal()">
   <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
@@ -1432,7 +1483,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();loadVendors();subscribeRecords();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
+    loadSettings();loadVendors();subscribeRecords();subscribeOrders();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -1969,26 +2020,58 @@ function renderSiteSelect(){
 }
 function renderSiteList(){
   var el=document.getElementById('siteList');
-  if(!sites.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';return;}
+  if(!sites.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';
+    return;
+  }
   var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
   var statusClass={meeting:'meeting',before:'before',ongoing:'ongoing',done:'done'};
-  el.innerHTML=sites.map(function(s,i){
-    var name=typeof s==='object'?s.name:s;
-    var status=typeof s==='object'?s.status:'ongoing';
-    var sc=statusClass[status]||'ongoing';
-    var sl=statusMap[status]||'공사중';
-    return '<div class="site-card drag-item" data-site-idx="'+i+'">'
-      +'<span class="drag-handle">☰</span>'
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="display:flex;align-items:center;gap:4px">'
-      +'<span class="site-name">'+name+'</span>'
-      +'<span class="site-status-badge '+sc+'">'+sl+'</span>'
+  var statusOrder=['meeting','before','ongoing','done'];
+  var statusColors={meeting:'var(--blue)',before:'var(--accent2)',ongoing:'var(--green)',done:'var(--muted)'};
+
+  // 상태별로 그룹화
+  var groups={};
+  statusOrder.forEach(function(st){groups[st]=[];});
+  sites.forEach(function(s,i){
+    var st=typeof s==='object'?s.status||'ongoing':'ongoing';
+    if(!groups[st])groups[st]=[];
+    groups[st].push({s:s,i:i});
+  });
+
+  var html_parts=[];
+  statusOrder.forEach(function(st){
+    var group=groups[st];
+    if(!group||!group.length)return;
+    // 섹션 헤더
+    html_parts.push(
+      '<div style="display:flex;align-items:center;gap:6px;padding:8px 4px 4px;margin-top:4px">'
+      +'<span style="width:8px;height:8px;border-radius:50%;background:'+statusColors[st]+';flex-shrink:0"></span>'
+      +'<span style="font-size:11px;font-weight:800;color:'+statusColors[st]+'">'+statusMap[st]+'</span>'
+      +'<span style="font-size:11px;color:var(--muted)">('+group.length+')</span>'
       +'</div>'
-      +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+(s.pyeong?' · '+s.pyeong+'평':'')+'</div>':'')
-      +'</div>'
-      +'<button class="site-del" data-del-site="'+i+'" onclick="event.stopPropagation()">✕</button>'
-      +'</div>';
-  }).join('');
+    );
+    // 해당 상태 현장들
+    group.forEach(function(item){
+      var s=item.s; var i=item.i;
+      var name=typeof s==='object'?s.name:s;
+      var sc=statusClass[st]||'ongoing';
+      html_parts.push(
+        '<div class="site-card drag-item" data-site-idx="'+i+'">'
+        +'<span class="drag-handle">☰</span>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:700">'+name+'</div>'
+        +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+(s.pyeong?' · '+s.pyeong+'평':'')+'</div>':'')
+        +(s.startDate||s.endDate?'<div style="font-size:11px;color:var(--muted);margin-top:1px">📅 '+(s.startDate||'?')+' ~ '+(s.endDate||'?')+'</div>':'')
+        +'</div>'
+        +'<button class="site-del" data-del-site="'+i+'">✕</button>'
+        +'</div>'
+      );
+    });
+  });
+
+  el.innerHTML=html_parts.join('');
+
+  // 탭 이벤트
   el.querySelectorAll('.site-card').forEach(function(card){
     card.addEventListener('touchend',function(e){
       if(isScrolling)return;
@@ -1996,2322 +2079,27 @@ function renderSiteList(){
       if(e.target.classList.contains('site-del'))return;
       openSiteEditModal(parseInt(this.dataset.siteIdx));
     },{passive:true});
+    card.addEventListener('click',function(e){
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      openSiteEditModal(parseInt(this.dataset.siteIdx));
+    });
   });
+
+  // 삭제 이벤트
   el.querySelectorAll('[data-del-site]').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
       deleteSite(parseInt(this.getAttribute('data-del-site')));
     });
   });
+
+  // 드래그 정렬
   initDragList(el, sites, 'sites', function(){
-    saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
+    saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();});
   });
 }
-function moveSite(i,dir){
-  var t=i+dir;
-  if(t<0||t>=sites.length)return;
-  var tmp=sites[i];sites[i]=sites[t];sites[t]=tmp;
-  saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
-}
-function deleteSite(i){
-  if(!confirm('"'+(typeof sites[i]==='object'?sites[i].name:sites[i])+'" 현장을 삭제할까요?'))return;
-  sites.splice(i,1);saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
-}
-
-// ── FILTER ──
-function renderFilterBar(){
-  var bar=document.getElementById('filterBar');
-  bar.innerHTML='<button class="filter-chip '+(currentFilter==='전체'?'active':'')+'" onclick="setFilter(\'전체\',this)">전체</button>';
-  sites.forEach(function(s){
-    var name=typeof s==='object'?s.name:s;
-    bar.innerHTML+='<button class="filter-chip '+(currentFilter===name?'active':'')+'" onclick="setFilter(\''+name+'\',this)">'+name+'</button>';
-  });
-}
-function setFilter(f,btn){
-  currentFilter=f;
-  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
-  btn.classList.add('active');renderList();
-}
-
-// ── LIST ──
-function renderList(){
-  var filtered=currentFilter==='전체'?records:records.filter(function(r){return r.site===currentFilter;});
-  var total=filtered.reduce(function(a,r){return a+r.amount;},0);
-  document.getElementById('filteredTotal').textContent='₩'+total.toLocaleString('ko-KR');
-  document.getElementById('filteredCount').textContent=filtered.length+'건';
-  var el=document.getElementById('recordList');
-  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="emoji">📋</div><p>기록이 없어요</p></div>';return;}
-  var groups={};
-  filtered.forEach(function(r){
-    var d=new Date(r.date),key=d.getFullYear()+'.'+(d.getMonth()+1+'').padStart(2,'0')+'.'+(''+d.getDate()).padStart(2,'0');
-    if(!groups[key])groups[key]=[];groups[key].push(r);
-  });
-  el.innerHTML=Object.entries(groups).map(function(e){
-    var date=e[0],recs=e[1];
-    var dayTotal=recs.reduce(function(a,r){return a+r.amount;},0);
-    return '<div class="section-header">'+date+' · ₩'+dayTotal.toLocaleString('ko-KR')+'</div>'+recs.map(function(r){
-      var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
-      var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
-      var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
-      var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
-      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
-    }).join('');
-  }).join('');
-}
-
-// ── HEADER TOTAL ──
-function updateHeaderTotal(){
-  var today=new Date().toDateString();
-  var t=records.filter(function(r){return new Date(r.date).toDateString()===today;}).reduce(function(a,r){return a+r.amount;},0);
-  document.getElementById('headerTotal').textContent=t?'오늘 ₩'+t.toLocaleString('ko-KR'):'';
-}
-
-// ── DASHBOARD ──
-function buildPeriods(){
-  var set={};
-  records.concat(incomes).forEach(function(r){
-    var d=new Date(r.date||'');
-    if(!isNaN(d)){set[d.getFullYear()]=1;set[d.getFullYear()+'-'+(''+( d.getMonth()+1)).padStart(2,'0')]=1;}
-  });
-  return Object.keys(set).sort().reverse();
-}
-function filterByPeriod(arr){
-  return arr.filter(function(r){
-    var d=new Date(r.date||'');if(isNaN(d))return false;
-    if(dashPeriod.includes('-')){var p=dashPeriod.split('-');return d.getFullYear()===parseInt(p[0])&&d.getMonth()+1===parseInt(p[1]);}
-    return d.getFullYear()===parseInt(dashPeriod);
-  });
-}
-function selectDashPeriod(p){dashPeriod=p;renderDash();}
-function renderDash(){
-  var periods=buildPeriods();
-  if(!periods.length){document.getElementById('dashPeriod').innerHTML='';document.getElementById('dashContent').innerHTML='<div class="empty-state"><div class="emoji">📊</div><p>기록을 먼저 입력해주세요</p></div>';return;}
-  if(!dashPeriod||!periods.includes(dashPeriod))dashPeriod=periods[0];
-  document.getElementById('dashPeriod').innerHTML=periods.map(function(p){return '<button class="period-btn '+(dashPeriod===p?'active':'')+'" onclick="selectDashPeriod(\''+p+'\')">'+p+'</button>';}).join('');
-  var fRec=filterByPeriod(records),fInc=filterByPeriod(incomes);
-  var totalInc=fInc.reduce(function(a,r){return a+r.amount;},0);
-  var totalExp=fRec.reduce(function(a,r){return a+r.amount;},0);
-  var profit=totalInc-totalExp,margin=totalInc?Math.round(profit/totalInc*100):0;
-  var byCat={};fRec.forEach(function(r){byCat[r.category]=(byCat[r.category]||0)+r.amount;});
-  var catEntries=Object.entries(byCat).sort(function(a,b){return b[1]-a[1];});
-  var bySite={};
-  fRec.forEach(function(r){if(!bySite[r.site])bySite[r.site]={exp:0,inc:0};bySite[r.site].exp+=r.amount;});
-  fInc.forEach(function(r){if(!bySite[r.site])bySite[r.site]={exp:0,inc:0};bySite[r.site].inc+=r.amount;});
-  var siteEntries=Object.entries(bySite).sort(function(a,b){return(b[1].inc-b[1].exp)-(a[1].inc-a[1].exp);});
-  function fmt(n){return '₩'+Math.abs(n).toLocaleString('ko-KR');}
-  document.getElementById('dashContent').innerHTML=
-    '<div class="kpi-grid">'
-    +'<div class="kpi-card"><div class="kpi-label">📥 총 매출</div><div class="kpi-value income">'+fmt(totalInc)+'</div><div class="kpi-sub">'+fInc.length+'건</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">📤 총 매입</div><div class="kpi-value expense">'+fmt(totalExp)+'</div><div class="kpi-sub">'+fRec.length+'건</div></div>'
-    +'<div class="kpi-card full"><div class="kpi-label">💰 손익 (매출 - 매입)</div><div class="kpi-value profit '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'-')+fmt(profit)+'</div><div class="kpi-sub">이익률 '+margin+'%'+(totalInc?'':' · 매출 입력 필요')+'</div></div>'
-    +'</div>'
-    +'<div class="section-header" style="margin-bottom:10px">현장별 손익</div>'
-    +'<div class="site-pl-list">'+(siteEntries.length?siteEntries.map(function(e){var s=e[0],v=e[1],pl=v.inc-v.exp,plc=pl>=0?'var(--green)':'var(--red)',pct=v.inc?Math.round(v.exp/v.inc*100):100;return '<div class="site-pl-item"><div class="site-pl-name">📍 '+s+'</div><div class="site-pl-row"><span class="lbl">매출</span><span style="color:var(--blue)">'+fmt(v.inc)+'</span></div><div class="site-pl-row"><span class="lbl">매입</span><span style="color:var(--red)">'+fmt(v.exp)+'</span></div><div class="site-pl-row"><span class="lbl">손익</span><span style="color:'+plc+'">'+(pl>=0?'+':'-')+fmt(pl)+'</span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+plc+'"></div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">데이터 없음</div>')+'</div>'
-    +'<div class="section-header" style="margin-bottom:10px">카테고리별 매입</div>'
-    +'<div class="cat-breakdown">'+(catEntries.length?catEntries.map(function(e){var cat=e[0],amt=e[1],ci=CAT_ICONS[cat]||CAT_ICONS['기타'],pct=totalExp?Math.round(amt/totalExp*100):0;return '<div class="cat-row"><div class="cat-name">'+ci.icon+' '+cat+'</div><div style="display:flex;align-items:center;gap:8px"><span class="cat-pct">'+pct+'%</span><span style="font-weight:700">'+fmt(amt)+'</span></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:4px">데이터 없음</div>')+'</div>'
-    +'<div class="section-header" style="margin-bottom:10px;margin-top:4px">매출 내역</div>'
-    +'<div>'+(fInc.length?fInc.map(function(r){return '<div class="record-item" style="margin-bottom:8px">'
-      +'<div class="record-icon" style="background:#1a1f2e">💰</div>'
-      +'<div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div><div class="record-cat">'+r.date+'</div></div>'
-      +'<div class="record-right"><div class="record-amount" style="color:var(--blue)">₩'+r.amount.toLocaleString('ko-KR')+'</div>'
-      +'<div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end">'
-      +'<button class="proc-btn" onclick="openIncomeEditModal(\''+r.id+'\')">수정</button>'
-      +'<button class="proc-btn del" onclick="deleteIncome(\''+r.id+'\')">삭제</button>'
-      +'</div></div>'
-      +'</div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">매출 기록이 없어요</div>')+'</div>';
-}
-
-// ── CARDS ──
-function renderCardChips(){
-  var el=document.getElementById('cardChips');
-  if(!cards.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">카드 없음 · 설정에서 추가</span>';return;}
-  el.innerHTML=cards.map(function(c){var label=c.num?c.name+' ('+c.num+')':c.name;return '<button class="pay-chip'+(selectedPayMethod===c.name?' selected-card':'')+'" onclick="selectPay(this,\''+c.name+'\',\'card\')">'+label+'</button>';}).join('');
-}
-function renderCardList(){
-  var el=document.getElementById('cardList');
-  if(!cards.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">카드가 없어요</div>';return;}
-  el.innerHTML=cards.map(function(c,i){
-    return '<div class="site-item drag-item" data-card-idx="'+i+'">'
-      +'<span class="drag-handle">☰</span>'
-      +'<div style="flex:1">'
-      +'<div class="site-name">💳 '+c.name+(c.num?' <span style="font-size:11px;color:var(--muted)">····'+c.num+'</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(c.issuer||'')+(c.issuer&&c.type?' · ':'')+(c.type||'')+'</div>'
-      +'</div>'
-      +'<button class="site-del" data-del-card="'+i+'">✕</button>'
-      +'</div>';
-  }).join('');
-  // 카드 탭 → 수정 모달
-  el.querySelectorAll('.site-item').forEach(function(item){
-    item.addEventListener('touchend',function(e){
-      if(isScrolling)return;
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      openCardModal(parseInt(this.dataset.cardIdx));
-    },{passive:true});
-  });
-  el.querySelectorAll('[data-del-card]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteCard(parseInt(this.getAttribute('data-del-card')));
-    });
-  });
-  initDragList(el, cards, 'cards', function(){
-    saveSettings().then(function(){renderCardList();renderCardChips();});
-  });
-}
-
-function selectCardType(type){
-  selectedCardType=type;
-  [{id:'ctCredit',t:'신용'},{id:'ctDebit',t:'체크'},{id:'ctCorp',t:'법인'}].forEach(function(x){var el=document.getElementById(x.id);if(el)el.classList.toggle('selected-card',x.t===type);});
-}
-function openCardModal(idx){
-  editingCardIdx=idx===undefined?-1:idx;
-  document.getElementById('cardModalTitle').textContent=editingCardIdx>=0?'카드 수정':'카드 추가';
-  if(editingCardIdx>=0){var c=cards[editingCardIdx];document.getElementById('cardNameInp').value=c.name||'';document.getElementById('cardIssuerInp').value=c.issuer||'';document.getElementById('cardNumInp').value=c.num||'';selectCardType(c.type||'신용');}
-  else{document.getElementById('cardNameInp').value='';document.getElementById('cardIssuerInp').value='';document.getElementById('cardNumInp').value='';selectCardType('신용');}
-  document.getElementById('cardModal').style.display='flex';
-  pushModalState('cardModal');
-}
-function closeCardModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('cardModal').style.display='none';}
-function saveCardModal(){
-  var name=document.getElementById('cardNameInp').value.trim();
-  if(!name){showToast('카드 별칭을 입력해주세요');return;}
-  var card={name:name,issuer:document.getElementById('cardIssuerInp').value,type:selectedCardType,num:document.getElementById('cardNumInp').value.trim()};
-  if(editingCardIdx>=0)cards[editingCardIdx]=card;else cards.push(card);
-  saveSettings().then(function(){closeCardModal();renderCardList();renderCardChips();showToast(editingCardIdx>=0?'카드 수정됐어요':'카드 추가됐어요');});
-}
-
-function moveCard(i,dir){
-  var t=i+dir;
-  if(t<0||t>=cards.length)return;
-  var tmp=cards[i];cards[i]=cards[t];cards[t]=tmp;
-  saveSettings().then(function(){renderCardList();renderCardChips();});
-}
-function deleteCard(i){
-  if(selectedPayMethod===cards[i].name){selectedPayMethod='';selectedPayType='';}
-  cards.splice(i,1);saveSettings().then(function(){renderCardList();renderCardChips();});
-}
-
-// ── ACCOUNTS ──
-function renderAccountChips(){
-  var el=document.getElementById('accountChips');
-  if(!el)return;
-  if(!accounts.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">계좌 없음 · 설정에서 추가</span>';return;}
-  el.innerHTML=accounts.map(function(a){
-    var label=a.num?a.name+' ('+a.num.slice(-4)+')':a.name;
-    return '<button class="pay-chip'+(selectedPayMethod===a.name?' selected-cash':'')+'" onclick="selectPay(this,\''+a.name+'\',\'cash\')">🏦 '+label+'</button>';
-  }).join('');
-}
-function renderAccountList(){
-  var el=document.getElementById('accountList');
-  if(!el)return;
-  if(!accounts.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">계좌가 없어요</div>';return;}
-  el.innerHTML=accounts.map(function(a,i){
-    return '<div class="site-item drag-item" data-acc-idx="'+i+'">'
-      +'<span class="drag-handle">☰</span>'
-      +'<div style="flex:1">'
-      +'<div class="site-name">🏦 '+a.name+(a.num?' <span style="font-size:11px;color:var(--muted)">'+a.num+'</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+(a.bank||'')+(a.bank&&a.owner?' · ':'')+(a.owner||'')+'</div>'
-      +'</div>'
-      +'<button class="site-del" data-del-acc="'+i+'">✕</button>'
-      +'</div>';
-  }).join('');
-  // 계좌 탭 → 수정 모달
-  el.querySelectorAll('.site-item').forEach(function(item){
-    item.addEventListener('touchend',function(e){
-      if(isScrolling)return;
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      openAccountModal(parseInt(this.dataset.accIdx));
-    },{passive:true});
-  });
-  el.querySelectorAll('[data-del-acc]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteAccount(parseInt(this.getAttribute('data-del-acc')));
-    });
-  });
-  initDragList(el, accounts, 'accounts', function(){
-    saveSettings().then(function(){renderAccountList();renderAccountChips();});
-  });
-}
-
-function openAccountModal(idx){
-  editingAccIdx=idx===undefined?-1:idx;
-  document.getElementById('accountModalTitle').textContent=editingAccIdx>=0?'계좌 수정':'계좌 추가';
-  if(editingAccIdx>=0){
-    var a=accounts[editingAccIdx];
-    document.getElementById('accNameInp').value=a.name||'';
-    document.getElementById('accBankInp').value=a.bank||'';
-    document.getElementById('accNumInp').value=a.num||'';
-    document.getElementById('accOwnerInp').value=a.owner||'';
-  } else {
-    document.getElementById('accNameInp').value='';
-    document.getElementById('accBankInp').value='';
-    document.getElementById('accNumInp').value='';
-    document.getElementById('accOwnerInp').value='';
-  }
-  document.getElementById('accountModal').style.display='flex';
-  pushModalState('accountModal');
-  setTimeout(function(){document.getElementById('accNameInp').focus();},100);
-}
-function closeAccountModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('accountModal').style.display='none';}
-function saveAccountModal(){
-  var name=document.getElementById('accNameInp').value.trim();
-  if(!name){showToast('계좌 별칭을 입력해주세요');return;}
-  var acc={name:name,bank:document.getElementById('accBankInp').value,num:document.getElementById('accNumInp').value.trim(),owner:document.getElementById('accOwnerInp').value.trim()};
-  if(editingAccIdx>=0)accounts[editingAccIdx]=acc;else accounts.push(acc);
-  saveSettings().then(function(){closeAccountModal();renderAccountList();renderAccountChips();showToast(editingAccIdx>=0?'계좌 수정됐어요':'계좌 추가됐어요');});
-}
-
-function moveAccount(i,dir){
-  var t=i+dir;
-  if(t<0||t>=accounts.length)return;
-  var tmp=accounts[i];accounts[i]=accounts[t];accounts[t]=tmp;
-  saveSettings().then(function(){renderAccountList();renderAccountChips();});
-}
-function deleteAccount(i){
-  if(selectedPayMethod===accounts[i].name){selectedPayMethod='';selectedPayType='';}
-  accounts.splice(i,1);saveSettings().then(function(){renderAccountList();renderAccountChips();});
-}
-
-// ── PROCESSES ──
-function renderProcessSelect(){
-  var sel=document.getElementById('processSelect');
-  if(!sel)return;
-  var cur=sel.value;
-  sel.innerHTML='<option value="">공정 선택</option>';
-  processes.forEach(function(p,i){
-    var o=document.createElement('option');o.value=i;o.textContent=p.name;
-    if(String(i)===cur)o.selected=true;
-    sel.appendChild(o);
-  });
-}
-function renderItemCheckboxes(){
-  var sel=document.getElementById('processSelect');
-  var area=document.getElementById('itemCheckboxArea');
-  selectedItems=[];
-  if(!sel.value&&sel.value!=='0'){area.innerHTML='';return;}
-  var proc=processes[parseInt(sel.value)];
-  if(!proc||!proc.items||!proc.items.length){
-    area.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">품목이 없어요 · 설정에서 추가하세요</div>';return;
-  }
-  area.innerHTML='<div class="item-check-grid">'+proc.items.map(function(item,i){
-    return '<button class="item-check-btn" onclick="toggleItem(this,\''+item.name+(item.unit?' ('+item.unit+')':'')+'\')">'
-      +'<span>'+item.name+'</span>'
-      +(item.unit?'<span class="unit">'+item.unit+'</span>':'')
-      +'</button>';
-  }).join('')+'</div>';
-}
-function toggleItem(btn,label){
-  if(btn.classList.contains('checked')){
-    btn.classList.remove('checked');
-    selectedItems=selectedItems.filter(function(i){return i!==label;});
-  } else {
-    btn.classList.add('checked');
-    selectedItems.push(label);
-  }
-}
-function openProcessModal(idx){
-  editingProcIdx=idx===undefined?-1:idx;
-  document.getElementById('processModalTitle').textContent=editingProcIdx>=0?'공정 수정':'공정 추가';
-  document.getElementById('procNameInp').value=editingProcIdx>=0?(processes[editingProcIdx].name||''):'';
-  document.getElementById('processModal').style.display='flex';
-  pushModalState('processModal');
-  setTimeout(function(){document.getElementById('procNameInp').focus();},100);
-}
-function closeProcessModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('processModal').style.display='none';}
-function saveProcessModal(){
-  var name=document.getElementById('procNameInp').value.trim();
-  if(!name){showToast('공정명을 입력해주세요');return;}
-  if(editingProcIdx>=0){processes[editingProcIdx].name=name;}
-  else{processes.push({name:name,items:[]});}
-  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
-}
-function deleteProcess(pi){
-  if(!confirm('"'+processes[pi].name+'" 공정을 삭제할까요?'))return;
-  processes.splice(pi,1);
-  saveSettings().then(function(){renderProcessList();renderProcessSelect();});
-}
-function openItemModal(pi){
-  currentProcForItem=pi;editingItemIdx=-1;
-  document.getElementById('itemModalTitle').textContent=processes[pi].name+' · 품목 추가';
-  document.getElementById('itemNameInp').value='';
-  document.getElementById('itemUnitInp').value='';
-  document.getElementById('itemModal').style.display='flex';
-  pushModalState('itemModal');
-  setTimeout(function(){document.getElementById('itemNameInp').focus();},100);
-}
-function closeItemModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('itemModal').style.display='none';}
-function saveItemModal(){
-  var name=document.getElementById('itemNameInp').value.trim();
-  if(!name){showToast('품목명을 입력해주세요');return;}
-  var unit=document.getElementById('itemUnitInp').value.trim();
-  if(!processes[currentProcForItem].items)processes[currentProcForItem].items=[];
-  processes[currentProcForItem].items.push({name:name,unit:unit});
-  saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
-}
-var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
-
-function renderProcessList(){
-  var el=document.getElementById('processList');
-  if(!el)return;
-  var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
-  if(!processes.length){
-    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';
-    return;
-  }
-
-  el.innerHTML='';
-  var grid=document.createElement('div');
-  grid.className='proc-grid';
-
-  processes.forEach(function(p,pi){
-    var pColor=p.color||SCH_COLORS_LIST[pi%SCH_COLORS_LIST.length];
-    var itemCount=(p.items||[]).length;
-    var isOpen=openProcIdx===pi;
-
-    // 카드
-    var card=document.createElement('div');
-    card.className='proc-grid-card drag-item'+(isOpen?' open':'');
-    card.dataset.pi=pi;
-    card.innerHTML=
-      '<div class="proc-grid-top">'
-        +'<div class="proc-grid-color" data-color-pi="'+pi+'" style="background:'+pColor+'"></div>'
-        +'<div class="proc-grid-actions">'
-          +'<button class="proc-grid-edit" data-edit-pi="'+pi+'">✏️</button>'
-          +'<button class="proc-grid-del" data-del-proc="'+pi+'">✕</button>'
-        +'</div>'
-      +'</div>'
-      +'<div class="proc-grid-name">'+p.name+'</div>'
-      +(itemCount
-        ?'<div class="proc-grid-sub">품목 '+itemCount+'개</div>'
-        :'<div class="proc-grid-sub" style="color:var(--border)">−</div>')
-      +'<div class="proc-grid-drag">☰</div>';
-    grid.appendChild(card);
-
-    // 아코디언 (3열 전체 차지)
-    if(isOpen){
-      var acc=document.createElement('div');
-      acc.className='proc-accordion open';
-      acc.dataset.accPi=pi;
-      var itemsHtml=(p.items&&p.items.length)
-        ?p.items.map(function(item,ii){
-          return '<div class="proc-acc-item">'
-            +'<span style="flex:1">'+item.name+(item.unit?' <span style="opacity:.6;font-size:11px">'+item.unit+'</span>':'')+'</span>'
-            +'<button class="proc-acc-del" data-acc-pi="'+pi+'" data-acc-ii="'+ii+'">✕</button>'
-            +'</div>';
-        }).join('')
-        :'<div style="font-size:12px;color:var(--muted);padding:4px 0">품목이 없어요</div>';
-      acc.innerHTML=
-        itemsHtml
-        +'<div class="proc-acc-add-row">'
-          +'<input class="proc-acc-inp" id="accInp-'+pi+'" placeholder="품목명" type="text">'
-          +'<input class="proc-acc-inp" id="accUnit-'+pi+'" placeholder="단위" type="text" style="width:60px;flex:none">'
-          +'<button class="proc-acc-btn" data-acc-add="'+pi+'">추가</button>'
-        +'</div>';
-      grid.appendChild(acc);
-    }
-  });
-
-  el.appendChild(grid);
-
-  // ── 이벤트 바인딩 ──
-
-  // 카드 탭 → 아코디언 토글 (스크롤 vs 탭 구분)
-  grid.querySelectorAll('.proc-grid-card').forEach(function(card){
-    var startX=0, startY=0;
-    var startX=0,startY=0;
-    card.addEventListener('touchstart',function(e){
-      startX=e.touches[0].clientX;
-      startY=e.touches[0].clientY;
-    },{passive:true});
-    card.addEventListener('touchend',function(e){
-      if(isScrolling)return;
-      if(e.target.classList.contains('proc-grid-color'))return;
-      if(e.target.classList.contains('proc-grid-edit'))return;
-      if(e.target.classList.contains('proc-grid-del'))return;
-      if(e.target.classList.contains('proc-grid-drag'))return;
-      var pi=parseInt(this.dataset.pi);
-      openProcIdx=(openProcIdx===pi)?-1:pi;
-      renderProcessList();
-    },{passive:true});
-  });
-
-  // 색상 점 → 팝업
-  grid.querySelectorAll('[data-color-pi]').forEach(function(dot){
-    dot.addEventListener('click',function(e){
-      e.stopPropagation();
-      openColorPopup(parseInt(this.dataset.colorPi));
-    });
-  });
-
-  // ✏️ 수정 버튼 → 모달
-  grid.querySelectorAll('[data-edit-pi]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      openProcessModal(parseInt(this.dataset.editPi));
-    });
-  });
-
-  // 삭제
-  grid.querySelectorAll('[data-del-proc]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteProcess(parseInt(this.getAttribute('data-del-proc')));
-    });
-  });
-
-  // 아코디언 품목 삭제
-  grid.querySelectorAll('.proc-acc-del').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteProcessItem(parseInt(this.dataset.accPi),parseInt(this.dataset.accIi));
-      renderProcessList();
-    });
-  });
-
-  // 아코디언 품목 추가
-  grid.querySelectorAll('[data-acc-add]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      var pi=parseInt(this.dataset.accAdd);
-      var nameInp=document.getElementById('accInp-'+pi);
-      var unitInp=document.getElementById('accUnit-'+pi);
-      var name=nameInp?nameInp.value.trim():'';
-      if(!name){showToast('품목명을 입력해주세요');return;}
-      var unit=unitInp?unitInp.value.trim():'';
-      if(!processes[pi].items)processes[pi].items=[];
-      processes[pi].items.push({name:name,unit:unit});
-      saveSettings().then(function(){
-        openProcIdx=pi;
-        renderProcessList();
-        renderProcessSelect();
-        showToast('품목 추가됐어요');
-      });
-    });
-  });
-
-  // 아코디언 입력 엔터키
-  grid.querySelectorAll('.proc-acc-inp').forEach(function(inp){
-    inp.addEventListener('keydown',function(e){
-      if(e.key==='Enter'){
-        var addBtn=this.closest('.proc-accordion').querySelector('[data-acc-add]');
-        if(addBtn)addBtn.click();
-      }
-    });
-  });
-
-  // 드래그
-  initDragList(grid, processes, 'processes', function(){
-    openProcIdx=-1;
-    saveSettings().then(function(){renderProcessList();renderProcessSelect();});
-  });
-}
-function moveProcess(pi,dir){
-  var target=pi+dir;
-  if(target<0||target>=processes.length)return;
-  var tmp=processes[pi];
-  processes[pi]=processes[target];
-  processes[target]=tmp;
-  saveSettings().then(function(){renderProcessList();renderProcessSelect();});
-}
-function moveProcessItem(pi,ii,dir){
-  var items=processes[pi].items;
-  var target=ii+dir;
-  if(target<0||target>=items.length)return;
-  var tmp=items[ii];
-  items[ii]=items[target];
-  items[target]=tmp;
-  saveSettings().then(function(){renderProcessList();renderProcessSelect();});
-}
-function deleteProcessItem(pi,ii){
-  processes[pi].items.splice(ii,1);
-  saveSettings().then(function(){renderProcessList();});
-}
-
-// ── EXPORT ──
-function exportCSV(){
-  if(!records.length){showToast('기록이 없어요');return;}
-  var header='날짜,시간,현장명,카테고리,결제수단,부가세,구매처,구매목록,금액,공급가액,부가세액,메모';
-  var rows=records.map(function(r){
-    var d=new Date(r.date),date=d.getFullYear()+'-'+(''+( d.getMonth()+1)).padStart(2,'0')+'-'+(''+d.getDate()).padStart(2,'0');
-    var time=(''+d.getHours()).padStart(2,'0')+':'+(''+d.getMinutes()).padStart(2,'0');
-    var items=r.items?r.items.join(' / '):'';
-    var vatLabel=r.vat==='included'?'VAT포함':r.vat==='excluded'?'VAT별도':'해당없음';
-    var supply='',vatAmt='';
-    if(r.vat==='included'){vatAmt=Math.round(r.amount/11);supply=r.amount-vatAmt;}
-    else if(r.vat==='excluded'){supply=r.amount;vatAmt=Math.round(r.amount*.1);}
-    return [date,time,r.site,r.category,r.payMethod||'',vatLabel,r.vendor||'',items,r.amount,supply,vatAmt,r.memo||''].join(',');
-  });
-  var csv='\uFEFF'+[header].concat(rows).join('\n');
-  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='현장지출내역.csv';a.click();showToast('CSV 다운로드됐어요');
-}
-function copyForKakao(){
-  var now=new Date();
-  var thisMonth=records.filter(function(r){var d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  if(!thisMonth.length){showToast('이번 달 기록이 없어요');return;}
-  var total=thisMonth.reduce(function(a,r){return a+r.amount;},0);
-  var bySite={};thisMonth.forEach(function(r){bySite[r.site]=(bySite[r.site]||0)+r.amount;});
-  var text='📊 '+(now.getMonth()+1)+'월 현장 지출 내역\n─────────────────\n';
-  Object.entries(bySite).forEach(function(e){text+='• '+e[0]+': ₩'+e[1].toLocaleString('ko-KR')+'\n';});
-  text+='─────────────────\n합계: ₩'+total.toLocaleString('ko-KR')+' ('+thisMonth.length+'건)';
-  navigator.clipboard.writeText(text).then(function(){showToast('카카오톡에 붙여넣기 하세요');}).catch(function(){prompt('복사하세요:',text);});
-}
-function clearAll(){
-  if(!confirm('정말 전체 삭제할까요?'))return;
-  db.collection('expenses').get().then(function(snap){
-    var batch=db.batch();snap.docs.forEach(function(d){batch.delete(d.ref);});return batch.commit();
-  }).then(function(){showToast('전체 삭제됐어요');});
-}
-
-// ── SMS PARSE ──
-function openSmsModal(){
-  document.getElementById('smsPasteInput').value='';
-  document.getElementById('smsParseResult').style.display='none';
-  document.getElementById('smsParseBtn').textContent='자동 읽기';
-  document.getElementById('smsModal').style.display='flex';
-  pushModalState('smsModal');
-  setTimeout(function(){document.getElementById('smsPasteInput').focus();},100);
-}
-function closeSmsModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('smsModal').style.display='none';}
-
-function parseSms(){
-  var text=document.getElementById('smsPasteInput').value.trim();
-  if(!text){showToast('문자를 붙여넣어주세요');return;}
-
-  var amount=0, vendor='', bank='';
-
-  // ── 금액 파싱 (여러 패턴) ──
-  var amtPatterns=[
-    /출금\s*([\d,]+)원/,
-    /결제\s*([\d,]+)원/,
-    /이체\s*([\d,]+)원/,
-    /([\d,]+)원\s*출금/,
-    /([\d,]+)원\s*결제/,
-    /금액[:\s]*([\d,]+)원/,
-    /승인금액[:\s]*([\d,]+)/,
-    /([\d,]+)원/,
-  ];
-  for(var i=0;i<amtPatterns.length;i++){
-    var m=text.match(amtPatterns[i]);
-    if(m){amount=parseInt(m[1].replace(/,/g,''));break;}
-  }
-
-  // ── 은행/카드사 파싱 ──
-  var bankPatterns=['신한은행','국민은행','하나은행','우리은행','농협','기업은행','카카오뱅크','토스','신한카드','국민카드','삼성카드','현대카드','롯데카드','하나카드'];
-  for(var i=0;i<bankPatterns.length;i++){
-    if(text.indexOf(bankPatterns[i])>=0){bank=bankPatterns[i];break;}
-  }
-
-  // ── 가맹점/출처 파싱 ──
-  // 패턴: 금액 뒤에 오는 가게명
-  var vendorPatterns=[
-    /원\s*[(\s]*잔액[^\)]*[)\s]*([가-힣a-zA-Z0-9\s]+?)(?:\s*\d{2}\/\d{2}|\s*\d{4}-\d{2}|$)/,
-    /([가-힣a-zA-Z0-9]+(?:마트|몰|스토어|상회|철물|타일|자재|페인트|전기|설비|도배|목공|인테리어|건자재|철강|유통|산업|상사|씨앤))/,
-    /가맹점[:\s]*([^\s\n]+)/,
-    /\)\s*([가-힣a-zA-Z0-9]+)\s+\d{2}\/\d{2}/,
-  ];
-  for(var i=0;i<vendorPatterns.length;i++){
-    var m=text.match(vendorPatterns[i]);
-    if(m&&m[1]&&m[1].trim().length>1){vendor=m[1].trim();break;}
-  }
-
-  // ── 결과 표시 ──
-  var resultEl=document.getElementById('smsParseResult');
-  var contentEl=document.getElementById('smsResultContent');
-
-  if(!amount){
-    showToast('금액을 찾지 못했어요. 문자를 확인해주세요');
-    return;
-  }
-
-  resultEl.style.display='block';
-  contentEl.innerHTML=
-    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">금액</span><span style="font-weight:800;color:var(--accent)">₩'+amount.toLocaleString('ko-KR')+'</span></div>'
-    +(vendor?'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--muted)">가맹점</span><span style="font-weight:700">'+vendor+'</span></div>':'')
-    +(bank?'<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">은행/카드</span><span style="font-weight:700">'+bank+'</span></div>':'');
-
-  document.getElementById('smsParseBtn').textContent='이 정보로 입력하기';
-  document.getElementById('smsParseBtn').onclick=function(){applySmsResult(amount,vendor,bank);};
-}
-
-function applySmsResult(amount, vendor, bank){
-  // 금액 적용
-  amountStr=String(amount);
-  updateAmountDisplay();
-
-  // 가맹점 적용
-  if(vendor) document.getElementById('vendorInput').value=vendor;
-
-  // 카드 자동 선택 (등록된 카드 중 매칭)
-  if(bank){
-    var matched=cards.find(function(c){return c.issuer&&c.issuer.indexOf(bank.replace('은행','').replace('카드',''))>=0;});
-    if(matched){
-      selectedPayMethod=matched.name;selectedPayType='card';
-      renderCardChips();
-    }
-  }
-
-  closeSmsModal();
-  showToast('✓ 자동 입력됐어요! 현장 선택 후 저장하세요');
-}
-
-
-
-
-// ── DAILY LOG MODAL ──
-var dailyDate='', dailyOpenIdx=-1;
-
-function openDailyModal(dateStr){
-  dailyDate=dateStr;
-  dailyOpenIdx=-1;
-  // 해당 날짜에 걸친 공정 필터
-  var dayProcs=schedules.filter(function(s){
-    return s.startDate<=dateStr&&s.endDate>=dateStr&&
-      (schSiteFilter==='전체'||s.site===schSiteFilter);
-  });
-  // 날짜 표시
-  var d=new Date(dateStr);
-  var dows=['일','월','화','수','목','금','토'];
-  var label=(d.getMonth()+1)+'월 '+d.getDate()+'일 ('+dows[d.getDay()]+')';
-  document.getElementById('dailyDateLabel').textContent=label;
-  document.getElementById('dailyProcCount').textContent=dayProcs.length?dayProcs.length+'개 공정 진행 중':'진행 중인 공정 없음';
-
-  renderDailyProcList(dayProcs, dateStr);
-  document.getElementById('dailyModal').classList.add('show');
-  pushModalState('dailyModal');
-}
-
-function closeDailyModal(){
-  // 열려있는 공정 자동 저장
-  saveDailyLog();
-  document.getElementById('dailyModal').classList.remove('show');
-  if(modalStack.length>0&&modalStack[modalStack.length-1]==='dailyModal'){
-    modalStack.pop();
-    history.go(-1);
-  }
-}
-
-function renderDailyProcList(dayProcs, dateStr){
-  var el=document.getElementById('dailyProcList');
-  if(!dayProcs.length){
-    el.innerHTML='<div class="daily-empty">📅 이 날 진행 중인 공정이 없어요<br><span style="font-size:12px;margin-top:8px;display:block">공정표에서 일정을 추가해보세요</span></div>';
-    return;
-  }
-  el.innerHTML=dayProcs.map(function(s,i){
-    var color=s.color||schColor(i);
-    var pct=parseInt(s.progress||0);
-    return '<div class="daily-proc-card" id="dailyCard-'+i+'">'
-      +'<div class="daily-proc-header" data-idx="'+i+'" data-schid="'+s.id+'">'
-      +'<div class="daily-proc-color-bar" style="background:'+color+'"></div>'
-      +'<div class="daily-proc-info">'
-      +'<div class="daily-proc-name">'+( s.procName||'공정')+'</div>'
-      +'<div class="daily-proc-site">📍 '+s.site+(s.worker?' · 👷 '+s.worker:'')+'</div>'
-      +'</div>'
-      +'<span style="font-size:12px;font-weight:800;color:'+color+'">'+pct+'%</span>'
-      +'<span style="font-size:16px;color:var(--muted);margin-left:6px" id="dailyArrow-'+i+'">›</span>'
-      +'</div>'
-      +'<div class="daily-proc-body" id="dailyBody-'+i+'"></div>'
-      +'</div>';
-  }).join('');
-
-  // 헤더 클릭 → 펼치기
-  el.querySelectorAll('.daily-proc-header').forEach(function(hdr){
-    hdr.addEventListener('click',function(){
-      var idx=parseInt(this.dataset.idx);
-      var schId=this.dataset.schid;
-      var proc=dayProcs[idx];
-      toggleDailyBody(idx, schId, proc, dateStr, dayProcs.length);
-    });
-  });
-}
-
-function toggleDailyBody(idx, schId, proc, dateStr, total){
-  // 이전 열린 항목 저장 후 닫기
-  if(dailyOpenIdx>=0&&dailyOpenIdx!==idx){
-    saveDailyLog();
-    var oldBody=document.getElementById('dailyBody-'+dailyOpenIdx);
-    var oldArrow=document.getElementById('dailyArrow-'+dailyOpenIdx);
-    if(oldBody)oldBody.classList.remove('open');
-    if(oldArrow)oldArrow.textContent='›';
-    dailyOpenIdx=-1;
-  }
-
-  var body=document.getElementById('dailyBody-'+idx);
-  var arrow=document.getElementById('dailyArrow-'+idx);
-  if(body.classList.contains('open')){
-    saveDailyLog();
-    body.classList.remove('open');
-    arrow.textContent='›';
-    dailyOpenIdx=-1;
-    return;
-  }
-
-  // 열기
-  dailyOpenIdx=idx;
-  arrow.textContent='↓';
-  body.classList.add('open');
-  loadDailyBody(body, schId, proc, dateStr);
-}
-
-function loadDailyBody(bodyEl, schId, proc, dateStr){
-  // Firestore에서 해당 날짜 로그 로드
-  var logId=schId+'_'+dateStr;
-  db.collection('dailylogs').doc(logId).get().then(function(snap){
-    var log=snap.exists?snap.data():{};
-
-    // 체크리스트 로드
-    db.collection('checklists').doc(schId).get().then(function(csnap){
-      var checks=csnap.exists&&csnap.data().items?csnap.data().items:[];
-      var dayConfirmed=log.confirmed||{};
-
-      var checksHtml=checks.length?
-        '<div class="field-label" style="margin-top:10px;margin-bottom:6px">📋 체크리스트 확인</div>'
-        +checks.map(function(item,ci){
-          var isDone=item.checked;
-          var isConfirmed=dayConfirmed[ci]===true;
-          return '<div class="daily-check-confirm">'
-            +'<div class="daily-check-confirm-box'+(isDone?' checked':isConfirmed?' confirmed':'')+'" data-ci="'+ci+'" data-logid="'+logId+'"></div>'
-            +'<span style="'+(isDone?'text-decoration:line-through;color:var(--muted)':'')+'">'+item.label+'</span>'
-            +(isDone?'<span style="font-size:10px;color:var(--green);font-weight:700">완료</span>':'')
-            +'</div>';
-        }).join('')
-        :'';
-
-      bodyEl.innerHTML=
-        '<div style="padding-top:10px">'
-        +'<div class="field-label">작업자 수</div>'
-        +'<input class="field-input" id="dailyWorkerCount" type="tel" inputmode="numeric" placeholder="예: 3" value="'+(log.workerCount||'')+'" style="width:120px;margin-bottom:10px">'
-        +'<div class="field-label">업무일지</div>'
-        +'<textarea class="field-input" id="dailyJournal" rows="4" placeholder="날씨, 진행 내용, 특이사항..." style="resize:none;line-height:1.6;margin-bottom:6px">'+(log.journal||'')+'</textarea>'
-        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="dailyWeatherChips">'
-        +'<button class="chip'+(log.weather==='☀️ 맑음'?' selected':'')+'" data-w="☀️ 맑음">☀️ 맑음</button>'
-        +'<button class="chip'+(log.weather==='⛅ 구름'?' selected':'')+'" data-w="⛅ 구름">⛅ 구름</button>'
-        +'<button class="chip'+(log.weather==='🌧️ 비'?' selected':'')+'" data-w="🌧️ 비">🌧️ 비</button>'
-        +'<button class="chip'+(log.weather==='❄️ 눈'?' selected':'')+'" data-w="❄️ 눈">❄️ 눈</button>'
-        +'<button class="chip'+(log.weather==='💨 바람'?' selected':'')+'" data-w="💨 바람">💨 바람</button>'
-        +'</div>'
-        +checksHtml
-        +'<button onclick="saveDailyLog(true)" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer;margin-top:10px">✓ 저장</button>'
-        +'</div>';
-
-      // 날씨 칩 이벤트
-      bodyEl.querySelectorAll('#dailyWeatherChips .chip').forEach(function(btn){
-        btn.addEventListener('click',function(){
-          bodyEl.querySelectorAll('#dailyWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
-          this.classList.add('selected');
-        });
-      });
-
-      // 확인 체크 이벤트 (당일 확인 표시)
-      bodyEl.querySelectorAll('.daily-check-confirm-box:not(.checked)').forEach(function(box){
-        box.addEventListener('click',function(){
-          this.classList.toggle('confirmed');
-          var ci=this.dataset.ci;
-          var lid=this.dataset.logid;
-          // 즉시 저장
-          var update={};
-          update['confirmed.'+ci]=this.classList.contains('confirmed');
-          db.collection('dailylogs').doc(lid).set(update,{merge:true});
-        });
-      });
-
-      // logId를 body에 저장
-      bodyEl.dataset.logid=logId;
-      bodyEl.dataset.schid=schId;
-    });
-  });
-}
-
-function saveDailyLog(showToastMsg){
-  if(dailyOpenIdx<0)return;
-  var body=document.getElementById('dailyBody-'+dailyOpenIdx);
-  if(!body||!body.dataset.logid)return;
-
-  var journalEl=document.getElementById('dailyJournal');
-  var workerEl=document.getElementById('dailyWorkerCount');
-  var weatherEl=body.querySelector('#dailyWeatherChips .chip.selected');
-  if(!journalEl&&!workerEl)return;
-
-  var data={
-    date:dailyDate,
-    schId:body.dataset.schid,
-    journal:journalEl?journalEl.value.trim():'',
-    workerCount:workerEl?parseInt(workerEl.value)||0:0,
-    weather:weatherEl?weatherEl.dataset.w:'',
-    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  db.collection('dailylogs').doc(body.dataset.logid).set(data,{merge:true}).then(function(){
-    if(showToastMsg)showToast('✓ 저장됐어요');
-  });
-}
-// ── DRAG SORT UTIL ──
-var dragState={
-  active:false, srcIdx:-1, toIdx:-1, el:null, ghost:null,
-  arr:null, onDone:null, container:null,
-  lastToIdx:-2, longPressTimer:null,
-  offsetX:0, offsetY:0
-};
-
-function vibrate(ms){if(navigator.vibrate)navigator.vibrate(ms||30);}
-
-function createGhost(el, touchX, touchY){
-  var rect=el.getBoundingClientRect();
-  var ghost=el.cloneNode(true);
-  ghost.className='drag-ghost';
-  ghost.style.left=rect.left+'px';
-  ghost.style.top=rect.top+'px';
-  ghost.style.width=rect.width+'px';
-  document.body.appendChild(ghost);
-  dragState.offsetX=touchX-rect.left;
-  dragState.offsetY=touchY-rect.top;
-  return ghost;
-}
-
-function moveGhost(touchX, touchY){
-  if(!dragState.ghost)return;
-  dragState.ghost.style.left=(touchX-dragState.offsetX)+'px';
-  dragState.ghost.style.top=(touchY-dragState.offsetY)+'px';
-}
-
-function removeGhost(){
-  if(dragState.ghost){dragState.ghost.remove();dragState.ghost=null;}
-}
-
-function clearInsertLines(container){
-  container.querySelectorAll('.drag-insert-line').forEach(function(l){l.remove();});
-}
-
-// 삽입 위치 계산: Y좌표 기준으로 어느 아이템 사이인지
-function getInsertIdx(container, clientY, srcIdx){
-  var items=Array.from(container.querySelectorAll('.drag-item'));
-  var insertIdx=items.length; // 기본: 맨 아래
-  for(var i=0;i<items.length;i++){
-    var rect=items[i].getBoundingClientRect();
-    var mid=rect.top+rect.height/2;
-    if(clientY<mid){insertIdx=i;break;}
-  }
-  return insertIdx;
-}
-
-// 삽입선 표시
-function showInsertLine(container, toIdx){
-  clearInsertLines(container);
-  var items=Array.from(container.querySelectorAll('.drag-item'));
-  var line=document.createElement('div');
-  line.className='drag-insert-line';
-  if(toIdx>=items.length){
-    container.appendChild(line);
-  } else {
-    container.insertBefore(line, items[toIdx]);
-  }
-}
-
-function initDragList(containerEl, arr, listKey, onDone){
-  var items=Array.from(containerEl.querySelectorAll('.drag-item'));
-
-  items.forEach(function(item, idx){
-    // ── 터치 ──
-    item.addEventListener('touchstart',function(e){
-      var self=this; var selfIdx=idx;
-      var touch=e.touches[0];
-      var startX=touch.clientX, startY=touch.clientY;
-
-      dragState.longPressTimer=setTimeout(function(){
-        vibrate(60);
-        var ghost=createGhost(self, startX, startY);
-        dragState.active=true;
-        dragState.srcIdx=selfIdx;
-        dragState.toIdx=selfIdx;
-        dragState.el=self;
-        dragState.ghost=ghost;
-        dragState.arr=arr;
-        dragState.onDone=onDone;
-        dragState.container=containerEl;
-        dragState.lastToIdx=-2;
-        dragState.longPressTimer=null;
-        self.classList.add('dragging');
-      },400);
-    },{passive:true});
-
-    item.addEventListener('touchmove',function(e){
-      var touch=e.touches[0];
-      if(!dragState.active){
-        if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
-        return;
-      }
-      e.preventDefault();
-      moveGhost(touch.clientX, touch.clientY);
-
-      // 고스트 잠깐 숨겨서 아래 엘리먼트 감지
-      dragState.ghost.style.visibility='hidden';
-      var toIdx=getInsertIdx(dragState.container, touch.clientY, dragState.srcIdx);
-      dragState.ghost.style.visibility='';
-
-      if(toIdx!==dragState.lastToIdx){
-        vibrate(18);
-        dragState.lastToIdx=toIdx;
-        dragState.toIdx=toIdx;
-        showInsertLine(dragState.container, toIdx);
-      }
-    },{passive:false});
-
-    item.addEventListener('touchend',function(e){
-      if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
-      if(!dragState.active)return;
-
-      removeGhost();
-      clearInsertLines(dragState.container);
-      dragState.el&&dragState.el.classList.remove('dragging');
-
-      var toIdx=dragState.toIdx;
-      var srcIdx=dragState.srcIdx;
-      var savedArr=dragState.arr;
-      var savedOnDone=dragState.onDone;
-
-      dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0};
-
-      // 실제 이동 - toIdx가 srcIdx 뒤면 -1 보정
-      var realTo=toIdx>(srcIdx)?toIdx-1:toIdx;
-      if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
-        vibrate([25,15,25]);
-        var tmp=savedArr.splice(srcIdx,1)[0];
-        savedArr.splice(realTo,0,tmp);
-        savedOnDone();
-      }
-    },{passive:true});
-
-    // ── 마우스 (PC) ──
-    item.addEventListener('mousedown',function(e){
-      if(e.button!==0)return;
-      var self=this; var selfIdx=idx;
-      dragState.longPressTimer=setTimeout(function(){
-        vibrate(60);
-        var ghost=createGhost(self, e.clientX, e.clientY);
-        dragState.active=true;
-        dragState.srcIdx=selfIdx;
-        dragState.toIdx=selfIdx;
-        dragState.el=self;
-        dragState.ghost=ghost;
-        dragState.arr=arr;
-        dragState.onDone=onDone;
-        dragState.container=containerEl;
-        dragState.lastToIdx=-2;
-        dragState.longPressTimer=null;
-        self.classList.add('dragging');
-        document.body.style.cursor='grabbing';
-      },400);
-    });
-  });
-
-  // 마우스 이동
-  document.addEventListener('mousemove',function(e){
-    if(!dragState.active)return;
-    moveGhost(e.clientX, e.clientY);
-    dragState.ghost.style.visibility='hidden';
-    var toIdx=getInsertIdx(dragState.container, e.clientY, dragState.srcIdx);
-    dragState.ghost.style.visibility='';
-    if(toIdx!==dragState.lastToIdx){
-      vibrate(18);
-      dragState.lastToIdx=toIdx;
-      dragState.toIdx=toIdx;
-      showInsertLine(dragState.container, toIdx);
-    }
-  });
-
-  // 전역 mouseup
-  document.addEventListener('mouseup',function(){
-    if(dragState.longPressTimer){clearTimeout(dragState.longPressTimer);dragState.longPressTimer=null;}
-    if(!dragState.active)return;
-
-    removeGhost();
-    if(dragState.container){
-      clearInsertLines(dragState.container);
-      dragState.container.querySelectorAll('.drag-item').forEach(function(i){i.classList.remove('dragging');});
-    }
-    document.body.style.cursor='';
-
-    var toIdx=dragState.toIdx;
-    var srcIdx=dragState.srcIdx;
-    var savedArr=dragState.arr;
-    var savedOnDone=dragState.onDone;
-
-    dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0};
-
-    var realTo=toIdx>srcIdx?toIdx-1:toIdx;
-    if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
-      vibrate([25,15,25]);
-      var tmp=savedArr.splice(srcIdx,1)[0];
-      savedArr.splice(realTo,0,tmp);
-      savedOnDone();
-    }
-  });
-}
-
-// ── EDIT RECORD MODAL ──
-var editingRecordId='', editAmountStr='', editSelectedCat='', editSelectedVat='none';
-var editSelectedPayMethod='', editSelectedPayType='';
-
-function openEditModal(id){
-  var r=records.find(function(x){return x.id===id;});
-  if(!r)return;
-  editingRecordId=id;
-  editAmountStr=String(r.amount||0);
-  updateEditAmountDisplay();
-  document.getElementById('editNumpad').classList.remove('show');
-  var d=new Date(r.date);
-  var localDt=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-  document.getElementById('editDate').value=localDt;
-  var sel=document.getElementById('editSite');
-  sel.innerHTML='';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===r.site)o.selected=true;sel.appendChild(o);});
-  editSelectedCat=r.category||'자재비';
-  document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.toggle('selected',b.textContent===editSelectedCat);});
-  editSelectedPayMethod=r.payMethod||'';
-  editSelectedPayType=r.payType||'';
-  renderEditPayChips();
-  selectEditVat(r.vat||'none');
-  document.getElementById('editVendor').value=r.vendor||'';
-  document.getElementById('editItems').value=(r.items&&r.items.length)?r.items.join(', '):'';
-  document.getElementById('editMemo').value=r.memo||'';
-  document.getElementById('editRecordModal').classList.add('show');
-  pushModalState('editRecordModal');
-}
-function closeEditModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('editRecordModal').classList.remove('show');}
-function toggleEditNumpad(){document.getElementById('editNumpad').classList.toggle('show');}
-function editNumInput(n){if(editAmountStr.length>=10)return;editAmountStr+=n;updateEditAmountDisplay();}
-function editNumDelete(){editAmountStr=editAmountStr.slice(0,-1);updateEditAmountDisplay();}
-function updateEditAmountDisplay(){
-  var el=document.getElementById('editAmountDisplay');
-  el.textContent=editAmountStr?'₩'+Number(editAmountStr).toLocaleString('ko-KR'):'₩0';
-}
-function selectEditCat(btn,cat){
-  editSelectedCat=cat;
-  document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.remove('selected');});
-  btn.classList.add('selected');
-}
-function selectEditVat(type){
-  editSelectedVat=type;
-  ['editVatNone','editVatIncluded','editVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
-  document.getElementById({none:'editVatNone',included:'editVatIncluded',excluded:'editVatExcluded'}[type]).classList.add('selected');
-}
-function renderEditPayChips(){
-  var el=document.getElementById('editPayChips');
-  var html='';
-  cards.forEach(function(c){
-    var label=c.num?c.name+' ('+c.num+')':c.name;
-    var sel=editSelectedPayMethod===c.name;
-    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" data-method="'+c.name+'" data-type="card">'+label+'</button>';
-  });
-  ['현금 직접','카카오페이','토스'].forEach(function(m){
-    var sel=editSelectedPayMethod===m;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+m+'" data-type="cash">'+m+'</button>';
-  });
-  accounts.forEach(function(a){
-    var sel=editSelectedPayMethod===a.name;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+a.name+'" data-type="cash">🏦 '+a.name+'</button>';
-  });
-  el.innerHTML=html;
-  el.querySelectorAll('.pay-chip').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      selectEditPay(this,this.dataset.method,this.dataset.type);
-    });
-  });
-}
-function selectEditPay(btn,method,type){
-  if(editSelectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');editSelectedPayMethod='';editSelectedPayType='';return;}
-  document.querySelectorAll('#editPayChips .pay-chip').forEach(function(b){b.classList.remove('selected-card','selected-cash');});
-  btn.classList.add(type==='card'?'selected-card':'selected-cash');
-  editSelectedPayMethod=method;editSelectedPayType=type;
-}
-function saveEditRecord(){
-  var amount=parseInt(editAmountStr||'0');
-  if(!amount){showToast('금액을 입력해주세요');return;}
-  var site=document.getElementById('editSite').value;
-  if(!site){showToast('현장을 선택해주세요');return;}
-  var dtVal=document.getElementById('editDate').value;
-  var saveDate=dtVal?dtVal+':00.000+09:00':new Date().toISOString();
-  var vendor=document.getElementById('editVendor').value.trim();
-  var itemsRaw=document.getElementById('editItems').value.trim();
-  var items=itemsRaw?itemsRaw.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean):[];
-  var memo=document.getElementById('editMemo').value.trim();
-  setSyncStatus('saving');
-  db.collection('expenses').doc(editingRecordId).update({
-    amount:amount,site:site,category:editSelectedCat,
-    payMethod:editSelectedPayMethod,payType:editSelectedPayType,
-    vat:editSelectedVat,vendor:vendor,items:items,memo:memo,date:saveDate
-  }).then(function(){closeEditModal();setSyncStatus('ok');showToast('✓ 수정됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('수정 실패: '+e.message);});
-}
-function deleteEditRecord(){
-  if(!confirm('이 내역을 삭제할까요?'))return;
-  closeEditModal();deleteRecord(editingRecordId);
-}
-
-
-// ── CHECKLIST ──
-var checklistSchId='', checklistChecks=[], checklistUnsubscribe=null;
-
-function openChecklistModal(schId, site, procName){
-  checklistSchId=schId;
-  document.getElementById('checklistModalTitle').textContent=(procName||'공정')+' 체크리스트';
-  document.getElementById('checklistModalSub').textContent='📍 '+site;
-  document.getElementById('checklistNewInp').value='';
-  document.getElementById('checklistModal').style.display='flex';
-  pushModalState('checklistModal');
-
-  // Firestore에서 체크리스트 로드
-  loadChecklist(schId, procName);
-}
-
-function loadChecklist(schId, procName){
-  db.collection('checklists').doc(schId).get().then(function(snap){
-    var items=[];
-    if(snap.exists && snap.data().items){
-      items=snap.data().items;
-    } else {
-      // 설정의 해당 공정 품목을 기본값으로 로드
-      var proc=processes.find(function(p){return p.name===procName;});
-      if(proc&&proc.items&&proc.items.length){
-        items=proc.items.map(function(item){
-          return {label:item.name+(item.unit?' ('+item.unit+')':''), checked:false};
-        });
-      }
-    }
-    checklistChecks=items;
-    renderChecklistItems();
-  });
-}
 
-function renderChecklistItems(){
-  var el=document.getElementById('checklistItems');
-  var total=checklistChecks.length;
-  var done=checklistChecks.filter(function(i){return i.checked;}).length;
-  var pct=total?Math.round(done/total*100):0;
-
-  document.getElementById('checklistProgressText').textContent=done+' / '+total;
-  document.getElementById('checklistProgressBar').style.width=pct+'%';
-
-  if(!total){
-    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:12px 0;text-align:center">항목이 없어요. 아래에서 추가하세요</div>';
-    return;
-  }
-
-  el.innerHTML=checklistChecks.map(function(item,i){
-    return '<div class="sch-check-item">'
-      +'<div class="sch-check-box'+(item.checked?' checked':'')+'" data-ci="'+i+'"></div>'
-      +'<span class="sch-check-label'+(item.checked?' done':'')+'">'+item.label+'</span>'
-      +'<button class="sch-check-del" data-di="'+i+'">✕</button>'
-      +'</div>';
-  }).join('');
-
-  // 체크박스 이벤트
-  el.querySelectorAll('.sch-check-box').forEach(function(box){
-    box.addEventListener('click',function(){
-      var i=parseInt(this.dataset.ci);
-      checklistChecks[i].checked=!checklistChecks[i].checked;
-      saveChecklist();
-      renderChecklistItems();
-    });
-  });
-  // 삭제 이벤트
-  el.querySelectorAll('.sch-check-del').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var i=parseInt(this.dataset.di);
-      checklistChecks.splice(i,1);
-      saveChecklist();
-      renderChecklistItems();
-    });
-  });
-}
-
-function addCheckItem(){
-  var inp=document.getElementById('checklistNewInp');
-  var label=inp.value.trim();
-  if(!label)return;
-  checklistChecks.push({label:label, checked:false});
-  inp.value='';
-  saveChecklist();
-  renderChecklistItems();
-  inp.focus();
-}
-
-function saveChecklist(){
-  db.collection('checklists').doc(checklistSchId).set({
-    items:checklistChecks,
-    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-function closeChecklistModal(){
-  if(modalStack.length>0)modalStack.pop();
-  document.getElementById('checklistModal').style.display='none';
-}
-
-// checklistNewInp 엔터키
-document.addEventListener('DOMContentLoaded',function(){
-  // ── 스와이프 네비게이션 초기화 ──
-  var TAB_ORDER_SW=['input','list','sch','dash','settings'];
-  var swStartX=0,swStartY=0,swStartTime=0;
-  var vc=document.getElementById('viewContainer');
-  if(vc){
-    vc.addEventListener('touchstart',function(e){
-      var openModal=document.querySelector('.modal-overlay[style*="flex"], .daily-modal-overlay.show, .color-popup-overlay.show');
-      if(openModal)return;
-      if(modalStack&&modalStack.length>0)return;
-      swStartX=e.touches[0].clientX;
-      swStartY=e.touches[0].clientY;
-      swStartTime=Date.now();
-    },{passive:true});
-    vc.addEventListener('touchend',function(e){
-      if(!swStartX)return;
-      var dx=e.changedTouches[0].clientX-swStartX;
-      var dy=e.changedTouches[0].clientY-swStartY;
-      var dt=Date.now()-swStartTime;
-      swStartX=0;
-      if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.7||dt>400)return;
-      var curEl=document.querySelector('.view.active');
-      if(!curEl)return;
-      var curId=curEl.id.replace('view-','');
-      var curIdx=TAB_ORDER_SW.indexOf(curId);
-      if(dx<0&&curIdx<TAB_ORDER_SW.length-1){
-        e.preventDefault&&e.preventDefault();
-        switchTab(TAB_ORDER_SW[curIdx+1]);
-      } else if(dx>0&&curIdx>0){
-        e.preventDefault&&e.preventDefault();
-        switchTab(TAB_ORDER_SW[curIdx-1]);
-      }
-    },{passive:true});
-  }
-  var inp=document.getElementById('checklistNewInp');
-  if(inp){inp.addEventListener('keydown',function(e){if(e.key==='Enter')addCheckItem();});}
-});
-
-
-// ── VENDOR (거래처) MANAGE ──
-var vendors=[], editingVendorId='';
-
-function loadVendors(){
-  db.collection('vendors').orderBy('company','asc').get().then(function(snap){
-    vendors=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    renderVendorMgmtList();
-    renderVendorSelect();
-  });
-}
-
-function renderVendorMgmtList(){
-  var el=document.getElementById('vendorMgmtList');
-  if(!el)return;
-  if(!vendors.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">거래처가 없어요</div>';return;}
-  el.innerHTML=vendors.map(function(v){
-    return '<div class="vendor-card" data-vid="'+v.id+'">'
-      +'<div class="vendor-card-name">🏢 '+(v.company||'')+(v.name?' · '+v.name:'')+'</div>'
-      +'<div class="vendor-card-sub">'
-      +(v.phone?'📞 '+v.phone+'<br>':'')
-      +(v.email?'✉️ '+v.email+'<br>':'')
-      +(v.biz?'사업자: '+v.biz+'<br>':'')
-      +(v.proc?'🔧 '+v.proc+'<br>':'')
-      +(v.bank&&v.account?'🏦 '+v.bank+' '+v.account:v.bank?'🏦 '+v.bank:'')
-      +'</div>'
-      +'</div>';
-  }).join('');
-  el.querySelectorAll('.vendor-card').forEach(function(card){
-    card.addEventListener('click',function(){openVendorModal(this.dataset.vid);});
-  });
-}
-
-function renderVendorSelect(){
-  // 공정표 담당자 선택 드롭다운 업데이트
-  var sel=document.getElementById('schWorkerInp');
-  if(!sel)return;
-  var cur=sel.value;
-  sel.innerHTML='<option value="">선택 안 함</option>';
-  vendors.forEach(function(v){
-    var o=document.createElement('option');
-    o.value=v.id;
-    o.textContent=(v.company||'')+(v.name?' ('+v.name+')':'');
-    if(v.id===cur)o.selected=true;
-    sel.appendChild(o);
-  });
-}
-
-function openVendorModal(id){
-  editingVendorId=id||'';
-  var isEdit=!!id;
-  document.getElementById('vendorModalTitle').textContent=isEdit?'거래처 수정':'거래처 추가';
-  document.getElementById('vendorDeleteBtn').style.display=isEdit?'block':'none';
-  // 공정 드롭다운 채우기
-  var procSel=document.getElementById('vendorProcInp');
-  procSel.innerHTML='<option value="">선택 안 함</option>';
-  if(typeof processes!=='undefined'){
-    processes.forEach(function(p){
-      var o=document.createElement('option');
-      o.value=p.name;o.textContent=p.name;
-      procSel.appendChild(o);
-    });
-  }
-  if(isEdit){
-    var v=vendors.find(function(x){return x.id===id;});
-    if(!v)return;
-    document.getElementById('vendorCompanyInp').value=v.company||'';
-    document.getElementById('vendorNameInp').value=v.name||'';
-    document.getElementById('vendorPhoneInp').value=v.phone||'';
-    document.getElementById('vendorEmailInp').value=v.email||'';
-    document.getElementById('vendorBizInp').value=v.biz||'';
-    document.getElementById('vendorIdInp').value=v.idnum||'';
-    document.getElementById('vendorProcInp').value=v.proc||'';
-    document.getElementById('vendorBankInp').value=v.bank||'';
-    document.getElementById('vendorAccountInp').value=v.account||'';
-  } else {
-    ['vendorCompanyInp','vendorNameInp','vendorPhoneInp','vendorEmailInp','vendorBizInp','vendorIdInp','vendorAccountInp'].forEach(function(fid){
-      document.getElementById(fid).value='';
-    });
-    document.getElementById('vendorProcInp').value='';
-    document.getElementById('vendorBankInp').value='';
-  }
-  document.getElementById('vendorModal').style.display='flex';
-  pushModalState('vendorModal');
-}
-
-function closeVendorModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('vendorModal').style.display='none';}
-
-function saveVendorModal(){
-  var company=document.getElementById('vendorCompanyInp').value.trim();
-  if(!company){showToast('업체명을 입력해주세요');return;}
-  var data={
-    company:company,
-    name:document.getElementById('vendorNameInp').value.trim(),
-    phone:document.getElementById('vendorPhoneInp').value.trim(),
-    email:document.getElementById('vendorEmailInp').value.trim(),
-    biz:document.getElementById('vendorBizInp').value.trim(),
-    idnum:document.getElementById('vendorIdInp').value.trim(),
-    proc:document.getElementById('vendorProcInp').value,
-    bank:document.getElementById('vendorBankInp').value,
-    account:document.getElementById('vendorAccountInp').value.trim(),
-    ts:firebase.firestore.FieldValue.serverTimestamp()
-  };
-  setSyncStatus('saving');
-  var promise=editingVendorId
-    ?db.collection('vendors').doc(editingVendorId).update(data)
-    :db.collection('vendors').add(data);
-  promise.then(function(){
-    closeVendorModal();loadVendors();setSyncStatus('ok');
-    showToast(editingVendorId?'✓ 거래처 수정됐어요':'✓ 거래처 추가됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
-}
-
-function deleteVendorItem(){
-  if(!confirm('이 거래처를 삭제할까요?'))return;
-  db.collection('vendors').doc(editingVendorId).delete().then(function(){
-    closeVendorModal();loadVendors();showToast('거래처 삭제됐어요');
-  });
-}
-
-// ── SCHEDULE MODAL 체크리스트 ──
-var schCheckItems=[];
-
-function initSchChecklist(procName){
-  // 해당 공정의 품목을 기본값으로 로드
-  var proc=processes.find(function(p){return p.name===procName;});
-  schCheckItems=[];
-  if(proc&&proc.items&&proc.items.length){
-    schCheckItems=proc.items.map(function(item){
-      return {label:item.name+(item.unit?' ('+item.unit+')':''),checked:false};
-    });
-  }
-  renderSchChecklist();
-}
-
-function loadSchChecklist(schId, procName){
-  db.collection('checklists').doc(schId).get().then(function(snap){
-    if(snap.exists&&snap.data().items){
-      schCheckItems=snap.data().items;
-    } else {
-      initSchChecklist(procName);
-    }
-    renderSchChecklist();
-  });
-}
-
-function renderSchChecklist(){
-  var el=document.getElementById('schChecklistItems');
-  if(!el)return;
-  var total=schCheckItems.length;
-  var done=schCheckItems.filter(function(i){return i.checked;}).length;
-  var pct=total?Math.round(done/total*100):0;
-  var progEl=document.getElementById('schCheckProgress');
-  var barEl=document.getElementById('schCheckProgressBar');
-  if(progEl)progEl.textContent=total?done+' / '+total:'';
-  if(barEl)barEl.style.width=pct+'%';
-  if(!total){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">항목이 없어요</div>';return;}
-  el.innerHTML=schCheckItems.map(function(item,i){
-    return '<div class="modal-check-item">'
-      +'<div class="modal-check-box'+(item.checked?' checked':'')+'" data-ci="'+i+'"></div>'
-      +'<span class="modal-check-label'+(item.checked?' done':'')+'">'+item.label+'</span>'
-      +'<button class="modal-check-del" data-di="'+i+'">✕</button>'
-      +'</div>';
-  }).join('');
-  el.querySelectorAll('.modal-check-box').forEach(function(box){
-    box.addEventListener('click',function(){
-      schCheckItems[parseInt(this.dataset.ci)].checked=!schCheckItems[parseInt(this.dataset.ci)].checked;
-      renderSchChecklist();
-    });
-  });
-  el.querySelectorAll('.modal-check-del').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      schCheckItems.splice(parseInt(this.dataset.di),1);
-      renderSchChecklist();
-    });
-  });
-}
-
-function addSchCheckItem(){
-  var inp=document.getElementById('schCheckNewInp');
-  var label=inp.value.trim();
-  if(!label)return;
-  schCheckItems.push({label:label,checked:false});
-  inp.value='';renderSchChecklist();inp.focus();
-}
-
-// 날씨 칩 이벤트 (모달 열릴 때 바인딩)
-function bindWeatherChips(){
-  document.querySelectorAll('#schWeatherChips .chip').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
-      this.classList.toggle('selected');
-    });
-  });
-}
-// ── WORK JOURNAL ──
-var journals=[], unsubJournal=null, editingJournalId='', selectedWeather='';
-
-function subscribeJournals(){
-  if(unsubJournal)unsubJournal();
-  unsubJournal=db.collection('journals').orderBy('date','desc').onSnapshot(function(snap){
-    journals=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    if(document.getElementById('view-sch').classList.contains('active'))renderJournalList();
-  });
-}
-
-function renderJournalSiteFilter(){
-  var sel=document.getElementById('journalSiteFilter');
-  if(!sel)return;
-  var cur=sel.value||'전체';
-  sel.innerHTML='<option value="전체">전체 현장</option>';
-  sites.forEach(function(s){
-    var name=typeof s==='object'?s.name:s;
-    var o=document.createElement('option');
-    o.value=name;o.textContent=name;
-    if(name===cur)o.selected=true;
-    sel.appendChild(o);
-  });
-}
-function renderJournalList(){
-  var el=document.getElementById('journalList');
-  if(!el)return;
-  var siteF=document.getElementById('journalSiteFilter').value||'전체';
-  var monthF=document.getElementById('journalMonthFilter').value||'';
-
-  var filtered=journals.filter(function(j){
-    if(siteF!=='전체'&&j.site!==siteF)return false;
-    if(monthF&&j.date&&!j.date.startsWith(monthF))return false;
-    return true;
-  });
-
-  if(!filtered.length){
-    el.innerHTML='<div class="journal-empty">📝 작성된 업무일지가 없어요</div>';
-    return;
-  }
-
-  el.innerHTML=filtered.map(function(j){
-    var dateLabel=j.date?j.date.replace(/-/g,'.'):'';
-    var preview=j.content?j.content.slice(0,60)+(j.content.length>60?'...':''):'';
-    return '<div class="journal-card" data-jid="'+j.id+'">'
-      +'<div class="journal-card-top">'
-      +'<span class="journal-card-site">📍 '+(j.site||'')+'</span>'
-      +'<span class="journal-card-date">'+dateLabel+'</span>'
-      +'</div>'
-      +(j.weather?'<div class="journal-card-weather">'+j.weather+'</div>':'')
-      +'<div class="journal-card-content">'+preview+'</div>'
-      +'</div>';
-  }).join('');
-
-  el.querySelectorAll('.journal-card').forEach(function(card){
-    card.addEventListener('click',function(){
-      openJournalModalEdit(this.dataset.jid);
-    });
-  });
-}
-
-function selectWeather(btn, weather){
-  selectedWeather=weather;
-  document.querySelectorAll('#journalModal .chip').forEach(function(b){b.classList.remove('selected');});
-  btn.classList.add('selected');
-}
-
-function openJournalModal(){
-  editingJournalId='';
-  selectedWeather='';
-  document.getElementById('journalModalTitle').textContent='업무일지 작성';
-  document.getElementById('journalDeleteBtn').style.display='none';
-  document.querySelectorAll('#journalModal .chip').forEach(function(b){b.classList.remove('selected');});
-
-  var sel=document.getElementById('journalSiteInp');
-  sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
-
-  // 현장 필터 선택된 현장 자동 세팅
-  var siteF=document.getElementById('journalSiteFilter').value;
-  if(siteF&&siteF!=='전체') sel.value=siteF;
-
-  document.getElementById('journalDateInp').value=new Date().toISOString().slice(0,10);
-  document.getElementById('journalContentInp').value='';
-  document.getElementById('journalModal').style.display='flex';
-  pushModalState('journalModal');
-  setTimeout(function(){document.getElementById('journalContentInp').focus();},100);
-}
-
-function openJournalModalEdit(id){
-  var j=journals.find(function(x){return x.id===id;});
-  if(!j)return;
-  editingJournalId=id;
-  selectedWeather=j.weather||'';
-  document.getElementById('journalModalTitle').textContent='업무일지 수정';
-  document.getElementById('journalDeleteBtn').style.display='block';
-
-  var sel=document.getElementById('journalSiteInp');
-  sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;if(name===j.site)o.selected=true;sel.appendChild(o);});
-
-  document.getElementById('journalDateInp').value=j.date||'';
-  document.getElementById('journalContentInp').value=j.content||'';
-
-  // 날씨 칩 선택
-  document.querySelectorAll('#journalModal .chip').forEach(function(b){
-    b.classList.toggle('selected', b.textContent===j.weather);
-  });
-
-  document.getElementById('journalModal').style.display='flex';
-  pushModalState('journalModal');
-}
-
-function closeJournalModal(){
-  if(modalStack.length>0)modalStack.pop();
-  document.getElementById('journalModal').style.display='none';
-}
-
-function saveJournal(){
-  var site=document.getElementById('journalSiteInp').value;
-  var date=document.getElementById('journalDateInp').value;
-  var content=document.getElementById('journalContentInp').value.trim();
-  if(!site){showToast('현장을 선택해주세요');return;}
-  if(!date){showToast('날짜를 선택해주세요');return;}
-  if(!content){showToast('내용을 입력해주세요');return;}
-
-  var data={site:site,date:date,content:content,weather:selectedWeather,ts:firebase.firestore.FieldValue.serverTimestamp()};
-  setSyncStatus('saving');
-  var promise=editingJournalId
-    ?db.collection('journals').doc(editingJournalId).update(data)
-    :db.collection('journals').add(data);
-  promise.then(function(){
-    closeJournalModal();setSyncStatus('ok');
-    showToast(editingJournalId?'✓ 일지 수정됐어요':'✓ 일지 저장됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
-}
-
-function deleteJournal(){
-  if(!confirm('이 업무일지를 삭제할까요?'))return;
-  db.collection('journals').doc(editingJournalId).delete().then(function(){
-    closeJournalModal();showToast('일지 삭제됐어요');
-  });
-}
-// ── SCHEDULE ──
-var schYear=new Date().getFullYear(), schMonth=new Date().getMonth();
-var schSiteFilter='전체', schedules=[], unsubSch=null;
-var editingSchId='';
-
-// 공정별 색상
-var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
-function schColor(idx){return SCH_COLORS[idx%SCH_COLORS.length];}
-function getProcColor(procName,fallbackIdx){var SCH_C=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];var proc=processes.find(function(p){return p.name===procName;});if(proc&&proc.color)return proc.color;return SCH_C[fallbackIdx%SCH_C.length];}
-function getProcColor(procName, fallbackIdx){
-  var proc=processes.find(function(p){return p.name===procName;});
-  if(proc&&proc.color)return proc.color;
-  return SCH_COLORS[fallbackIdx%SCH_COLORS.length];
-}
-
-function subscribeSchedules(){
-  if(unsubSch)unsubSch();
-  unsubSch=db.collection('schedules').orderBy('startDate','asc').onSnapshot(function(snap){
-    schedules=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    if(document.getElementById('view-sch').classList.contains('active'))renderSchTab();
-  });
-}
-
-function renderSchTab(){
-  renderSchSiteFilter();
-  renderSchCal();
-  renderSchList();
-  // 업무일지 이번달 기본값
-  var monthEl=document.getElementById('journalMonthFilter');
-  if(monthEl&&!monthEl.value){
-    var now=new Date();
-    monthEl.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  }
-  renderJournalSiteFilter();
-  renderJournalList();
-}
-
-function renderSchSiteFilter(){
-  var el=document.getElementById('schSiteFilter');
-  var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
-  var all=['전체'].concat(siteNames);
-  el.innerHTML=all.map(function(s){
-    return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" data-site="'+s+'">'+s+'</button>';
-  }).join('');
-  el.querySelectorAll('button').forEach(function(btn){
-    btn.addEventListener('click',function(){setSchSiteFilter(this.dataset.site);});
-  });
-}
-function setSchSiteFilter(s){
-  schSiteFilter=s;
-  renderSchCal();
-  renderSchList();
-  renderSchSiteFilter();
-}
-
-function schCalMove(dir){
-  schMonth+=dir;
-  if(schMonth>11){schMonth=0;schYear++;}
-  if(schMonth<0){schMonth=11;schYear--;}
-  renderSchCal();
-  renderSchList();
-}
-
-function getFilteredSch(){
-  return schedules.filter(function(s){
-    var siteName=typeof s.site==='object'?s.site.name:s.site;
-    return schSiteFilter==='전체'||siteName===schSiteFilter;
-  });
-}
-
-function renderSchCal(){
-  document.getElementById('schMonthLabel').textContent=schYear+'년 '+(schMonth+1)+'월';
-  var firstDay=new Date(schYear,schMonth,1).getDay();
-  var lastDate=new Date(schYear,schMonth+1,0).getDate();
-  var today=new Date();
-  var filtered=getFilteredSch();
-
-  // 요일 헤더
-  var dows=['일','월','화','수','목','금','토'];
-  document.getElementById('schCalHeader').innerHTML=dows.map(function(d,i){
-    return '<div class="sch-cal-dow" style="'+(i===0?'color:var(--red)':i===6?'color:var(--blue)':'')+'">' +d+'</div>';
-  }).join('');
-
-  // 날짜 셀 생성
-  var totalCells=firstDay+lastDate;
-  var rows=Math.ceil(totalCells/7);
-  var cells=[];
-  for(var i=0;i<rows*7;i++){
-    var day=i-firstDay+1;
-    var inMonth=day>=1&&day<=lastDate;
-    cells.push({day:day,inMonth:inMonth});
-  }
-
-  // 각 날짜에 해당하는 일정 바 계산
-  function dateStr(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
-
-  var html=cells.map(function(cell,idx){
-    if(!cell.inMonth) return '<div class="sch-cal-cell" style="background:var(--surface2)"></div>';
-    var ds=dateStr(schYear,schMonth,cell.day);
-    var dow=new Date(schYear,schMonth,cell.day).getDay();
-    var isToday=cell.day===today.getDate()&&schMonth===today.getMonth()&&schYear===today.getFullYear();
-    var dayNumCls=isToday?'sch-day-num today-mark':(dow===0?'sch-day-num sun':dow===6?'sch-day-num sat':'sch-day-num');
-    var dayNumHtml='<div class="'+dayNumCls+'">'+cell.day+'</div>';
-
-    // 이 날짜에 걸치는 일정들
-    var bars='';
-    filtered.forEach(function(s,si){
-      if(!s.startDate||!s.endDate)return;
-      if(ds>=s.startDate&&ds<=s.endDate){
-        var isStart=ds===s.startDate;
-        var isEnd=ds===s.endDate;
-        var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
-        var color=s.color||getProcColor(s.procName,si);
-        var label=isStart?(s.procName||'공정'):'';
-        bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
-      }
-    });
-    return '<div class="sch-cal-cell">'+dayNumHtml+bars+'</div>';
-  }).join('');
-
-  document.getElementById('schCalBody').innerHTML=html;
-  document.getElementById('schCalBody').querySelectorAll('[data-schid]').forEach(function(el){
-    el.addEventListener('click',function(e){e.stopPropagation();openSchModalEdit(this.dataset.schid);});
-  });
-  // 날짜 셀 클릭 → 일별 입력 모달
-  document.getElementById('schCalBody').querySelectorAll('.sch-cal-cell').forEach(function(cell){
-    cell.addEventListener('click',function(){
-      var day=this.querySelector('.sch-day-num');
-      if(!day)return;
-      var dayNum=parseInt(day.textContent);
-      if(!dayNum)return;
-      var dateStr=schYear+'-'+String(schMonth+1).padStart(2,'0')+'-'+String(dayNum).padStart(2,'0');
-      openDailyModal(dateStr);
-    });
-  });
-}
-
-function renderSchList(){
-  var filtered=getFilteredSch();
-  var el=document.getElementById('schList');
-  if(!filtered.length){
-    el.innerHTML='<div class="empty-state"><div class="emoji">📅</div><p>공정 일정이 없어요<br>아래 버튼으로 추가해보세요</p></div>';
-    return;
-  }
-  // 이번 달 기준 정렬
-  el.innerHTML=filtered.map(function(s,si){
-    var pct=parseInt(s.progress||0);
-    var isDone=pct>=100;
-    var color=s.color||getProcColor(s.procName,si);
-    return '<div class="sch-item" data-schid="'+s.id+'">'
-      +'<div class="sch-item-top">'
-      +'<div><div class="sch-item-name" style="color:'+color+'">'+( s.procName||'공정')+'</div>'
-      +'<div class="sch-item-site">📍 '+s.site+(s.worker?' · 👷 '+s.worker:'')+'</div></div>'
-      +(isDone?'<span class="sch-done-badge">완료</span>':'<span style="font-size:12px;font-weight:800;color:'+color+'">'+pct+'%</span>')
-      +'</div>'
-      +'<div class="sch-item-date">'+s.startDate+' ~ '+s.endDate+'</div>'
-      +'<div class="sch-progress-wrap"><div class="sch-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'
-      +(s.memo?'<div style="font-size:11px;color:var(--muted);margin-top:6px">💬 '+s.memo+'</div>':'')
-      +'<button class="proc-btn" style="margin-top:8px;width:100%;text-align:center;padding:8px" data-checklist-id="'+s.id+'" data-checklist-site="'+s.site+'" data-checklist-proc="'+(s.procName||'')+'" onclick="event.stopPropagation()">📋 체크리스트</button>'
-      +'</div>';
-  }).join('');
-  el.querySelectorAll('[data-schid]').forEach(function(item){
-    item.addEventListener('click',function(){openSchModalEdit(this.dataset.schid);});
-  });
-  el.querySelectorAll('[data-checklist-id]').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      openChecklistModal(this.dataset.checklistId, this.dataset.checklistSite, this.dataset.checklistProc);
-    });
-  });
-}
-
-function openSchModal(){
-  editingSchId='';
-  document.getElementById('schModalTitle').textContent='공정 일정 추가';
-  document.getElementById('schDeleteBtn').style.display='none';
-  schCheckItems=[];renderSchChecklist();
-  document.getElementById('schJournalInp').value='';
-  document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
-
-  var sel=document.getElementById('schSiteInp');
-  sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
-
-  var psel=document.getElementById('schProcInp');
-  psel.innerHTML='<option value="">공정 선택</option>';
-  processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;psel.appendChild(o);});
-
-  // 공정 변경시 체크리스트 자동 로드
-  psel.onchange=function(){initSchChecklist(this.value);};
-
-  renderVendorSelect();
-  document.getElementById('schWorkerCountInp').value='';
-
-  var today=new Date().toISOString().slice(0,10);
-  document.getElementById('schStartInp').value=today;
-  document.getElementById('schEndInp').value=today;
-  document.getElementById('schPctInp').value=0;
-  document.getElementById('schPctLabel').textContent='0%';
-  document.getElementById('schMemoInp').value='';
-  document.getElementById('schCheckNewInp').value='';
-  document.getElementById('schModal').style.display='flex';
-  pushModalState('schModal');
-  bindWeatherChips();
-}
-function openSchModalEdit(id){
-  var s=schedules.find(function(x){return x.id===id;});
-  if(!s)return;
-  editingSchId=id;
-  document.getElementById('schModalTitle').textContent='공정 일정 수정';
-  document.getElementById('schDeleteBtn').style.display='block';
-
-  var sel=document.getElementById('schSiteInp');
-  sel.innerHTML='<option value="">현장 선택</option>';
-  sites.forEach(function(st){var name=typeof st==='object'?st.name:st;var o=document.createElement('option');o.value=name;o.textContent=name;if(name===s.site)o.selected=true;sel.appendChild(o);});
-
-  var psel=document.getElementById('schProcInp');
-  psel.innerHTML='<option value="">공정 선택</option>';
-  processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;if(p.name===s.procName)o.selected=true;psel.appendChild(o);});
-  psel.onchange=function(){initSchChecklist(this.value);};
-
-  renderVendorSelect();
-  document.getElementById('schWorkerInp').value=s.workerId||'';
-  document.getElementById('schWorkerCountInp').value=s.workerCount||'';
-  document.getElementById('schStartInp').value=s.startDate||'';
-  document.getElementById('schEndInp').value=s.endDate||'';
-  var pct=parseInt(s.progress||0);
-  document.getElementById('schPctInp').value=pct;
-  document.getElementById('schPctLabel').textContent=pct+'%';
-  document.getElementById('schMemoInp').value=s.memo||'';
-  document.getElementById('schJournalInp').value=s.journal||'';
-  document.getElementById('schCheckNewInp').value='';
-
-  // 날씨
-  document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){
-    b.classList.toggle('selected',b.dataset.weather===s.weather);
-  });
-
-  // 체크리스트 로드
-  loadSchChecklist(id, s.procName);
-  document.getElementById('schModal').style.display='flex';
-  pushModalState('schModal');
-  bindWeatherChips();
-}
-function closeSchModal(){if(modalStack.length>0)modalStack.pop();
-  document.getElementById('schModal').style.display='none';}
-
-function saveSchModal(){
-  var site=document.getElementById('schSiteInp').value;
-  var proc=document.getElementById('schProcInp').value;
-  if(!site){showToast('현장을 선택해주세요');return;}
-  if(!proc){showToast('공정을 선택해주세요');return;}
-  var startDate=document.getElementById('schStartInp').value;
-  var endDate=document.getElementById('schEndInp').value;
-  if(!startDate||!endDate){showToast('날짜를 입력해주세요');return;}
-  if(startDate>endDate){showToast('종료일이 시작일보다 빠릅니다');return;}
-
-  // 날씨 선택값
-  var weatherEl=document.querySelector('#schWeatherChips .chip.selected');
-  var weather=weatherEl?weatherEl.dataset.weather:'';
-
-  // 담당자 ID → 이름
-  var workerSel=document.getElementById('schWorkerInp');
-  var workerId=workerSel.value;
-  var workerName=workerSel.options[workerSel.selectedIndex]?workerSel.options[workerSel.selectedIndex].text:'';
-
-  var data={
-    site:site, procName:proc,
-    workerId:workerId, worker:workerName,
-    workerCount:parseInt(document.getElementById('schWorkerCountInp').value)||0,
-    startDate:startDate, endDate:endDate,
-    progress:parseInt(document.getElementById('schPctInp').value)||0,
-    memo:document.getElementById('schMemoInp').value.trim(),
-    journal:document.getElementById('schJournalInp').value.trim(),
-    weather:weather,
-    ts:firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  setSyncStatus('saving');
-  var promise=editingSchId
-    ?db.collection('schedules').doc(editingSchId).update(data)
-    :db.collection('schedules').add(data);
-
-  promise.then(function(ref){
-    var schId=editingSchId||(ref&&ref.id);
-    // 체크리스트 저장
-    if(schId&&schCheckItems.length){
-      db.collection('checklists').doc(schId).set({items:schCheckItems,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-    }
-    closeSchModal();setSyncStatus('ok');
-    showToast(editingSchId?'✓ 공정 수정됐어요':'✓ 공정 추가됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
-}
-function deleteSchItem(){
-  if(!confirm('이 공정 일정을 삭제할까요?'))return;
-  db.collection('schedules').doc(editingSchId).delete().then(function(){
-    closeSchModal();showToast('공정 삭제됐어요');
-  });
-}
-
-// ── CALENDAR ──
-var calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelectedDate='';
-function calMove(dir){
-  calMonth+=dir;
-  if(calMonth>11){calMonth=0;calYear++;}
-  if(calMonth<0){calMonth=11;calYear--;}
-  renderCal();
-}
-function renderCal(){
-  var label=calYear+'년 '+(calMonth+1)+'월';
-  document.getElementById('calMonthLabel').textContent=label;
-  var firstDay=new Date(calYear,calMonth,1).getDay();
-  var lastDate=new Date(calYear,calMonth+1,0).getDate();
-  var today=new Date();
-  // 날짜별 합계
-  var dayTotals={};
-  records.forEach(function(r){
-    var d=new Date(r.date);
-    // 로컬 시간 기준으로 날짜 비교
-    if(d.getFullYear()===calYear&&d.getMonth()===calMonth){
-      var key=d.getDate();
-      dayTotals[key]=(dayTotals[key]||0)+r.amount;
-    }
-  });
-  var dows=['일','월','화','수','목','금','토'];
-  var html=dows.map(function(d,i){return '<div class="cal-dow'+(i===0?' style="color:var(--red)"':'')+'">'+d+'</div>';}).join('');
-  // 이전달 빈칸
-  for(var i=0;i<firstDay;i++){html+='<div class="cal-cell other-month"></div>';}
-  for(var d=1;d<=lastDate;d++){
-    var isToday=d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
-    var dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    var isSel=dateStr===calSelectedDate;
-    var dow=new Date(calYear,calMonth,d).getDay();
-    var cls='cal-cell'+(isToday?' today':'')+(isSel?' selected':'')+(dayTotals[d]?' has-data':'');
-    var dowCls=dow===0?'sun':dow===6?'sat':'';
-    var amtHtml=dayTotals[d]?'<div class="cal-day-amt">₩'+Math.round(dayTotals[d]/1000)+'k</div>':'';
-    html+='<div class="'+cls+'" onclick="selectCalDay(\''+dateStr+'\')"><div class="cal-day-num '+dowCls+'">'+d+'</div>'+amtHtml+'</div>';
-  }
-  document.getElementById('calGrid').innerHTML=html;
-  if(calSelectedDate)renderCalDetail(calSelectedDate);
-}
-function selectCalDay(dateStr){
-  calSelectedDate=dateStr;
-  renderCal();
-  renderCalDetail(dateStr);
-}
-function renderCalDetail(dateStr){
-  var detail=document.getElementById('calDayDetail');
-  var dayRecs=records.filter(function(r){
-    if(!r.date) return false;
-    // ISO 날짜를 로컬 시간 기준으로 비교
-    var d=new Date(r.date);
-    var localStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    return localStr===dateStr;
-  });
-  if(!dayRecs.length){detail.classList.remove('show');return;}
-  var total=dayRecs.reduce(function(a,r){return a+r.amount;},0);
-  var d=new Date(dateStr);
-  detail.classList.add('show');
-  detail.innerHTML='<div class="cal-detail-title">'+( d.getMonth()+1)+'월 '+d.getDate()+'일</div>'
-    +'<div class="cal-detail-total">₩'+total.toLocaleString('ko-KR')+'</div>'
-    +dayRecs.map(function(r){
-      var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
-      return '<div class="record-item" style="margin-bottom:6px">'
-        +'<div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div>'
-        +'<div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+'</div></div>'
-        +'<div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div></div>'
-        +'</div>';
-    }).join('');
-}
-
-// ── TABS ──
-function switchTab(tab){
-  var TAB_ORDER=['input','list','sch','dash','settings'];
-  // 모든 뷰 숨기기
-  document.querySelectorAll('.view').forEach(function(v){
-    v.classList.remove('active');
-  });
-  // 모든 탭 비활성화
-  document.querySelectorAll('.tab').forEach(function(t){
-    t.classList.remove('active');
-  });
-  // 선택한 뷰/탭 활성화
-  var nextView=document.getElementById('view-'+tab);
-  if(nextView){
-    nextView.classList.add('active');
-  }
-  // 모든 스크롤 위치 맨 위로
-  requestAnimationFrame(function(){
-    window.scrollTo({top:0,behavior:'instant'});
-    document.documentElement.scrollTop=0;
-    document.body.scrollTop=0;
-    if(nextView)nextView.scrollTop=0;
-    var vc=document.getElementById('viewContainer');
-    if(vc)vc.scrollTop=0;
-  });
-  var tabEl=document.getElementById('tab-'+tab);
-  if(tabEl){
-    tabEl.classList.add('active');
-    tabEl.scrollIntoView({inline:'center',behavior:'smooth'});
-  }
-  // 탭별 렌더링
-  if(tab==='list'){renderCal();renderList();}
-  else if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
-  else if(tab==='dash'){renderDash();}
-  else if(tab==='settings'){renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();}
-}
-
-function openNotifModal(){
-  document.getElementById('notifModal').style.display='flex';
-  pushModalState('notifModal');
-  setTimeout(function(){renderNotifTab();},0);
-}
-function closeNotifModal(){
-  if(modalStack.length>0)modalStack.pop();
-  document.getElementById('notifModal').style.display='none';
-}
-
-
-// ── COLOR POPUP ──
-var colorPopupPi=-1;
-var COLOR_30=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800','#e91e63','#00bcd4','#43a047','#2e7d32','#66bb6a','#a5d6a7','#c62828','#f06292','#ad1457','#fdd835','#f57f17','#0288d1','#0097a7','#1565c0','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b'];
-
-function openColorPopup(pi){
-  colorPopupPi=pi;
-  var curColor=processes[pi].color||COLOR_30[pi%COLOR_30.length];
-  var grid=document.getElementById('colorPopupGrid');
-  grid.innerHTML=COLOR_30.map(function(c){
-    return '<button class="color-popup-btn'+(c===curColor?' selected':'')+'" data-color="'+c+'" style="background:'+c+'"></button>';
-  }).join('');
-  grid.querySelectorAll('.color-popup-btn').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      grid.querySelectorAll('.color-popup-btn').forEach(function(b){b.classList.remove('selected');});
-      this.classList.add('selected');
-      processes[colorPopupPi].color=this.dataset.color;
-      saveSettings().then(function(){
-        renderProcessList();
-        renderProcessSelect();
-        closeColorPopup();
-        showToast('✓ 색상 변경됐어요');
-      });
-    });
-  });
-  document.getElementById('colorPopup').classList.add('show');
-  pushModalState('colorPopup');
-}
-
-function closeColorPopup(){
-  document.getElementById('colorPopup').classList.remove('show');
-  if(modalStack.length>0&&modalStack[modalStack.length-1]==='colorPopup'){
-    modalStack.pop();
-    history.go(-1);
-  }
-}
-
-// ── COLOR POPUP ──
-var colorPopupProcIdx = -1;
-var SCH_COLORS_ALL = [
-  '#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0',
-  '#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7',
-  '#e05252','#e91e63','#c62828','#f06292','#ad1457',
-  '#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17',
-  '#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8',
-  '#795548','#6d4c41','#546e7a','#607d8b','#78909c'
-];
-
-function openColorPopup(pi){
-  colorPopupProcIdx = pi;
-  var curColor = processes[pi].color || SCH_COLORS_ALL[pi % SCH_COLORS_ALL.length];
-  var grid = document.getElementById('colorPopupGrid');
-  grid.innerHTML = SCH_COLORS_ALL.map(function(c){
-    return '<button class="color-popup-btn'+(c===curColor?' selected':'')+'" data-color="'+c+'" style="background:'+c+'"></button>';
-  }).join('');
-  grid.querySelectorAll('.color-popup-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      grid.querySelectorAll('.color-popup-btn').forEach(function(b){b.classList.remove('selected');});
-      this.classList.add('selected');
-      processes[colorPopupProcIdx].color = this.dataset.color;
-      saveSettings().then(function(){
-        renderProcessList();
-        renderProcessSelect();
-        closeColorPopup();
-      });
-    });
-  });
-  document.getElementById('colorPopup').classList.add('show');
-  pushModalState('colorPopup');
-}
-
-function closeColorPopup(){
-  document.getElementById('colorPopup').classList.remove('show');
-  if(modalStack.length>0&&modalStack[modalStack.length-1]==='colorPopup'){
-    modalStack.pop();
-    history.go(-1);
-  }
-}
-// ── COLOR PICKER ──
-function bindColorPicker(defaultColor){
-  var btns=document.querySelectorAll('#schColorPicker .color-pick-btn');
-  btns.forEach(function(btn){
-    btn.classList.remove('selected');
-    if(btn.dataset.color===(defaultColor||'#5b8cf7'))btn.classList.add('selected');
-    btn.onclick=function(){
-      btns.forEach(function(b){b.classList.remove('selected');});
-      this.classList.add('selected');
-    };
-  });
-}
-function getSelectedColor(){
-  var sel=document.querySelector('#schColorPicker .color-pick-btn.selected');
-  return sel?sel.dataset.color:'#5b8cf7';
-}
-
-// ── HISTORY API (뒤로가기 처리) ──
-var modalStack=[];
-
-function pushModalState(modalId){
-  history.pushState({modal:modalId},'','');
-  modalStack.push(modalId);
-}
-
-function popModal(){
-  if(modalStack.length>0){
-    var last=modalStack.pop();
-    var el=document.getElementById(last);
-    if(el)el.style.display='none';
-    // classList 방식도 처리
-    if(el)el.classList&&el.classList.remove('show');
-  }
-}
-
-window.addEventListener('popstate',function(e){
-  if(modalStack.length>0){
-    popModal();
-  }
-});
-
-// 모달 열기/닫기 래퍼 - 각 모달에 history 연동
-function openModalWithHistory(modalId){
-  document.getElementById(modalId).style.display='flex';
-  pushModalState(modalId);
-}
-function closeModalWithHistory(modalId){
-  document.getElementById(modalId).style.display='none';
-  if(modalStack.length>0&&modalStack[modalStack.length-1]===modalId){
-    modalStack.pop();
-    history.go(-1);
-  }
-}
-function openModalShowWithHistory(modalId){
-  document.getElementById(modalId).classList.add('show');
-  pushModalState(modalId);
-}
-function closeModalShowWithHistory(modalId){
-  document.getElementById(modalId).classList.remove('show');
-  if(modalStack.length>0&&modalStack[modalStack.length-1]===modalId){
-    modalStack.pop();
-    history.go(-1);
-  }
-}
-
-
-
-// ── 평↔㎡ 변환 ──
-function syncPyeong(sqmVal){
-  var sqm=parseFloat(sqmVal);
-  var pyeongEl=document.getElementById('sitePyeongInp');
-  if(!pyeongEl)return;
-  if(isNaN(sqm)||sqmVal===''){pyeongEl.value='';return;}
-  pyeongEl.value=Math.round(sqm/3.3058*100)/100;
-}
-function syncSqm(pyeongVal){
-  var pyeong=parseFloat(pyeongVal);
-  var sqmEl=document.getElementById('siteSqmInp');
-  if(!sqmEl)return;
-  if(isNaN(pyeong)||pyeongVal===''){sqmEl.value='';return;}
-  sqmEl.value=Math.round(pyeong*3.3058*100)/100;
-}
-// ── SITE SHARE ──
-function buildSiteText(){
-  // 모달 입력값 직접 읽기 (저장 전이어도 현재 입력 내용 반영)
-  var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
-  var name    =(document.getElementById('siteEditInp')||{}).value||'';
-  var customer=(document.getElementById('siteCustomerInp')||{}).value||'';
-  var phone   =(document.getElementById('sitePhoneInp')||{}).value||'';
-  var address =(document.getElementById('siteAddressInp')||{}).value||'';
-  var apt     =(document.getElementById('siteAptInp')||{}).value||'';
-  var dong    =(document.getElementById('siteDongInp')||{}).value||'';
-  var ho      =(document.getElementById('siteHoInp')||{}).value||'';
-  var commonPw=(document.getElementById('siteCommonPwInp')||{}).value||'';
-  var unitPw  =(document.getElementById('siteUnitPwInp')||{}).value||'';
-  var status  =editingSiteStatus||'ongoing';
-  var dongho  =dong&&ho?dong+'동 '+ho+'호':(dong?dong+'동':ho?ho+'호':'');
-  if(!name){showToast('현장명이 없어요');return '';}
-  var lines=[];
-  lines.push('📍 현장 정보');
-  lines.push('━━━━━━━━━━━━━━');
-  lines.push('🏠 현장명: '+name);
-  lines.push('📌 상태: '+(statusMap[status]||status));
-  if(customer) lines.push('👤 고객명: '+customer);
-  if(phone)    lines.push('📞 전화번호: '+phone);
-  if(address)  lines.push('🗺 주소: '+address);
-  if(apt)      lines.push('🏢 아파트: '+apt);
-  if(dongho)   lines.push('🚪 동/호수: '+dongho);
-  var startDate=(document.getElementById('siteStartDateInp')||{}).value||'';
-  var endDate  =(document.getElementById('siteEndDateInp')||{}).value||'';
-  var sqm      =(document.getElementById('siteSqmInp')||{}).value||'';
-  var pyeong   =(document.getElementById('sitePyeongInp')||{}).value||'';
-  if(startDate||endDate) lines.push('📅 공사기간: '+(startDate||'?')+' ~ '+(endDate||'?'));
-  if(sqm||pyeong)        lines.push('📐 면적: '+(sqm?sqm+'㎡':'')+(sqm&&pyeong?' / ':' ')+(pyeong?pyeong+'평':''));
-  if(commonPw||unitPw){
-    lines.push('━━━━━━━━━━━━━━');
-    if(commonPw) lines.push('🔑 공용 비번: '+commonPw);
-    if(unitPw)   lines.push('🔐 세대 비번: '+unitPw);
-  }
-  return lines.join('\n');
-}
-
-function copySiteInfo(){
-  var text=buildSiteText();
-  if(!text){showToast('현장 정보가 없어요');return;}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      showToast('✓ 클립보드에 복사됐어요');
-    }).catch(function(){
-      fallbackCopy(text);
-    });
-  } else {
-    fallbackCopy(text);
-  }
-}
-
-function fallbackCopy(text){
-  var ta=document.createElement('textarea');
-  ta.value=text;
-  ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
-  document.body.appendChild(ta);
-  ta.focus();ta.select();
-  try{document.execCommand('copy');showToast('✓ 클립보드에 복사됐어요');}
-  catch(e){showToast('복사 실패 - 직접 선택해주세요');}
-  document.body.removeChild(ta);
-}
-
-function shareSiteKakao(){
-  var text=buildSiteText();
-  if(!text){showToast('현장 정보가 없어요');return;}
-
-  // 1. 클립보드 복사 (항상 먼저)
-  var copied=false;
-  function tryOpen(){
-    // 2. Web Share API (Android Chrome/삼성인터넷 지원)
-    if(navigator.share){
-      navigator.share({text:text}).catch(function(e){
-        // 사용자가 취소한 경우 무시
-        if(e.name!=='AbortError') showToast('공유 실패: '+e.message);
-      });
-    } else {
-      // 3. Web Share 없으면 카카오톡 URL Scheme 시도
-      var encoded=encodeURIComponent(text);
-      window.location.href='kakaotalk://send?text='+encoded;
-      setTimeout(function(){
-        showToast(copied?'📋 복사됐어요. 카카오톡에 붙여넣기 해주세요':'카카오톡이 없으면 클립보드 복사를 이용해주세요');
-      },1200);
-    }
-  }
-
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      copied=true;
-      showToast('📋 클립보드 복사 완료');
-      setTimeout(tryOpen, 300);
-    }).catch(function(){tryOpen();});
-  } else {
-    fallbackCopy(text);
-    tryOpen();
-  }
-}
-// ── SITE EDIT ──
-var editingSiteIdx=-1, editingSiteStatus='ongoing';
 function openSiteEditModal(i){
   editingSiteIdx=i;
   var s=sites[i];
@@ -4388,6 +2176,137 @@ document.addEventListener('touchend', function(){
 }, {passive: true});
 
 function isTap(){ return !isScrolling; }
+
+// ── SETTINGS MODAL ──
+function openSettingsModal(){
+  renderSiteList();renderCardList();renderAccountList();renderProcessList();renderVendorMgmtList();
+  document.getElementById('settingsModal').style.display='flex';
+  pushModalState('settingsModal');
+}
+function closeSettingsModal(){
+  document.getElementById('settingsModal').style.display='none';
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='settingsModal'){modalStack.pop();history.go(-1);}
+}
+
+// ── ORDER (발주) ──
+var orders=[],unsubOrders=null,editingOrderId='',orderStatus='pending',orderFilter='all';
+function subscribeOrders(){
+  if(unsubOrders)unsubOrders();
+  unsubOrders=db.collection('orders').orderBy('ts','desc').onSnapshot(function(snap){
+    orders=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById('view-order')&&document.getElementById('view-order').classList.contains('active'))renderOrderList();
+  });
+}
+function renderOrderSiteFilter(){
+  var sel=document.getElementById('orderSiteFilter');
+  if(!sel)return;
+  var cur=sel.value||'전체';
+  sel.innerHTML='<option value="전체">전체 현장</option>';
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;if(name===cur)o.selected=true;sel.appendChild(o);});
+}
+function setOrderFilter(f,btn){
+  orderFilter=f;
+  document.querySelectorAll('#orderStatusTabs .notif-filter-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  renderOrderList();
+}
+function renderOrderList(){
+  renderOrderSiteFilter();
+  var el=document.getElementById('orderList');
+  if(!el)return;
+  var siteF=(document.getElementById('orderSiteFilter')||{}).value||'전체';
+  var filtered=orders.filter(function(o){
+    if(siteF!=='전체'&&o.site!==siteF)return false;
+    if(orderFilter!=='all'&&o.status!==orderFilter)return false;
+    return true;
+  });
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="emoji">📦</div><p>발주 내역이 없어요</p></div>';return;}
+  var statusLabel={pending:'발주중',ordered:'발주완료',arrived:'입고완료'};
+  var statusBg={pending:'var(--accent2)',ordered:'var(--blue)',arrived:'var(--green)'};
+  el.innerHTML=filtered.map(function(o){
+    var st=o.status||'pending';
+    return '<div class="site-card" data-oid="'+o.id+'" style="cursor:pointer;margin-bottom:8px">'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+      +'<span style="font-size:13px;font-weight:800">'+o.name+'</span>'
+      +'<span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:'+statusBg[st]+'30;color:'+statusBg[st]+'">'+statusLabel[st]+'</span>'
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+(o.site?'📍 '+o.site+' · ':'')+( o.qty?o.qty+(o.unit?' '+o.unit:'')+'  ':'')+( o.amount?'₩'+parseInt(o.amount).toLocaleString():'')+'</div>'
+      +(o.vendor?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👷 '+o.vendor+'</div>':'')
+      +(o.delivery?'<div style="font-size:11px;color:var(--muted);margin-top:2px">📅 납품예정: '+o.delivery+'</div>':'')
+      +(o.memo?'<div style="font-size:11px;color:var(--muted);margin-top:2px">💬 '+o.memo+'</div>':'')
+      +'</div></div>';
+  }).join('');
+  el.querySelectorAll('.site-card').forEach(function(card){
+    card.addEventListener('touchend',function(e){if(isScrolling)return;openOrderModalEdit(this.dataset.oid);},{passive:true});
+    card.addEventListener('click',function(){openOrderModalEdit(this.dataset.oid);});
+  });
+}
+function selectOrderStatus(st){
+  orderStatus=st;
+  var cls={pending:'active-before',ordered:'active-meeting',arrived:'active-ongoing'};
+  ['pending','ordered','arrived'].forEach(function(s){
+    var btn=document.getElementById('ostBtn-'+s);
+    if(btn)btn.className='site-status-btn'+(s===st?' '+cls[s]:'');
+  });
+}
+function openOrderModal(){
+  editingOrderId='';orderStatus='pending';
+  document.getElementById('orderModalTitle').textContent='발주 추가';
+  document.getElementById('orderDeleteBtn').style.display='none';
+  var sel=document.getElementById('orderSiteInp');
+  sel.innerHTML='<option value="">현장 선택</option>';
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
+  var vsel=document.getElementById('orderVendorInp');
+  vsel.innerHTML='<option value="">선택 안 함</option>';
+  vendors.forEach(function(v){var vn=v.company+(v.name?' ('+v.name+')':'');var o=document.createElement('option');o.value=vn;o.textContent=vn;vsel.appendChild(o);});
+  ['orderNameInp','orderQtyInp','orderUnitInp','orderAmountInp','orderMemoInp'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('orderDateInp').value=new Date().toISOString().slice(0,10);
+  document.getElementById('orderDeliveryInp').value='';
+  selectOrderStatus('pending');
+  document.getElementById('orderModal').style.display='flex';
+  pushModalState('orderModal');
+}
+function openOrderModalEdit(id){
+  var o=orders.find(function(x){return x.id===id;});
+  if(!o)return;
+  editingOrderId=id;
+  document.getElementById('orderModalTitle').textContent='발주 수정';
+  document.getElementById('orderDeleteBtn').style.display='block';
+  var sel=document.getElementById('orderSiteInp');
+  sel.innerHTML='<option value="">현장 선택</option>';
+  sites.forEach(function(s){var name=typeof s==='object'?s.name:s;var opt=document.createElement('option');opt.value=name;opt.textContent=name;if(name===o.site)opt.selected=true;sel.appendChild(opt);});
+  var vsel=document.getElementById('orderVendorInp');
+  vsel.innerHTML='<option value="">선택 안 함</option>';
+  vendors.forEach(function(v){var vn=v.company+(v.name?' ('+v.name+')':'');var opt=document.createElement('option');opt.value=vn;opt.textContent=vn;if(vn===o.vendor)opt.selected=true;vsel.appendChild(opt);});
+  document.getElementById('orderNameInp').value=o.name||'';
+  document.getElementById('orderQtyInp').value=o.qty||'';
+  document.getElementById('orderUnitInp').value=o.unit||'';
+  document.getElementById('orderAmountInp').value=o.amount||'';
+  document.getElementById('orderDateInp').value=o.date||'';
+  document.getElementById('orderDeliveryInp').value=o.delivery||'';
+  document.getElementById('orderMemoInp').value=o.memo||'';
+  selectOrderStatus(o.status||'pending');
+  document.getElementById('orderModal').style.display='flex';
+  pushModalState('orderModal');
+}
+function closeOrderModal(){
+  document.getElementById('orderModal').style.display='none';
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='orderModal'){modalStack.pop();history.go(-1);}
+}
+function saveOrderModal(){
+  var name=document.getElementById('orderNameInp').value.trim();
+  if(!name){showToast('자재명을 입력해주세요');return;}
+  var data={site:document.getElementById('orderSiteInp').value,name:name,qty:document.getElementById('orderQtyInp').value.trim(),unit:document.getElementById('orderUnitInp').value.trim(),amount:document.getElementById('orderAmountInp').value.trim(),vendor:document.getElementById('orderVendorInp').value,date:document.getElementById('orderDateInp').value,delivery:document.getElementById('orderDeliveryInp').value,memo:document.getElementById('orderMemoInp').value.trim(),status:orderStatus,ts:firebase.firestore.FieldValue.serverTimestamp()};
+  setSyncStatus('saving');
+  var p=editingOrderId?db.collection('orders').doc(editingOrderId).update(data):db.collection('orders').add(data);
+  p.then(function(){closeOrderModal();setSyncStatus('ok');showToast(editingOrderId?'✓ 발주 수정됐어요':'✓ 발주 추가됐어요');}).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+function deleteOrder(){
+  if(!confirm('이 발주를 삭제할까요?'))return;
+  db.collection('orders').doc(editingOrderId).delete().then(function(){closeOrderModal();showToast('발주 삭제됐어요');});
+}
+
 // ── TOAST ──
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
