@@ -1903,7 +1903,7 @@ function confirmDatePicker(){
 function saveRecord(){
   var amount=parseInt(amountStr||'0');
   if(!amount){showToast('금액을 입력해주세요');return;}
-  var site=document.getElementById('siteSelect').value||'';
+  var site=String(document.getElementById('siteSelect').value||'');
   if(!site){showToast('현장을 선택해주세요');return;}
   var memo=document.getElementById('memoInput').value.trim();
   var vendor=document.getElementById('vendorInput').value.trim();
@@ -2116,23 +2116,14 @@ function renderSiteList(){
 
   el.innerHTML=parts.join('');
 
-  // click 이벤트만 사용 (touchend + isScrolling 조합 제거)
-  el.querySelectorAll('.site-card').forEach(function(card){
-    card.addEventListener('click',function(e){
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      openSiteEditModal(parseInt(this.dataset.siteIdx));
-    });
+    el.addEventListener('click', function(e){
+    var delBtn=e.target.closest('[data-del-site]');
+    if(delBtn){deleteSite(parseInt(delBtn.getAttribute('data-del-site')));return;}
+    if(e.target.classList.contains('drag-handle'))return;
+    var card=e.target.closest('[data-site-action="edit"]');
+    if(card)openSiteEditModal(parseInt(card.dataset.siteIdx));
   });
-
-  el.querySelectorAll('[data-del-site]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteSite(parseInt(this.getAttribute('data-del-site')));
-    });
-  });
-
-  initDragList(el, sites, 'sites', function(){
+    initDragList(el, sites, 'sites', function(){
     saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();});
   });
 }
@@ -2142,7 +2133,7 @@ function pushSiteCard(parts, s, i){
   var name=typeof s==='object'?s.name:String(s);
   if(!name||name==='[object Object]')name='(이름 없음)';
   var st=typeof s==='object'?s.status||'ongoing':'ongoing';
-  parts.push('<div class="site-card drag-item" data-site-idx="'+i+'">'
+  parts.push('<div class="site-card drag-item" data-site-idx="'+i+'" data-site-action="edit">'
     +'<span class="drag-handle">☰</span>'
     +'<div style="flex:1;min-width:0">'
     +'<div style="font-size:13px;font-weight:700">'+name+'</div>'
@@ -2200,7 +2191,7 @@ function renderList(){
       var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
       var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
       var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
-      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+(r.site==='[object Object]'?'':r.site||'')+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
+      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+siteStr(r.site)+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
     }).join('');
   }).join('');
 }
@@ -2258,7 +2249,7 @@ function renderDash(){
     +'<div class="section-header" style="margin-bottom:10px;margin-top:4px">매출 내역</div>'
     +'<div>'+(fInc.length?fInc.map(function(r){return '<div class="record-item" style="margin-bottom:8px">'
       +'<div class="record-icon" style="background:#1a1f2e">💰</div>'
-      +'<div class="record-info"><div class="record-site">'+(r.site==='[object Object]'?'':r.site||'')+'</div><div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div><div class="record-cat">'+r.date+'</div></div>'
+      +'<div class="record-info"><div class="record-site">'+siteStr(r.site)+'</div><div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div><div class="record-cat">'+r.date+'</div></div>'
       +'<div class="record-right"><div class="record-amount" style="color:var(--blue)">₩'+r.amount.toLocaleString('ko-KR')+'</div>'
       +'<div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end">'
       +'<button class="proc-btn" onclick="openIncomeEditModal(\''+r.id+'\')">수정</button>'
@@ -3217,7 +3208,7 @@ function openEditModal(id){
   document.getElementById('editDate').value=localDt;
   var sel=document.getElementById('editSite');
   sel.innerHTML='';
-  sites.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;if(s===r.site)o.selected=true;sel.appendChild(o);});
+  sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===siteStr(r.site))o.selected=true;sel.appendChild(o);});
   editSelectedCat=r.category||'자재비';
   document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.toggle('selected',b.textContent===editSelectedCat);});
   editSelectedPayMethod=r.payMethod||'';
@@ -4117,7 +4108,7 @@ function renderCalDetail(dateStr){
       var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
       return '<div class="record-item" style="margin-bottom:6px">'
         +'<div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div>'
-        +'<div class="record-info"><div class="record-site">'+(r.site==='[object Object]'?'':r.site||'')+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+'</div></div>'
+        +'<div class="record-info"><div class="record-site">'+siteStr(r.site)+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+'</div></div>'
         +'<div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div></div>'
         +'</div>';
     }).join('');
@@ -4885,6 +4876,8 @@ function savePersonalBudget(cat){
   });
 }
 
+
+function siteStr(site){if(!site)return '';if(typeof site==='object')return site.name||'';if(site==='[object Object]')return '';return String(site);}
 // ── TOAST ──
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
