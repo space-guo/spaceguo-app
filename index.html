@@ -1614,6 +1614,7 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
 
   // 입력 탭으로 먼저 이동
   switchTab('input');
+  setTimeout(function(){initDatePicker();},50);
 
   // 탭 이동 후 카드 매칭 (renderCardChips가 탭 전환 시 초기화되므로 이후 실행)
   var matched=null;
@@ -1758,16 +1759,26 @@ var miniCalYear=new Date().getFullYear(), miniCalMonth=new Date().getMonth();
 var miniCalSelectedDay=new Date().getDate();
 
 function initDatePicker(){
-  if(activePendingId) return;
-  var now=new Date();
-  var ny=now.getFullYear(), nm=now.getMonth()+1, nd=now.getDate();
-  var nh=now.getHours(), nmn=now.getMinutes();
-  document.getElementById('dpYear').value=ny;
-  document.getElementById('dpMonth').value=String(nm).padStart(2,'0');
-  document.getElementById('dpDay').value=String(nd).padStart(2,'0');
-  document.getElementById('dpHour').value=String(nh).padStart(2,'0');
-  document.getElementById('dpMin').value=String(nmn).padStart(2,'0');
-  miniCalYear=ny; miniCalMonth=nm-1; miniCalSelectedDay=nd;
+  var d;
+  if(activePendingId && activePendingDate){
+    // 카드 알림 날짜로 피커 설정 (YYYY-MM-DD HH:mm 형식)
+    var parts=activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if(parts){
+      d={y:parseInt(parts[1]),m:parseInt(parts[2]),d:parseInt(parts[3]),
+         h:parseInt(parts[4]),mn:parseInt(parts[5])};
+    }
+  }
+  if(!d){
+    var now=new Date();
+    d={y:now.getFullYear(),m:now.getMonth()+1,d:now.getDate(),
+       h:now.getHours(),mn:now.getMinutes()};
+  }
+  document.getElementById('dpYear').value=d.y;
+  document.getElementById('dpMonth').value=String(d.m).padStart(2,'0');
+  document.getElementById('dpDay').value=String(d.d).padStart(2,'0');
+  document.getElementById('dpHour').value=String(d.h).padStart(2,'0');
+  document.getElementById('dpMin').value=String(d.mn).padStart(2,'0');
+  miniCalYear=d.y; miniCalMonth=d.m-1; miniCalSelectedDay=d.d;
   renderMiniCal();
 }
 function resetToNow(){ initDatePicker(); }
