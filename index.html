@@ -1029,7 +1029,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 
 <!-- NOTIF MODAL -->
 <div class="modal-overlay" id="notifModal" onclick="if(event.target===this)closeNotifModal()" style="display:none">
-  <div class="modal-inner" style="max-height:90vh;overflow-y:auto;padding:0">
+  <div class="modal-inner" style="height:80vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px">
       <div class="modal-title" style="margin-bottom:0">🔔 카드 알림</div>
       <button onclick="closeNotifModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px">✕</button>
@@ -1040,7 +1040,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <button class="notif-filter-btn" id="notifFilterSkipped" onclick="setNotifFilter('skipped',this)">✕ 미처리</button>
       <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
     </div>
-    <div id="notifList" style="padding:0 16px 20px">
+    <div id="notifList" style="padding:0 16px 20px;flex:1;overflow-y:auto;min-height:0">
       <div class="empty-state"><div class="emoji">🔔</div><p>불러오는 중...</p></div>
     </div>
   </div>
@@ -1133,6 +1133,13 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <div style="padding:16px">
   <div class="settings-title">현장 목록</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="siteStatusFilterRow">
+    <button class="notif-filter-btn active" data-sf="all" onclick="setSiteFilter('all',this)">전체</button>
+    <button class="notif-filter-btn" data-sf="meeting" onclick="setSiteFilter('meeting',this)">미팅</button>
+    <button class="notif-filter-btn" data-sf="before" onclick="setSiteFilter('before',this)">공사전</button>
+    <button class="notif-filter-btn" data-sf="ongoing" onclick="setSiteFilter('ongoing',this)">공사중</button>
+    <button class="notif-filter-btn" data-sf="done" onclick="setSiteFilter('done',this)">마감</button>
+  </div>
   <div class="site-list" id="siteList"></div>
   <div class="add-site-row">
     <input class="add-site-input" id="newSiteInput" placeholder="새 현장명 입력">
@@ -2024,46 +2031,104 @@ function renderSiteSelect(){
     if(name===cur)o.selected=true;sel.appendChild(o);
   });
 }
+var siteStatusFilter='all';
+function setSiteFilter(f, btn){
+  siteStatusFilter=f;
+  document.querySelectorAll('#siteStatusFilterRow .notif-filter-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  renderSiteList();
+}
+
 function renderSiteList(){
   var el=document.getElementById('siteList');
-  if(!sites.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';return;}
   var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
-  var statusClass={meeting:'meeting',before:'before',ongoing:'ongoing',done:'done'};
-  el.innerHTML=sites.map(function(s,i){
-    var name=typeof s==='object'?s.name:s;
-    var status=typeof s==='object'?s.status:'ongoing';
-    var sc=statusClass[status]||'ongoing';
-    var sl=statusMap[status]||'공사중';
-    return '<div class="site-card drag-item" data-site-idx="'+i+'">'
-      +'<span class="drag-handle">☰</span>'
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="display:flex;align-items:center;gap:4px">'
-      +'<span class="site-name">'+name+'</span>'
-      +'<span class="site-status-badge '+sc+'">'+sl+'</span>'
-      +'</div>'
-      +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+(s.pyeong?' · '+s.pyeong+'평':'')+'</div>':'')
-      +'</div>'
-      +'<button class="site-del" data-del-site="'+i+'" onclick="event.stopPropagation()">✕</button>'
-      +'</div>';
-  }).join('');
+  var statusColors={meeting:'var(--blue)',before:'var(--accent2)',ongoing:'var(--green)',done:'var(--muted)'};
+
+  // 필터 적용
+  var filtered=sites.map(function(s,i){return {s:s,i:i};}).filter(function(item){
+    if(siteStatusFilter==='all')return true;
+    var st=typeof item.s==='object'?item.s.status||'ongoing':'ongoing';
+    return st===siteStatusFilter;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px">현장이 없어요</div>';
+    return;
+  }
+
+  var statusOrder=['meeting','before','ongoing','done'];
+  var groups={};
+  statusOrder.forEach(function(st){groups[st]=[];});
+  filtered.forEach(function(item){
+    var st=typeof item.s==='object'?item.s.status||'ongoing':'ongoing';
+    if(!groups[st])groups[st]=[];
+    groups[st].push(item);
+  });
+
+  var parts=[];
+  if(siteStatusFilter==='all'){
+    // 전체 탭: 상태별 그룹
+    statusOrder.forEach(function(st){
+      var group=groups[st];
+      if(!group||!group.length)return;
+      parts.push('<div style="display:flex;align-items:center;gap:6px;padding:8px 4px 4px;margin-top:4px">'
+        +'<span style="width:8px;height:8px;border-radius:50%;background:'+statusColors[st]+';flex-shrink:0"></span>'
+        +'<span style="font-size:11px;font-weight:800;color:'+statusColors[st]+'">'+statusMap[st]+'</span>'
+        +'<span style="font-size:11px;color:var(--muted)">('+group.length+')</span>'
+        +'</div>');
+      group.forEach(function(item){pushSiteCard(parts, item.s, item.i, statusMap, statusColors);});
+    });
+  } else {
+    // 특정 상태 탭: 그냥 목록
+    filtered.forEach(function(item){pushSiteCard(parts, item.s, item.i, statusMap, statusColors);});
+  }
+
+  el.innerHTML=parts.join('');
+
+  // 탭 이벤트 - touchend + click 둘 다
   el.querySelectorAll('.site-card').forEach(function(card){
     card.addEventListener('touchend',function(e){
       if(isScrolling)return;
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
+      e.preventDefault();
       openSiteEditModal(parseInt(this.dataset.siteIdx));
-    },{passive:true});
+    },{passive:false});
+    card.addEventListener('click',function(e){
+      if(e.target.classList.contains('drag-handle'))return;
+      if(e.target.classList.contains('site-del'))return;
+      openSiteEditModal(parseInt(this.dataset.siteIdx));
+    });
   });
+
+  // 삭제 이벤트
   el.querySelectorAll('[data-del-site]').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
       deleteSite(parseInt(this.getAttribute('data-del-site')));
     });
   });
+
+  // 드래그
   initDragList(el, sites, 'sites', function(){
-    saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();});
+    saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();});
   });
 }
+
+function pushSiteCard(parts, s, i, statusMap, statusColors){
+  var name=typeof s==='object'?s.name:s;
+  var st=typeof s==='object'?s.status||'ongoing':'ongoing';
+  parts.push('<div class="site-card drag-item" data-site-idx="'+i+'">'
+    +'<span class="drag-handle">☰</span>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="font-size:13px;font-weight:700">'+name+'</div>'
+    +(s.customer?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 '+s.customer+(s.phone?' · '+s.phone:'')+(s.pyeong?' · '+s.pyeong+'평':'')+'</div>':'')
+    +(s.startDate||s.endDate?'<div style="font-size:11px;color:var(--muted);margin-top:1px">📅 '+(s.startDate||'?')+' ~ '+(s.endDate||'?')+'</div>':'')
+    +'</div>'
+    +'<button class="site-del" data-del-site="'+i+'">✕</button>'
+    +'</div>');
+}
+
 function moveSite(i,dir){
   var t=i+dir;
   if(t<0||t>=sites.length)return;
@@ -4327,67 +4392,6 @@ function shareSiteKakao(){
 }
 // ── SITE EDIT ──
 var editingSiteIdx=-1, editingSiteStatus='ongoing';
-function openSiteEditModal(i){
-  editingSiteIdx=i;
-  var s=sites[i];
-  if(typeof s==='string') s={name:s,status:'ongoing',customer:'',phone:'',address:'',apt:'',dongho:'',commonPw:'',unitPw:''};
-  editingSiteStatus=s.status||'ongoing';
-  document.getElementById('siteEditModalTitle').textContent='현장 정보 수정';
-  document.getElementById('siteEditInp').value=s.name||'';
-  document.getElementById('siteCustomerInp').value=s.customer||'';
-  document.getElementById('sitePhoneInp').value=s.phone||'';
-  document.getElementById('siteAddressInp').value=s.address||'';
-  document.getElementById('siteAptInp').value=s.apt||'';
-  var dongho=(s.dongho||'').split('/');
-  document.getElementById('siteDongInp').value=dongho[0]||'';
-  document.getElementById('siteHoInp').value=dongho[1]||'';
-  document.getElementById('siteStartDateInp').value=s.startDate||'';
-  document.getElementById('siteEndDateInp').value=s.endDate||'';
-  document.getElementById('siteSqmInp').value=s.sqm||'';
-  document.getElementById('sitePyeongInp').value=s.pyeong||'';
-  document.getElementById('siteCommonPwInp').value=s.commonPw||'';
-  document.getElementById('siteUnitPwInp').value=s.unitPw||'';
-  var statusClass={meeting:'active-meeting',before:'active-before',ongoing:'active-ongoing',done:'active-done'};
-  document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(btn){
-    btn.className='site-status-btn'+(btn.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
-    btn.onclick=function(){
-      editingSiteStatus=this.dataset.status;
-      document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(b){
-        b.className='site-status-btn'+(b.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
-      });
-    };
-  });
-  document.getElementById('siteEditModal').style.display='flex';
-  pushModalState('siteEditModal');
-}
-function closeSiteEditModal(){
-  document.getElementById('siteEditModal').style.display='none';
-  if(modalStack.length>0&&modalStack[modalStack.length-1]==='siteEditModal'){modalStack.pop();history.go(-1);}
-}
-function saveSiteEdit(){
-  var name=document.getElementById('siteEditInp').value.trim();
-  if(!name){showToast('현장명을 입력해주세요');return;}
-  var dong=document.getElementById('siteDongInp').value.trim();
-  var ho=document.getElementById('siteHoInp').value.trim();
-  sites[editingSiteIdx]={
-    name:name,
-    status:editingSiteStatus,
-    customer:document.getElementById('siteCustomerInp').value.trim(),
-    phone:document.getElementById('sitePhoneInp').value.trim(),
-    address:document.getElementById('siteAddressInp').value.trim(),
-    apt:document.getElementById('siteAptInp').value.trim(),
-    dongho:dong&&ho?dong+'/'+ho:(dong||ho||''),
-    startDate:document.getElementById('siteStartDateInp').value||'',
-    endDate:document.getElementById('siteEndDateInp').value||'',
-    sqm:document.getElementById('siteSqmInp').value.trim(),
-    pyeong:document.getElementById('sitePyeongInp').value.trim(),
-    commonPw:document.getElementById('siteCommonPwInp').value.trim(),
-    unitPw:document.getElementById('siteUnitPwInp').value.trim()
-  };
-  saveSettings().then(function(){
-    closeSiteEditModal();renderSiteSelect();renderSiteList();renderFilterBar();showToast('현장 정보 저장됐어요');
-  });
-}
 
 // ── SCROLL GUARD ──
 // touchmove가 한 번이라도 발생하면 isScrolling=true
