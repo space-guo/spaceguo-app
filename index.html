@@ -1037,6 +1037,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div style="display:flex;gap:8px;padding:0 16px 12px">
       <button class="notif-filter-btn active" id="notifFilterPending" onclick="setNotifFilter('pending',this)">🔔 대기중</button>
       <button class="notif-filter-btn" id="notifFilterDone" onclick="setNotifFilter('done',this)">✓ 처리됨</button>
+      <button class="notif-filter-btn" id="notifFilterSkipped" onclick="setNotifFilter('skipped',this)">✕ 미처리</button>
       <button class="notif-filter-btn" id="notifFilterAll" onclick="setNotifFilter('all',this)">전체</button>
     </div>
     <div id="notifList" style="padding:0 16px 20px">
@@ -1662,9 +1663,11 @@ function renderNotifTab(){
   var filtered=pendingNotifs;
   if(notifFilter==='pending') filtered=pendingNotifs.filter(function(n){return n.status==='pending';});
   if(notifFilter==='done') filtered=pendingNotifs.filter(function(n){return n.status==='done';});
+  if(notifFilter==='skipped') filtered=pendingNotifs.filter(function(n){return n.status==='skipped';});
   var el=document.getElementById('notifList');
   if(!filtered.length){
-    el.innerHTML='<div class="empty-state"><div class="emoji">🔔</div><p>'+(notifFilter==='pending'?'대기 중인 알림이 없어요':notifFilter==='done'?'처리된 알림이 없어요':'알림이 없어요')+'</p></div>';
+    var emptyMsg={pending:'대기 중인 알림이 없어요',done:'처리된 알림이 없어요',skipped:'미처리 알림이 없어요',all:'알림이 없어요'};
+    el.innerHTML='<div class="empty-state"><div class="emoji">🔔</div><p>'+(emptyMsg[notifFilter]||'알림이 없어요')+'</p></div>';
     return;
   }
   el.innerHTML=filtered.map(function(n){
@@ -1686,7 +1689,10 @@ function renderNotifTab(){
         ?'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">입력에 적용</button>'
         :'<button class="notif-apply-btn" style="background:var(--blue);color:#fff" onclick="reapplyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">↩ 다시 입력</button>'
       )
-      +'<button class="notif-del-btn" onclick="deletePending(\''+n.id+'\')">삭제</button>'
+      +(n.status==='pending'
+        ?'<button class="notif-del-btn" onclick="skipPending(\''+n.id+'\')">✕ 미처리</button>'
+        :'<button class="notif-del-btn" onclick="deletePending(\''+n.id+'\')">삭제</button>'
+      )
       +'</div>'
       +'</div>'
       +'<div class="notif-amount">₩'+amount.toLocaleString('ko-KR')+'</div>'
@@ -1694,6 +1700,11 @@ function renderNotifTab(){
   }).join('');
 }
 
+function skipPending(id){
+  db.collection('sms_pending').doc(id).update({status:'skipped'}).then(function(){
+    showToast('미처리로 이동됐어요');
+  });
+}
 function deletePending(id){
   db.collection('sms_pending').doc(id).delete().then(function(){showToast('알림 삭제됐어요');});
 }
