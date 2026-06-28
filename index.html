@@ -518,6 +518,23 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* ── AUTO RESIZE TEXTAREA ── */
 textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
+
+/* ── PERSONAL ── */
+.personal-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:flex-end;justify-content:center}
+.personal-modal-overlay.show{display:flex}
+.personal-modal-inner{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.personal-tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0}
+.personal-tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:700;padding:12px 4px;cursor:pointer;transition:all .15s}
+.personal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.personal-body{flex:1;overflow-y:auto;padding:16px}
+.budget-bar-wrap{background:var(--surface2);border-radius:6px;height:8px;margin-top:6px;overflow:hidden}
+.budget-bar-fill{height:100%;border-radius:6px;transition:width .3s}
+.budget-over{color:var(--red)!important}
+.personal-cat-card{background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.personal-cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.personal-cat-name{font-size:13px;font-weight:700}
+.personal-cat-amt{font-size:13px;font-weight:800}
+.personal-cat-budget{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -553,6 +570,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <span class="today-total" id="headerTotal"></span>
       <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
       <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()">🔔<span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
+      <button class="logout-btn" onclick="openPersonalModal()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">👤</button>
       <button class="logout-btn" onclick="openSettingsModal()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">⚙️</button>
     </div>
   </div>
@@ -1046,6 +1064,22 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   </div>
 </div>
 
+<!-- PERSONAL MODAL -->
+<div class="personal-modal-overlay" id="personalModal">
+  <div class="personal-modal-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 0;flex-shrink:0">
+      <div style="font-size:16px;font-weight:900">👤 개인 가계부</div>
+      <button onclick="closePersonalModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div class="personal-tab-bar" style="margin-top:12px">
+      <button class="personal-tab active" onclick="switchPersonalTab('input',this)">입력</button>
+      <button class="personal-tab" onclick="switchPersonalTab('list',this)">내역</button>
+      <button class="personal-tab" onclick="switchPersonalTab('budget',this)">예산</button>
+    </div>
+    <div class="personal-body" id="personalBody"></div>
+  </div>
+</div>
+
 <!-- COLOR POPUP -->
 <div class="color-popup-overlay" id="colorPopup" onclick="if(event.target===this)closeColorPopup()">
   <div class="color-popup-box">
@@ -1475,7 +1509,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();loadVendors();subscribeRecords();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
+    loadSettings();loadVendors();subscribeRecords();subscribePersonal();loadPersonalBudgets();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -4578,6 +4612,276 @@ function shareSiteKakao(){
     window.location.href='kakaotalk://send?text='+encodeURIComponent(text);
     setTimeout(function(){showToast('📋 복사됐어요. 카카오톡에 붙여넣기 해주세요');},1200);
   }
+}
+
+
+// ── PERSONAL 가계부 ──
+var personalTab='input';
+var personalRecords=[], unsubPersonal=null;
+var personalBudgets={}, personalBudgetEditing='';
+
+// 개인 카테고리
+var PERSONAL_CATS=['식비','카페/음료','교통','쇼핑','문화/여가','의료/건강','구독','기타'];
+
+function subscribePersonal(){
+  if(unsubPersonal)unsubPersonal();
+  unsubPersonal=db.collection('personal_expenses').orderBy('date','desc').onSnapshot(function(snap){
+    personalRecords=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById('personalModal').classList.contains('show'))renderPersonalBody();
+  });
+}
+
+function loadPersonalBudgets(){
+  db.collection('settings').doc('personalBudgets').get().then(function(snap){
+    personalBudgets=snap.exists?snap.data():{};
+    if(document.getElementById('personalModal').classList.contains('show')&&personalTab==='budget')renderPersonalBody();
+  });
+}
+
+function openPersonalModal(){
+  personalTab='input';
+  document.getElementById('personalModal').classList.add('show');
+  pushModalState('personalModal');
+  renderPersonalBody();
+}
+function closePersonalModal(){
+  document.getElementById('personalModal').classList.remove('show');
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='personalModal'){modalStack.pop();history.go(-1);}
+}
+function switchPersonalTab(tab, btn){
+  personalTab=tab;
+  document.querySelectorAll('.personal-tab').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  renderPersonalBody();
+}
+
+function renderPersonalBody(){
+  var body=document.getElementById('personalBody');
+  if(!body)return;
+  if(personalTab==='input') renderPersonalInput(body);
+  else if(personalTab==='list') renderPersonalList(body);
+  else if(personalTab==='budget') renderPersonalBudget(body);
+}
+
+// ── 입력 탭 ──
+function renderPersonalInput(body){
+  var now=new Date();
+  var dateVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var catsHtml=PERSONAL_CATS.map(function(c){
+    return '<button class="chip" data-cat="'+c+'" onclick="personalToggleCat(this)">'+c+'</button>';
+  }).join('');
+  body.innerHTML=
+    '<div class="field-row"><div class="field-label">날짜</div>'
+    +'<input class="field-input" id="piDate" type="date" value="'+dateVal+'"></div>'
+    +'<div class="field-row"><div class="field-label">금액 (원)</div>'
+    +'<input class="field-input" id="piAmount" type="tel" inputmode="numeric" placeholder="0"></div>'
+    +'<div class="field-row"><div class="field-label">카테고리</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px" id="piCatWrap">'+catsHtml+'</div></div>'
+    +'<div class="field-row"><div class="field-label">내용 (선택)</div>'
+    +'<input class="field-input" id="piMemo" placeholder="예: 스타벅스, 지하철"></div>'
+    +'<div class="field-row"><div class="field-label">결제수단 (선택)</div>'
+    +'<input class="field-input" id="piMethod" placeholder="예: 카카오페이, 신한카드"></div>'
+    +'<button onclick="savePersonalRecord()" style="width:100%;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:15px;font-weight:800;padding:14px;cursor:pointer;margin-top:8px">저장</button>'
+    +'<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">'
+    +'<div class="field-label" style="margin-bottom:8px">📱 카드 알림 대기</div>'
+    +'<div id="piPendingList"></div>'
+    +'</div>';
+  renderPersonalPending();
+}
+
+var piSelectedCat='기타';
+function personalToggleCat(btn){
+  var cat=btn.dataset.cat;
+  var wasSelected=btn.classList.contains('selected');
+  document.querySelectorAll('#piCatWrap .chip').forEach(function(b){b.classList.remove('selected');});
+  if(!wasSelected){btn.classList.add('selected');piSelectedCat=cat;}
+  else{piSelectedCat='기타';}
+}
+
+function savePersonalRecord(){
+  var amount=parseInt((document.getElementById('piAmount').value||'0').replace(/,/g,''));
+  if(!amount){showToast('금액을 입력해주세요');return;}
+  var date=document.getElementById('piDate').value;
+  var memo=document.getElementById('piMemo').value.trim();
+  var method=document.getElementById('piMethod').value.trim();
+  var data={date:date,amount:amount,category:piSelectedCat,memo:memo,method:method,
+    ts:firebase.firestore.FieldValue.serverTimestamp()};
+  setSyncStatus('saving');
+  db.collection('personal_expenses').add(data).then(function(){
+    setSyncStatus('ok');showToast('✓ 개인 지출 저장됐어요');
+    document.getElementById('piAmount').value='';
+    document.getElementById('piMemo').value='';
+    document.getElementById('piMethod').value='';
+    document.querySelectorAll('#piCatWrap .chip').forEach(function(b){b.classList.remove('selected');});
+    piSelectedCat='기타';
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+
+// 카드 알림 → 개인 지출로 적용
+function renderPersonalPending(){
+  var el=document.getElementById('piPendingList');
+  if(!el)return;
+  var pending=pendingNotifs.filter(function(n){return n.status==='pending';});
+  if(!pending.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">대기 중인 알림 없음</div>';return;}
+  el.innerHTML=pending.map(function(n){
+    var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
+    var vendor=n.vendor||'';
+    var dateStr=n.date?n.date.slice(0,16):'';
+    return '<div class="site-card" style="margin-bottom:6px;cursor:pointer" data-pn-id="'+n.id+'" data-pn-amount="'+amount+'" data-pn-vendor="'+encodeURIComponent(vendor)+'" data-pn-date="'+dateStr+'">'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:700">'+vendor+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+dateStr+'</div></div>'
+      +'<div style="font-size:14px;font-weight:800;color:var(--accent)">₩'+amount.toLocaleString()+'</div>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('.site-card').forEach(function(card){
+    card.addEventListener('click',function(){
+      var id=this.dataset.pnId;
+      var amount=parseInt(this.dataset.pnAmount);
+      var vendor=decodeURIComponent(this.dataset.pnVendor);
+      var dateStr=this.dataset.pnDate;
+      document.getElementById('piAmount').value=amount;
+      document.getElementById('piMemo').value=vendor;
+      if(dateStr)document.getElementById('piDate').value=dateStr.slice(0,10);
+      db.collection('sms_pending').doc(id).update({status:'done',appliedAt:new Date().toISOString()});
+      renderPersonalPending();
+      showToast('✓ 자동 입력됐어요. 카테고리 선택 후 저장하세요');
+    });
+  });
+}
+
+// ── 내역 탭 ──
+function renderPersonalList(body){
+  var now=new Date();
+  var thisMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var filtered=personalRecords.filter(function(r){return r.date&&r.date.startsWith(thisMonth);});
+  var total=filtered.reduce(function(a,r){return a+(r.amount||0);},0);
+
+  // 월 선택
+  var months={};
+  personalRecords.forEach(function(r){if(r.date)months[r.date.slice(0,7)]=1;});
+  var monthList=Object.keys(months).sort().reverse();
+  var selHtml=monthList.map(function(m){
+    return '<option value="'+m+'"'+(m===thisMonth?' selected':'')+'>'+m.replace('-','년 ')+'월</option>';
+  }).join('');
+
+  body.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<select class="field-select" id="plMonthSel" onchange="renderPersonalListFiltered()" style="flex:1;margin-right:8px">'+selHtml+'</select>'
+    +'<span style="font-size:14px;font-weight:800;color:var(--accent)">₩'+total.toLocaleString()+'</span>'
+    +'</div>'
+    +'<div id="plList"></div>';
+  renderPersonalListFiltered();
+}
+
+function renderPersonalListFiltered(){
+  var sel=document.getElementById('plMonthSel');
+  var month=sel?sel.value:'';
+  var filtered=personalRecords.filter(function(r){return !month||r.date&&r.date.startsWith(month);});
+  var el=document.getElementById('plList');
+  if(!el)return;
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="emoji">💰</div><p>내역이 없어요</p></div>';return;}
+  var groups={};
+  filtered.forEach(function(r){
+    var key=r.date||'';
+    if(!groups[key])groups[key]=[];
+    groups[key].push(r);
+  });
+  el.innerHTML=Object.keys(groups).sort().reverse().map(function(date){
+    var recs=groups[date];
+    var dayTotal=recs.reduce(function(a,r){return a+(r.amount||0);},0);
+    return '<div class="section-header">'+date.replace(/-/g,'.')+'  ₩'+dayTotal.toLocaleString()+'</div>'
+      +recs.map(function(r){
+        return '<div class="record-item" style="margin-bottom:6px">'
+          +'<div class="record-icon" style="background:#1a1f2e;font-size:16px">'+getCatEmoji(r.category)+'</div>'
+          +'<div class="record-info">'
+          +'<div class="record-cat" style="font-weight:700">'+(r.category||'기타')+'</div>'
+          +(r.memo?'<div class="record-memo">'+r.memo+'</div>':'')
+          +(r.method?'<div class="record-memo">💳 '+r.method+'</div>':'')
+          +'</div>'
+          +'<div class="record-right">'
+          +'<div class="record-amount">₩'+(r.amount||0).toLocaleString()+'</div>'
+          +'<button class="proc-btn del" data-rid="'+r.id+'" onclick="deletePersonalRecord(this.dataset.rid)">삭제</button>'
+          +'</div></div>';
+      }).join('');
+  }).join('');
+}
+
+function getCatEmoji(cat){
+  var map={식비:'🍱',카페음료:'☕','카페/음료':'☕',교통:'🚌',쇼핑:'🛍️','문화/여가':'🎬','의료/건강':'💊',구독:'📱',기타:'💰'};
+  return map[cat]||'💰';
+}
+
+function deletePersonalRecord(id){
+  if(!confirm('삭제할까요?'))return;
+  db.collection('personal_expenses').doc(id).delete().then(function(){showToast('삭제됐어요');});
+}
+
+// ── 예산 탭 ──
+function renderPersonalBudget(body){
+  var now=new Date();
+  var thisMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  // 이번 달 카테고리별 합계
+  var spent={};
+  personalRecords.filter(function(r){return r.date&&r.date.startsWith(thisMonth);}).forEach(function(r){
+    spent[r.category]=(spent[r.category]||0)+(r.amount||0);
+  });
+  var totalBudget=Object.values(personalBudgets).reduce(function(a,b){return a+(parseInt(b)||0);},0);
+  var totalSpent=Object.values(spent).reduce(function(a,b){return a+b;},0);
+  var remaining=totalBudget-totalSpent;
+
+  body.innerHTML=
+    '<div style="margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+    +'<span style="font-size:13px;font-weight:700">이번 달 전체</span>'
+    +'<span style="font-size:13px;color:var(--muted)">예산 ₩'+totalBudget.toLocaleString()+'</span>'
+    +'</div>'
+    +'<div style="font-size:20px;font-weight:900;color:'+(remaining<0?'var(--red)':'var(--text)')+'">₩'+totalSpent.toLocaleString()+' 지출'
+    +'<span style="font-size:13px;font-weight:500;color:'+(remaining<0?'var(--red)':'var(--green)')+'"> ('+(remaining>=0?'잔여 ₩'+remaining.toLocaleString():'초과 ₩'+Math.abs(remaining).toLocaleString())+')</span>'
+    +'</div>'
+    +'<div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:'+Math.min(totalBudget?totalSpent/totalBudget*100:0,100)+'%;background:'+(remaining<0?'var(--red)':'var(--accent)')+'"></div></div>'
+    +'</div>'
+    +PERSONAL_CATS.map(function(cat){
+      var budget=parseInt(personalBudgets[cat])||0;
+      var s=spent[cat]||0;
+      var pct=budget?Math.min(s/budget*100,100):0;
+      var over=budget&&s>budget;
+      return '<div class="personal-cat-card">'
+        +'<div class="personal-cat-header">'
+        +'<span class="personal-cat-name">'+getCatEmoji(cat)+' '+cat+'</span>'
+        +'<span class="personal-cat-amt'+(over?' budget-over':'')+'">₩'+s.toLocaleString()+(budget?' / ₩'+budget.toLocaleString():'')+'</span>'
+        +'</div>'
+        +(budget?'<div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:'+pct+'%;background:'+(over?'var(--red)':'var(--accent)')+'"></div></div>':'')
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'
+        +(over?'<span style="font-size:11px;color:var(--red)">₩'+Math.abs(s-budget).toLocaleString()+' 초과</span>'
+               :(budget?'<span style="font-size:11px;color:var(--muted)">잔여 ₩'+(budget-s).toLocaleString()+'</span>':'<span></span>'))
+        +'<button class="proc-btn" data-cat="'+cat+'" onclick="editPersonalBudget(this.dataset.cat)">예산 설정</button>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+    +'<div id="budgetEditArea"></div>';
+}
+
+function editPersonalBudget(cat){
+  var cur=personalBudgets[cat]||'';
+  var el=document.getElementById('budgetEditArea');
+  el.innerHTML=
+    '<div style="background:var(--surface2);border-radius:12px;padding:14px;margin-top:8px">'
+    +'<div style="font-size:13px;font-weight:800;margin-bottom:8px">'+getCatEmoji(cat)+' '+cat+' 예산 설정</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<input class="field-input" id="budgetInput" type="tel" inputmode="numeric" placeholder="월 예산 금액" value="'+cur+'" style="flex:1">'
+    +'<button data-cat="'+cat+'" onclick="savePersonalBudget(this.dataset.cat)" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer">저장</button>'
+    +'</div></div>';
+  el.scrollIntoView({behavior:'smooth'});
+  document.getElementById('budgetInput').focus();
+}
+
+function savePersonalBudget(cat){
+  var val=parseInt(document.getElementById('budgetInput').value)||0;
+  personalBudgets[cat]=val;
+  db.collection('settings').doc('personalBudgets').set(personalBudgets).then(function(){
+    showToast('✓ 예산 저장됐어요');
+    renderPersonalBody();
+  });
 }
 
 // ── TOAST ──
