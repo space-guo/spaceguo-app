@@ -2138,8 +2138,9 @@ function renderSiteList(){
 }
 
 
-function pushSiteCard(parts, s, i, statusMap, statusColors){
-  var name=typeof s==='object'?s.name:s;
+function pushSiteCard(parts, s, i){
+  var name=typeof s==='object'?s.name:String(s);
+  if(!name||name==='[object Object]')name='(이름 없음)';
   var st=typeof s==='object'?s.status||'ongoing':'ongoing';
   parts.push('<div class="site-card drag-item" data-site-idx="'+i+'">'
     +'<span class="drag-handle">☰</span>'
