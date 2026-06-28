@@ -4437,7 +4437,6 @@ function getSelectedColor(){
 var modalStack=[];
 
 function pushModalState(modalId){
-  history.pushState({modal:modalId},'','');
   modalStack.push(modalId);
 }
 
@@ -4451,11 +4450,7 @@ function popModal(){
   }
 }
 
-window.addEventListener('popstate',function(e){
-  if(modalStack.length>0){
-    popModal();
-  }
-});
+// popstate: history 미사용으로 제거
 
 // 모달 열기/닫기 래퍼 - 각 모달에 history 연동
 function openModalWithHistory(modalId){
