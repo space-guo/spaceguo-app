@@ -535,6 +535,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 .personal-cat-name{font-size:13px;font-weight:700}
 .personal-cat-amt{font-size:13px;font-weight:800}
 .personal-cat-budget{font-size:11px;color:var(--muted)}
+
+/* ── INPUT MODE TAB ── */
+.input-mode-bar{display:flex;gap:0;margin:12px 0 0;border-radius:12px;background:var(--surface2);padding:3px}
+.input-mode-btn{flex:1;background:none;border:none;border-radius:9px;color:var(--muted);font-family:inherit;font-size:14px;font-weight:700;padding:10px 0;cursor:pointer;transition:all .15s}
+.input-mode-btn.active{background:var(--accent);color:#fff}
+.input-mode-btn.personal.active{background:var(--green)}
 </style>
 </head>
 <body>
@@ -678,19 +684,47 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <button class="date-confirm-btn" onclick="confirmDatePicker()">✓ 날짜 확정</button>
     </div>
   </div>
-  <div class="field-row">
-    <div class="field-label">현장명</div>
-    <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
+  <!-- 업무 / 개인 모드 탭 -->
+  <div class="input-mode-bar">
+    <button class="input-mode-btn active" id="modeBtnWork" onclick="setInputMode('work')">🏗 업무</button>
+    <button class="input-mode-btn personal" id="modeBtnPersonal" onclick="setInputMode('personal')">👤 개인</button>
   </div>
-  <div class="field-row">
-    <div class="field-label">카테고리</div>
-    <div class="chips">
-      <button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
-      <button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
-      <button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
-      <button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
-      <button class="chip" onclick="selectCat(this,'식대')">식대</button>
-      <button class="chip" onclick="selectCat(this,'기타')">기타</button>
+  <!-- 업무 모드 섹션 -->
+  <div id="inputSectionWork">
+    <div class="field-row">
+      <div class="field-label">현장명</div>
+      <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">카테고리</div>
+      <div class="chips">
+        <button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
+        <button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
+        <button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
+        <button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
+        <button class="chip" onclick="selectCat(this,'식대')">식대</button>
+        <button class="chip" onclick="selectCat(this,'기타')">기타</button>
+      </div>
+    </div>
+  </div>
+  <!-- 개인 모드 섹션 -->
+  <div id="inputSectionPersonal" style="display:none">
+    <div class="field-row">
+      <div class="field-label">카테고리</div>
+      <div class="chips" id="piCatChips">
+        <button class="chip" data-cat="식비" onclick="personalToggleCatDirect(this)">식비</button>
+        <button class="chip" data-cat="카페/음료" onclick="personalToggleCatDirect(this)">카페/음료</button>
+        <button class="chip" data-cat="교통" onclick="personalToggleCatDirect(this)">교통</button>
+        <button class="chip" data-cat="쇼핑" onclick="personalToggleCatDirect(this)">쇼핑</button>
+        <button class="chip" data-cat="문화/여가" onclick="personalToggleCatDirect(this)">문화/여가</button>
+        <button class="chip" data-cat="의료/건강" onclick="personalToggleCatDirect(this)">의료/건강</button>
+        <button class="chip" data-cat="구독" onclick="personalToggleCatDirect(this)">구독</button>
+        <button class="chip" data-cat="기타" onclick="personalToggleCatDirect(this)">기타</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">내용 (선택)</div>
+      <input class="field-input" id="piDirectMemo" placeholder="예: 스타벅스, 지하철">
     </div>
   </div>
   <div class="field-row">
@@ -736,7 +770,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="field-label">메모 (선택)</div>
     <input class="field-input" id="memoInput" type="text" placeholder="특이사항...">
   </div>
-  <button class="submit-btn" onclick="saveRecord()">💾 저장</button>
+  <button class="submit-btn" onclick="currentInputMode==='personal'?savePersonalDirect():saveRecord()">💾 저장</button>
 </div>
 
 <!-- 알림 탭은 헤더 벨 모달로 이동 -->
@@ -4904,6 +4938,73 @@ function savePersonalBudget(cat){
 
 
 function siteStr(site){if(!site)return '';if(typeof site==='object')return site.name||'';if(site==='[object Object]')return '';return String(site);}
+
+// ── INPUT MODE ──
+var currentInputMode = 'work';
+var piDirectCat = '기타';
+
+function setInputMode(mode){
+  currentInputMode = mode;
+  var isWork = mode === 'work';
+  document.getElementById('modeBtnWork').classList.toggle('active', isWork);
+  document.getElementById('modeBtnPersonal').classList.toggle('active', !isWork);
+  document.getElementById('inputSectionWork').style.display = isWork ? '' : 'none';
+  document.getElementById('inputSectionPersonal').style.display = isWork ? 'none' : '';
+  // 결제수단/VAT/구매처/품목/메모는 공통이므로 유지
+}
+
+function personalToggleCatDirect(btn){
+  var cat = btn.dataset.cat;
+  var wasSelected = btn.classList.contains('selected');
+  document.querySelectorAll('#piCatChips .chip').forEach(function(b){b.classList.remove('selected');});
+  if(!wasSelected){btn.classList.add('selected'); piDirectCat = cat;}
+  else{piDirectCat = '기타';}
+}
+
+function savePersonalDirect(){
+  var amount = parseInt(amountStr || '0');
+  if(!amount){showToast('금액을 입력해주세요');return;}
+  var memo = document.getElementById('piDirectMemo').value.trim();
+  var payMethod = selectedPayMethod || '';
+  // 날짜
+  var saveDate;
+  if(activePendingDate){
+    var parts = activePendingDate.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if(parts) saveDate = parts[1]+'-'+String(parseInt(parts[2])).padStart(2,'0')+'-'+String(parseInt(parts[3])).padStart(2,'0');
+  }
+  if(!saveDate && selectedManualDate) saveDate = selectedManualDate.slice(0,10);
+  if(!saveDate){
+    var now = new Date();
+    saveDate = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  }
+  setSyncStatus('saving');
+  db.collection('personal_expenses').add({
+    date: saveDate,
+    amount: amount,
+    category: piDirectCat,
+    memo: memo,
+    method: payMethod,
+    ts: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    // pending 완료 처리
+    if(activePendingId){
+      db.collection('sms_pending').doc(activePendingId).update({status:'done',appliedAt:new Date().toISOString(),appliedTo:'personal'});
+      activePendingId = '';
+      activePendingDate = '';
+      document.getElementById('activeInputBanner').classList.remove('show');
+    }
+    amountStr = ''; updateAmountDisplay();
+    resetManualDate();
+    document.getElementById('piDirectMemo').value = '';
+    document.querySelectorAll('#piCatChips .chip').forEach(function(b){b.classList.remove('selected');});
+    piDirectCat = '기타';
+    document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
+    selectedPayMethod = ''; selectedPayType = '';
+    setSyncStatus('ok');
+    showToast('✓ 개인 지출 저장됐어요');
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+
 // ── TOAST ──
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
