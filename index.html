@@ -1903,7 +1903,7 @@ function confirmDatePicker(){
 function saveRecord(){
   var amount=parseInt(amountStr||'0');
   if(!amount){showToast('금액을 입력해주세요');return;}
-  var site=document.getElementById('siteSelect').value;
+  var site=document.getElementById('siteSelect').value||'';
   if(!site){showToast('현장을 선택해주세요');return;}
   var memo=document.getElementById('memoInput').value.trim();
   var vendor=document.getElementById('vendorInput').value.trim();
@@ -2200,7 +2200,7 @@ function renderList(){
       var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
       var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
       var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
-      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
+      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+(r.site==='[object Object]'?'':r.site||'')+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
     }).join('');
   }).join('');
 }
@@ -2252,13 +2252,13 @@ function renderDash(){
     +'<div class="kpi-card full"><div class="kpi-label">💰 손익 (매출 - 매입)</div><div class="kpi-value profit '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'-')+fmt(profit)+'</div><div class="kpi-sub">이익률 '+margin+'%'+(totalInc?'':' · 매출 입력 필요')+'</div></div>'
     +'</div>'
     +'<div class="section-header" style="margin-bottom:10px">현장별 손익</div>'
-    +'<div class="site-pl-list">'+(siteEntries.length?siteEntries.map(function(e){var s=e[0],v=e[1],pl=v.inc-v.exp,plc=pl>=0?'var(--green)':'var(--red)',pct=v.inc?Math.round(v.exp/v.inc*100):100;return '<div class="site-pl-item"><div class="site-pl-name">📍 '+s+'</div><div class="site-pl-row"><span class="lbl">매출</span><span style="color:var(--blue)">'+fmt(v.inc)+'</span></div><div class="site-pl-row"><span class="lbl">매입</span><span style="color:var(--red)">'+fmt(v.exp)+'</span></div><div class="site-pl-row"><span class="lbl">손익</span><span style="color:'+plc+'">'+(pl>=0?'+':'-')+fmt(pl)+'</span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+plc+'"></div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">데이터 없음</div>')+'</div>'
+    +'<div class="site-pl-list">'+(siteEntries.length?siteEntries.map(function(e){var s=e[0],v=e[1],pl=v.inc-v.exp,plc=pl>=0?'var(--green)':'var(--red)',pct=v.inc?Math.round(v.exp/v.inc*100):100;return '<div class="site-pl-item"><div class="site-pl-name">📍 '+(s==='[object Object]'?'(현장 미지정)':s)+'</div><div class="site-pl-row"><span class="lbl">매출</span><span style="color:var(--blue)">'+fmt(v.inc)+'</span></div><div class="site-pl-row"><span class="lbl">매입</span><span style="color:var(--red)">'+fmt(v.exp)+'</span></div><div class="site-pl-row"><span class="lbl">손익</span><span style="color:'+plc+'">'+(pl>=0?'+':'-')+fmt(pl)+'</span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+plc+'"></div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:8px">데이터 없음</div>')+'</div>'
     +'<div class="section-header" style="margin-bottom:10px">카테고리별 매입</div>'
     +'<div class="cat-breakdown">'+(catEntries.length?catEntries.map(function(e){var cat=e[0],amt=e[1],ci=CAT_ICONS[cat]||CAT_ICONS['기타'],pct=totalExp?Math.round(amt/totalExp*100):0;return '<div class="cat-row"><div class="cat-name">'+ci.icon+' '+cat+'</div><div style="display:flex;align-items:center;gap:8px"><span class="cat-pct">'+pct+'%</span><span style="font-weight:700">'+fmt(amt)+'</span></div></div>';}).join(''):'<div style="font-size:13px;color:var(--muted);padding:4px">데이터 없음</div>')+'</div>'
     +'<div class="section-header" style="margin-bottom:10px;margin-top:4px">매출 내역</div>'
     +'<div>'+(fInc.length?fInc.map(function(r){return '<div class="record-item" style="margin-bottom:8px">'
       +'<div class="record-icon" style="background:#1a1f2e">💰</div>'
-      +'<div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div><div class="record-cat">'+r.date+'</div></div>'
+      +'<div class="record-info"><div class="record-site">'+(r.site==='[object Object]'?'':r.site||'')+'</div><div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div><div class="record-cat">'+r.date+'</div></div>'
       +'<div class="record-right"><div class="record-amount" style="color:var(--blue)">₩'+r.amount.toLocaleString('ko-KR')+'</div>'
       +'<div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end">'
       +'<button class="proc-btn" onclick="openIncomeEditModal(\''+r.id+'\')">수정</button>'
@@ -4117,7 +4117,7 @@ function renderCalDetail(dateStr){
       var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
       return '<div class="record-item" style="margin-bottom:6px">'
         +'<div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div>'
-        +'<div class="record-info"><div class="record-site">'+r.site+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+'</div></div>'
+        +'<div class="record-info"><div class="record-site">'+(r.site==='[object Object]'?'':r.site||'')+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+'</div></div>'
         +'<div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div></div>'
         +'</div>';
     }).join('');
