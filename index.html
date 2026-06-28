@@ -2044,7 +2044,6 @@ function renderSiteList(){
   var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
   var statusColors={meeting:'var(--blue)',before:'var(--accent2)',ongoing:'var(--green)',done:'var(--muted)'};
 
-  // 필터 적용
   var filtered=sites.map(function(s,i){return {s:s,i:i};}).filter(function(item){
     if(siteStatusFilter==='all')return true;
     var st=typeof item.s==='object'?item.s.status||'ongoing':'ongoing';
@@ -2067,7 +2066,6 @@ function renderSiteList(){
 
   var parts=[];
   if(siteStatusFilter==='all'){
-    // 전체 탭: 상태별 그룹
     statusOrder.forEach(function(st){
       var group=groups[st];
       if(!group||!group.length)return;
@@ -2076,24 +2074,16 @@ function renderSiteList(){
         +'<span style="font-size:11px;font-weight:800;color:'+statusColors[st]+'">'+statusMap[st]+'</span>'
         +'<span style="font-size:11px;color:var(--muted)">('+group.length+')</span>'
         +'</div>');
-      group.forEach(function(item){pushSiteCard(parts, item.s, item.i, statusMap, statusColors);});
+      group.forEach(function(item){pushSiteCard(parts,item.s,item.i);});
     });
   } else {
-    // 특정 상태 탭: 그냥 목록
-    filtered.forEach(function(item){pushSiteCard(parts, item.s, item.i, statusMap, statusColors);});
+    filtered.forEach(function(item){pushSiteCard(parts,item.s,item.i);});
   }
 
   el.innerHTML=parts.join('');
 
-  // 탭 이벤트 - touchend + click 둘 다
+  // click 이벤트만 사용 (touchend + isScrolling 조합 제거)
   el.querySelectorAll('.site-card').forEach(function(card){
-    card.addEventListener('touchend',function(e){
-      if(isScrolling)return;
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      e.preventDefault();
-      openSiteEditModal(parseInt(this.dataset.siteIdx));
-    },{passive:false});
     card.addEventListener('click',function(e){
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
@@ -2101,7 +2091,6 @@ function renderSiteList(){
     });
   });
 
-  // 삭제 이벤트
   el.querySelectorAll('[data-del-site]').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
@@ -2109,11 +2098,11 @@ function renderSiteList(){
     });
   });
 
-  // 드래그
   initDragList(el, sites, 'sites', function(){
     saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();});
   });
 }
+
 
 function pushSiteCard(parts, s, i, statusMap, statusColors){
   var name=typeof s==='object'?s.name:s;
