@@ -515,6 +515,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .site-share-btn{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;font-weight:700;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
 .site-share-btn.kakao{background:#FEE500;border-color:#FEE500;color:#191919}
 .site-share-btn.copy{background:var(--surface2);border-color:var(--border);color:var(--text)}
+
+/* ── AUTO RESIZE TEXTAREA ── */
+textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 </style>
 </head>
 <body>
@@ -1110,7 +1113,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="field-row">
       <div class="field-label">작업 내용</div>
-      <textarea class="field-input" id="journalContentInp" rows="6" placeholder="오늘 진행한 작업, 특이사항, 인원 등을 기록하세요..." style="resize:none;line-height:1.6"></textarea>
+      <textarea class="field-input" id="journalContentInp" rows="6" placeholder="오늘 진행한 작업, 특이사항, 인원 등을 기록하세요..." style="resize:none;line-height:1.6" oninput="autoResize(this)" rows="6" placeholder="오늘 진행한 작업, 특이사항, 인원 등을 기록하세요..." style="resize:none;line-height:1.6"></textarea>
     </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeJournalModal()">취소</button>
@@ -1181,7 +1184,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="field-row"><div class="field-label">발주일</div><input class="field-input" id="orderDateInp" type="date"></div>
     <div class="field-row"><div class="field-label">납품 예정일</div><input class="field-input" id="orderDeliveryInp" type="date"></div>
     <div class="field-row"><div class="field-label">상태</div><div style="display:flex;gap:6px"><button class="site-status-btn active-before" id="ostBtn-pending" onclick="selectOrderStatus('pending')">발주중</button><button class="site-status-btn" id="ostBtn-ordered" onclick="selectOrderStatus('ordered')">발주완료</button><button class="site-status-btn" id="ostBtn-arrived" onclick="selectOrderStatus('arrived')">입고완료</button></div></div>
-    <div class="field-row"><div class="field-label">메모</div><textarea class="field-input" id="orderMemoInp" rows="3" placeholder="특이사항..." style="resize:none"></textarea></div>
+    <div class="field-row"><div class="field-label">메모</div><textarea class="field-input" id="orderMemoInp" rows="3" placeholder="특이사항..." style="resize:none" oninput="autoResize(this)" rows="3" placeholder="특이사항..." style="resize:none"></textarea></div>
     <div class="modal-btn-row"><button class="modal-cancel" onclick="closeOrderModal()">취소</button><button class="modal-save" onclick="saveOrderModal()">저장</button></div>
     <button id="orderDeleteBtn" style="display:none;width:100%;background:none;border:1px solid var(--red);border-radius:12px;color:var(--red);font-family:inherit;font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-top:8px" onclick="deleteOrder()">🗑 삭제</button>
   </div>
@@ -1207,7 +1210,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div id="checklistItems"></div>
     <!-- 항목 추가 -->
     <div class="sch-add-check-row">
-      <input class="sch-add-check-inp" id="checklistNewInp" type="text" placeholder="항목 추가...">
+      <input class="sch-add-check-inp" id="checklistNewInp" type="text" placeholder="항목 추가..." oninput="autoResize(this)" type="text" placeholder="항목 추가...">
       <button class="sch-add-check-btn" onclick="addCheckItem()">추가</button>
     </div>
   </div>
@@ -1252,7 +1255,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="field-row">
       <div class="field-label">메모</div>
-      <textarea class="field-input" id="schMemoInp" rows="3" placeholder="특이사항, 작업 내용..." style="resize:none;line-height:1.6"></textarea>
+      <textarea class="field-input" id="schMemoInp" rows="3" placeholder="특이사항, 작업 내용..." style="resize:none;line-height:1.6" oninput="autoResize(this)" rows="3" placeholder="특이사항, 작업 내용..." style="resize:none;line-height:1.6"></textarea>
     </div>
     <div class="field-row">
       <div class="field-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1268,7 +1271,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="field-row">
       <div class="field-label">📝 업무일지</div>
-      <textarea class="field-input" id="schJournalInp" rows="4" placeholder="날씨, 인원, 진행 내용, 특이사항 등..." style="resize:none;line-height:1.6"></textarea>
+      <textarea class="field-input" id="schJournalInp" rows="4" placeholder="날씨, 인원, 진행 내용, 특이사항 등..." style="resize:none;line-height:1.6" oninput="autoResize(this)" rows="4" placeholder="날씨, 인원, 진행 내용, 특이사항 등..." style="resize:none;line-height:1.6"></textarea>
     </div>
     <div class="field-row">
       <div class="field-label">날씨</div>
@@ -2821,7 +2824,7 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
         +'<div class="field-label">작업자 수</div>'
         +'<input class="field-input" id="dailyWorkerCount" type="tel" inputmode="numeric" placeholder="예: 3" value="'+(log.workerCount||'')+'" style="width:120px;margin-bottom:10px">'
         +'<div class="field-label">업무일지</div>'
-        +'<textarea class="field-input" id="dailyJournal" rows="4" placeholder="날씨, 진행 내용, 특이사항..." style="resize:none;line-height:1.6;margin-bottom:6px">'+(log.journal||'')+'</textarea>'
+        +'<textarea class="field-input" id="dailyJournal" rows="4" placeholder="날씨, 진행 내용, 특이사항..." style="resize:none;line-height:1.6;margin-bottom:6px" oninput="autoResize(this)" rows="4" placeholder="날씨, 진행 내용, 특이사항..." style="resize:none;line-height:1.6;margin-bottom:6px">'+(log.journal||'')+'</textarea>'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="dailyWeatherChips">'
         +'<button class="chip'+(log.weather==='☀️ 맑음'?' selected':'')+'" data-w="☀️ 맑음">☀️ 맑음</button>'
         +'<button class="chip'+(log.weather==='⛅ 구름'?' selected':'')+'" data-w="⛅ 구름">⛅ 구름</button>'
@@ -4378,6 +4381,190 @@ document.addEventListener('touchend', function(){
 }, {passive: true});
 
 function isTap(){ return !isScrolling; }
+
+// ── AUTO RESIZE TEXTAREA ──
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=(el.scrollHeight)+'px';
+}
+// 초기 로드 시 적용
+function initAutoResize(){
+  document.querySelectorAll('textarea.auto-resize, textarea[oninput="autoResize(this)"]').forEach(function(el){
+    autoResize(el);
+  });
+}
+
+
+// ── SITE MANAGE ──
+function addSite(){
+  var inp=document.getElementById('newSiteInput');
+  var name=(inp?inp.value:'').trim();
+  if(!name){showToast('현장명을 입력해주세요');return;}
+  if(sites.find(function(s){return (typeof s==='object'?s.name:s)===name;})){
+    showToast('이미 있는 현장이에요');return;
+  }
+  sites.push({name:name,status:'ongoing',customer:'',phone:'',address:'',apt:'',
+    dongho:'',startDate:'',endDate:'',sqm:'',pyeong:'',commonPw:'',unitPw:''});
+  saveSettings().then(function(){
+    if(inp)inp.value='';
+    renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();
+    showToast('✓ 현장 추가됐어요');
+  });
+}
+
+function deleteSite(i){
+  var name=typeof sites[i]==='object'?sites[i].name:sites[i];
+  if(!confirm('"'+name+'" 현장을 삭제할까요?'))return;
+  sites.splice(i,1);
+  saveSettings().then(function(){
+    renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();
+  });
+}
+
+var editingSiteIdx=-1, editingSiteStatus='ongoing';
+function openSiteEditModal(i){
+  editingSiteIdx=i;
+  var s=sites[i];
+  if(typeof s==='string') s={name:s,status:'ongoing',customer:'',phone:'',address:'',apt:'',dongho:'',commonPw:'',unitPw:'',startDate:'',endDate:'',sqm:'',pyeong:''};
+  editingSiteStatus=s.status||'ongoing';
+  document.getElementById('siteEditModalTitle').textContent='현장 정보 수정';
+  document.getElementById('siteEditInp').value=s.name||'';
+  document.getElementById('siteCustomerInp').value=s.customer||'';
+  document.getElementById('sitePhoneInp').value=s.phone||'';
+  document.getElementById('siteAddressInp').value=s.address||'';
+  document.getElementById('siteAptInp').value=s.apt||'';
+  var dongho=(s.dongho||'').split('/');
+  document.getElementById('siteDongInp').value=dongho[0]||'';
+  document.getElementById('siteHoInp').value=dongho[1]||'';
+  document.getElementById('siteStartDateInp').value=s.startDate||'';
+  document.getElementById('siteEndDateInp').value=s.endDate||'';
+  document.getElementById('siteSqmInp').value=s.sqm||'';
+  document.getElementById('sitePyeongInp').value=s.pyeong||'';
+  document.getElementById('siteCommonPwInp').value=s.commonPw||'';
+  document.getElementById('siteUnitPwInp').value=s.unitPw||'';
+  var statusClass={meeting:'active-meeting',before:'active-before',ongoing:'active-ongoing',done:'active-done'};
+  document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(btn){
+    btn.className='site-status-btn'+(btn.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
+    btn.onclick=function(){
+      editingSiteStatus=this.dataset.status;
+      document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(b){
+        b.className='site-status-btn'+(b.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
+      });
+    };
+  });
+  document.getElementById('siteEditModal').style.display='flex';
+  pushModalState('siteEditModal');
+}
+
+function closeSiteEditModal(){
+  document.getElementById('siteEditModal').style.display='none';
+  if(modalStack.length>0&&modalStack[modalStack.length-1]==='siteEditModal'){
+    modalStack.pop();history.go(-1);
+  }
+}
+
+function saveSiteEdit(){
+  var name=(document.getElementById('siteEditInp').value||'').trim();
+  if(!name){showToast('현장명을 입력해주세요');return;}
+  var dong=(document.getElementById('siteDongInp').value||'').trim();
+  var ho=(document.getElementById('siteHoInp').value||'').trim();
+  sites[editingSiteIdx]={
+    name:name, status:editingSiteStatus,
+    customer:(document.getElementById('siteCustomerInp').value||'').trim(),
+    phone:(document.getElementById('sitePhoneInp').value||'').trim(),
+    address:(document.getElementById('siteAddressInp').value||'').trim(),
+    apt:(document.getElementById('siteAptInp').value||'').trim(),
+    dongho:dong&&ho?dong+'/'+ho:(dong||ho||''),
+    startDate:document.getElementById('siteStartDateInp').value||'',
+    endDate:document.getElementById('siteEndDateInp').value||'',
+    sqm:(document.getElementById('siteSqmInp').value||'').trim(),
+    pyeong:(document.getElementById('sitePyeongInp').value||'').trim(),
+    commonPw:(document.getElementById('siteCommonPwInp').value||'').trim(),
+    unitPw:(document.getElementById('siteUnitPwInp').value||'').trim()
+  };
+  saveSettings().then(function(){
+    closeSiteEditModal();
+    renderSiteSelect();renderSiteList();renderFilterBar();
+    showToast('✓ 현장 정보 저장됐어요');
+  });
+}
+
+// ── 평↔㎡ 변환 ──
+function syncPyeong(sqmVal){
+  var sqm=parseFloat(sqmVal);
+  var el=document.getElementById('sitePyeongInp');
+  if(!el)return;
+  el.value=isNaN(sqm)||sqmVal===''?'':Math.round(sqm/3.3058*100)/100;
+}
+function syncSqm(pyeongVal){
+  var pyeong=parseFloat(pyeongVal);
+  var el=document.getElementById('siteSqmInp');
+  if(!el)return;
+  el.value=isNaN(pyeong)||pyeongVal===''?'':Math.round(pyeong*3.3058*100)/100;
+}
+
+// ── SITE SHARE ──
+function buildSiteText(){
+  var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
+  var name=(document.getElementById('siteEditInp')||{}).value||'';
+  var customer=(document.getElementById('siteCustomerInp')||{}).value||'';
+  var phone=(document.getElementById('sitePhoneInp')||{}).value||'';
+  var address=(document.getElementById('siteAddressInp')||{}).value||'';
+  var apt=(document.getElementById('siteAptInp')||{}).value||'';
+  var dong=(document.getElementById('siteDongInp')||{}).value||'';
+  var ho=(document.getElementById('siteHoInp')||{}).value||'';
+  var commonPw=(document.getElementById('siteCommonPwInp')||{}).value||'';
+  var unitPw=(document.getElementById('siteUnitPwInp')||{}).value||'';
+  var startDate=(document.getElementById('siteStartDateInp')||{}).value||'';
+  var endDate=(document.getElementById('siteEndDateInp')||{}).value||'';
+  var sqm=(document.getElementById('siteSqmInp')||{}).value||'';
+  var pyeong=(document.getElementById('sitePyeongInp')||{}).value||'';
+  var status=editingSiteStatus||'ongoing';
+  var dongho=dong&&ho?dong+'동 '+ho+'호':(dong?dong+'동':ho?ho+'호':'');
+  if(!name){showToast('현장명이 없어요');return '';}
+  var lines=['📍 현장 정보','━━━━━━━━━━━━━━'];
+  lines.push('🏠 현장명: '+name);
+  lines.push('📌 상태: '+(statusMap[status]||status));
+  if(customer) lines.push('👤 고객명: '+customer);
+  if(phone)    lines.push('📞 전화번호: '+phone);
+  if(address)  lines.push('🗺 주소: '+address);
+  if(apt)      lines.push('🏢 아파트: '+apt);
+  if(dongho)   lines.push('🚪 동/호수: '+dongho);
+  if(startDate||endDate) lines.push('📅 공사기간: '+(startDate||'?')+' ~ '+(endDate||'?'));
+  if(sqm||pyeong) lines.push('📐 면적: '+(sqm?sqm+'㎡':'')+(sqm&&pyeong?' / ':'')+( pyeong?pyeong+'평':''));
+  if(commonPw||unitPw){
+    lines.push('━━━━━━━━━━━━━━');
+    if(commonPw) lines.push('🔑 공용 비번: '+commonPw);
+    if(unitPw)   lines.push('🔐 세대 비번: '+unitPw);
+  }
+  return lines.join('\n');
+}
+function copySiteInfo(){
+  var text=buildSiteText();
+  if(!text)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){showToast('✓ 클립보드에 복사됐어요');}).catch(function(){fallbackCopy(text);});
+  } else {fallbackCopy(text);}
+}
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;top:-9999px;opacity:0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');showToast('✓ 클립보드에 복사됐어요');}
+  catch(e){showToast('복사 실패');}
+  document.body.removeChild(ta);
+}
+function shareSiteKakao(){
+  var text=buildSiteText();if(!text)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(function(){});}
+  if(navigator.share){
+    navigator.share({text:text}).catch(function(e){if(e.name!=='AbortError')showToast('공유 실패');});
+  } else {
+    window.location.href='kakaotalk://send?text='+encodeURIComponent(text);
+    setTimeout(function(){showToast('📋 복사됐어요. 카카오톡에 붙여넣기 해주세요');},1200);
+  }
+}
+
 // ── TOAST ──
 function showToast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
