@@ -1379,6 +1379,11 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <button onclick="closeDailyModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:2px 6px">✕</button>
     </div>
     <div id="dailyProcList"></div>
+    <button id="dailyAddSchBtn" onclick="openSchModalFromDate(dailyDate)"
+      style="width:100%;margin-top:14px;background:var(--accent);border:none;border-radius:12px;
+             color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:13px;cursor:pointer">
+      ＋ 공정 일정 추가
+    </button>
   </div>
 </div>
 
@@ -4113,6 +4118,19 @@ function renderSchList(){
   });
 }
 
+
+// ── 달력에서 날짜 선택 → 공정 추가 ──
+function openSchModalFromDate(dateStr){
+  closeDailyModal();
+  // openSchModal 실행 후 날짜 자동 세팅
+  openSchModal();
+  setTimeout(function(){
+    var startInp = document.getElementById('schStartInp');
+    var endInp   = document.getElementById('schEndInp');
+    if(startInp) startInp.value = dateStr;
+    if(endInp)   endInp.value   = dateStr;
+  }, 50);
+}
 function openSchModal(){
   editingSchId='';
   document.getElementById('schModalTitle').textContent='공정 일정 추가';
