@@ -1408,19 +1408,47 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <div class="field-label">날짜</div>
       <input class="field-input" id="editDate" type="datetime-local">
     </div>
-    <div class="field-row">
-      <div class="field-label">현장명</div>
-      <select class="field-select" id="editSite"></select>
+    <!-- 업무/개인 모드 탭 -->
+    <div class="input-mode-bar" style="margin:10px 0 0">
+      <button class="input-mode-btn active" id="editModeBtnWork" onclick="setEditMode('work')">🏗 업무</button>
+      <button class="input-mode-btn personal" id="editModeBtnPersonal" onclick="setEditMode('personal')">👤 개인</button>
     </div>
-    <div class="field-row">
-      <div class="field-label">카테고리</div>
-      <div class="chips" id="editCatChips">
-        <button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
-        <button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
-        <button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
-        <button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
-        <button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
-        <button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
+    <!-- 업무 섹션 -->
+    <div id="editSectionWork">
+      <div class="field-row">
+        <div class="field-label">현장명</div>
+        <select class="field-select" id="editSite"></select>
+      </div>
+      <div class="field-row">
+        <div class="field-label">카테고리</div>
+        <div class="chips" id="editCatChips">
+          <button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
+          <button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
+          <button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
+          <button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
+          <button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
+          <button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
+        </div>
+      </div>
+    </div>
+    <!-- 개인 섹션 -->
+    <div id="editSectionPersonal" style="display:none">
+      <div class="field-row">
+        <div class="field-label">카테고리</div>
+        <div class="chips" id="editPersonalCatChips">
+          <button class="chip" data-cat="식비" onclick="selectEditPersonalCat(this)">식비</button>
+          <button class="chip" data-cat="카페/음료" onclick="selectEditPersonalCat(this)">카페/음료</button>
+          <button class="chip" data-cat="교통" onclick="selectEditPersonalCat(this)">교통</button>
+          <button class="chip" data-cat="쇼핑" onclick="selectEditPersonalCat(this)">쇼핑</button>
+          <button class="chip" data-cat="문화/여가" onclick="selectEditPersonalCat(this)">문화/여가</button>
+          <button class="chip" data-cat="의료/건강" onclick="selectEditPersonalCat(this)">의료/건강</button>
+          <button class="chip" data-cat="구독" onclick="selectEditPersonalCat(this)">구독</button>
+          <button class="chip" data-cat="기타" onclick="selectEditPersonalCat(this)">기타</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">내용</div>
+        <input class="field-input" id="editPersonalMemo" placeholder="예: 스타벅스, 지하철">
       </div>
     </div>
     <div class="field-row">
@@ -1447,7 +1475,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <div class="field-label">메모</div>
       <input class="field-input" id="editMemo" type="text" placeholder="메모">
     </div>
-    <button class="edit-save-btn" onclick="saveEditRecord()">✓ 수정 저장</button>
+    <button class="edit-save-btn" onclick="editCurrentMode==='personal'?saveEditPersonal():saveEditRecord()">✓ 수정 저장</button>
     <button class="edit-del-btn" onclick="deleteEditRecord()">🗑 이 내역 삭제</button>
   </div>
 </div>
@@ -2231,31 +2259,69 @@ function setFilter(f,btn){
 
 // ── LIST ──
 function renderList(){
-  var filtered=currentFilter==='전체'?records:records.filter(function(r){return r.site===currentFilter;});
-  var total=filtered.reduce(function(a,r){return a+r.amount;},0);
+  var workRecs=currentFilter==='전체'?records:records.filter(function(r){return r.site===currentFilter;});
+  var personalTagged=currentFilter==='전체'
+    ?personalRecords.map(function(r){return Object.assign({},r,{isPersonal:true});})
+    :[];
+  var filtered=workRecs.concat(personalTagged).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+
+  var total=workRecs.reduce(function(a,r){return a+r.amount;},0);
   document.getElementById('filteredTotal').textContent='₩'+total.toLocaleString('ko-KR');
-  document.getElementById('filteredCount').textContent=filtered.length+'건';
+  document.getElementById('filteredCount').textContent=workRecs.length+'건';
+
   var el=document.getElementById('recordList');
   if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="emoji">📋</div><p>기록이 없어요</p></div>';return;}
+
   var groups={};
   filtered.forEach(function(r){
     var d=new Date(r.date),key=d.getFullYear()+'.'+(d.getMonth()+1+'').padStart(2,'0')+'.'+(''+d.getDate()).padStart(2,'0');
     if(!groups[key])groups[key]=[];groups[key].push(r);
   });
-  el.innerHTML=Object.entries(groups).map(function(e){
+
+  el.innerHTML=Object.entries(groups).sort(function(a,b){return b[0]<a[0]?-1:1;}).map(function(e){
     var date=e[0],recs=e[1];
-    var dayTotal=recs.reduce(function(a,r){return a+r.amount;},0);
-    return '<div class="section-header">'+date+' · ₩'+dayTotal.toLocaleString('ko-KR')+'</div>'+recs.map(function(r){
-      var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
-      var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
-      var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
-      var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
-      return '<div class="record-item" onclick="openEditModal(\''+r.id+'\')" style="cursor:pointer"><div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div><div class="record-info"><div class="record-site">'+siteStr(r.site)+'</div><div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'+(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')+(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')+'</div><div class="record-right"><div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div><div class="record-date">'+time+'</div></div><button class="record-delete" onclick="deleteRecord(\''+r.id+'\')">✕</button></div>';
-    }).join('');
+    var dayWork=recs.filter(function(r){return !r.isPersonal;}).reduce(function(a,r){return a+r.amount;},0);
+    var dayPsn=recs.filter(function(r){return r.isPersonal;}).reduce(function(a,r){return a+(r.amount||0);},0);
+    var psnLabel=dayPsn?(' <span style="font-size:11px;color:var(--green)">+개인 ₩'+dayPsn.toLocaleString('ko-KR')+'</span>'):'';
+    return '<div class="section-header">'+date+(dayWork?' · ₩'+dayWork.toLocaleString('ko-KR'):'')+psnLabel+'</div>'
+      +recs.map(function(r){
+        if(r.isPersonal){
+          var emoji=getCatEmoji(r.category);
+          return '<div class="record-item" data-rid="'+r.id+'" onclick="openEditModal(this.dataset.rid)" style="cursor:pointer;opacity:.9">'
+            +'<div class="record-icon" style="background:#1a3a2a;font-size:16px">'+emoji+'</div>'
+            +'<div class="record-info">'
+            +'<div class="record-site" style="color:var(--green);font-size:11px;font-weight:800">👤 개인</div>'
+            +'<div class="record-cat">'+(r.category||'기타')+(r.memo?' · '+r.memo:'')+'</div>'
+            +(r.method?'<div class="record-memo">💳 '+r.method+'</div>':'')
+            +'</div>'
+            +'<div class="record-right">'
+            +'<div class="record-amount" style="color:var(--green)">₩'+(r.amount||0).toLocaleString('ko-KR')+'</div>'
+            +'</div>'
+            +'<button class="record-delete" data-rid="'+r.id+'" onclick="event.stopPropagation();deletePersonalRecord(this.dataset.rid)">✕</button>'
+            +'</div>';
+        }
+        var ci=CAT_ICONS[r.category]||CAT_ICONS['기타'];
+        var t=new Date(r.date),time=(''+t.getHours()).padStart(2,'0')+':'+(''+t.getMinutes()).padStart(2,'0');
+        var vatB=r.vat==='included'?'<span class="vat-badge included">VAT포함</span>':r.vat==='excluded'?'<span class="vat-badge excluded">VAT별도</span>':'';
+        var payB=r.payMethod?'<span class="pay-badge '+r.payType+'">'+r.payMethod+'</span>':'';
+        return '<div class="record-item" data-rid="'+r.id+'" onclick="openEditModal(this.dataset.rid)" style="cursor:pointer">'
+          +'<div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div>'
+          +'<div class="record-info">'
+          +'<div class="record-site">'+siteStr(r.site)+'</div>'
+          +'<div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'
+          +(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')
+          +(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')
+          +'</div>'
+          +'<div class="record-right">'
+          +'<div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div>'
+          +'<div class="record-date">'+time+'</div>'
+          +'</div>'
+          +'<button class="record-delete" data-rid="'+r.id+'" onclick="event.stopPropagation();deleteRecord(this.dataset.rid)">✕</button>'
+          +'</div>';
+      }).join('');
   }).join('');
 }
 
-// ── HEADER TOTAL ──
 function updateHeaderTotal(){
   var today=new Date().toDateString();
   var t=records.filter(function(r){return new Date(r.date).toDateString()===today;}).reduce(function(a,r){return a+r.amount;},0);
@@ -3255,30 +3321,101 @@ function initDragList(containerEl, arr, listKey, onDone){
 var editingRecordId='', editAmountStr='', editSelectedCat='', editSelectedVat='none';
 var editSelectedPayMethod='', editSelectedPayType='';
 
+var editCurrentMode='work';
+var editPersonalCat='기타';
+var editingPersonalId='';
+
+function setEditMode(mode){
+  editCurrentMode=mode;
+  var isWork=mode==='work';
+  document.getElementById('editModeBtnWork').classList.toggle('active',isWork);
+  document.getElementById('editModeBtnPersonal').classList.toggle('active',!isWork);
+  document.getElementById('editSectionWork').style.display=isWork?'':'none';
+  document.getElementById('editSectionPersonal').style.display=isWork?'none':'';
+}
+
+function selectEditPersonalCat(btn){
+  var cat=btn.dataset.cat;
+  var was=btn.classList.contains('selected');
+  document.querySelectorAll('#editPersonalCatChips .chip').forEach(function(b){b.classList.remove('selected');});
+  if(!was){btn.classList.add('selected');editPersonalCat=cat;}
+  else{editPersonalCat='기타';}
+}
+
 function openEditModal(id){
+  // 먼저 expenses에서 찾기
   var r=records.find(function(x){return x.id===id;});
+  var isPersonal=false;
+  if(!r){
+    // personal_expenses에서 찾기
+    r=personalRecords.find(function(x){return x.id===id;});
+    isPersonal=true;
+  }
   if(!r)return;
-  editingRecordId=id;
+  editingRecordId=isPersonal?'':id;
+  editingPersonalId=isPersonal?id:'';
   editAmountStr=String(r.amount||0);
   updateEditAmountDisplay();
   document.getElementById('editNumpad').classList.remove('show');
   var d=new Date(r.date);
   var localDt=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   document.getElementById('editDate').value=localDt;
-  var sel=document.getElementById('editSite');
-  sel.innerHTML='';
-  sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===siteStr(r.site))o.selected=true;sel.appendChild(o);});
-  editSelectedCat=r.category||'자재비';
-  document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.toggle('selected',b.textContent===editSelectedCat);});
+
+  if(isPersonal){
+    // 개인 모드
+    setEditMode('personal');
+    editPersonalCat=r.category||'기타';
+    document.querySelectorAll('#editPersonalCatChips .chip').forEach(function(b){
+      b.classList.toggle('selected',b.dataset.cat===editPersonalCat);
+    });
+    document.getElementById('editPersonalMemo').value=r.memo||'';
+  } else {
+    // 업무 모드
+    setEditMode('work');
+    var sel=document.getElementById('editSite');
+    sel.innerHTML='';
+    sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===siteStr(r.site))o.selected=true;sel.appendChild(o);});
+    editSelectedCat=r.category||'자재비';
+    document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.toggle('selected',b.textContent===editSelectedCat);});
+    selectEditVat(r.vat||'none');
+    document.getElementById('editVendor').value=r.vendor||'';
+    document.getElementById('editItems').value=(r.items&&r.items.length)?r.items.join(', '):'';
+  }
   editSelectedPayMethod=r.payMethod||'';
   editSelectedPayType=r.payType||'';
   renderEditPayChips();
-  selectEditVat(r.vat||'none');
-  document.getElementById('editVendor').value=r.vendor||'';
-  document.getElementById('editItems').value=(r.items&&r.items.length)?r.items.join(', '):'';
   document.getElementById('editMemo').value=r.memo||'';
   document.getElementById('editRecordModal').classList.add('show');
   pushModalState('editRecordModal');
+}
+
+function saveEditPersonal(){
+  var amount=parseInt(editAmountStr||'0');
+  if(!amount){showToast('금액을 입력해주세요');return;}
+  var dtVal=document.getElementById('editDate').value;
+  var saveDate=dtVal?dtVal.slice(0,10):new Date().toISOString().slice(0,10);
+  var memo=document.getElementById('editPersonalMemo').value.trim();
+  setSyncStatus('saving');
+  if(editingPersonalId){
+    // 기존 개인 내역 수정
+    db.collection('personal_expenses').doc(editingPersonalId).update({
+      amount:amount,category:editPersonalCat,memo:memo,
+      method:editSelectedPayMethod,date:saveDate
+    }).then(function(){closeEditModal();setSyncStatus('ok');showToast('✓ 개인 내역 수정됐어요');
+    }).catch(function(e){setSyncStatus('err');showToast('수정 실패: '+e.message);});
+  } else {
+    // expenses를 personal_expenses로 이동 (컬렉션 변경)
+    db.collection('personal_expenses').add({
+      date:saveDate,amount:amount,category:editPersonalCat,
+      memo:memo,method:editSelectedPayMethod,
+      ts:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      // 기존 expenses 삭제
+      return db.collection('expenses').doc(editingRecordId).delete();
+    }).then(function(){
+      closeEditModal();setSyncStatus('ok');showToast('✓ 개인 내역으로 저장됐어요');
+    }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+  }
 }
 function closeEditModal(){if(modalStack.length>0)modalStack.pop();
   document.getElementById('editRecordModal').classList.remove('show');}
@@ -3349,7 +3486,12 @@ function saveEditRecord(){
 }
 function deleteEditRecord(){
   if(!confirm('이 내역을 삭제할까요?'))return;
-  closeEditModal();deleteRecord(editingRecordId);
+  closeEditModal();
+  if(editingPersonalId){
+    db.collection('personal_expenses').doc(editingPersonalId).delete().then(function(){showToast('삭제됐어요');});
+  } else {
+    deleteRecord(editingRecordId);
+  }
 }
 
 
