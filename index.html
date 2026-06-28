@@ -1728,6 +1728,7 @@ function renderNotifTab(){
       +'<div class="notif-actions">'
       +(isPending
         ?'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">입력에 적용</button>'
+         +'<button class="notif-apply-btn" style="background:var(--green)" onclick="applyPersonalPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\')">👤 개인</button>'
         :'<button class="notif-apply-btn" style="background:var(--blue);color:#fff" onclick="reapplyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">↩ 다시 입력</button>'
       )
       +(n.status==='pending'
@@ -1756,6 +1757,30 @@ function reapplyPending(id, amount, vendor, dateStr, cardnum){
   });
 }
 
+
+// ── 알림 → 개인 가계부 ──
+function applyPersonalPending(id, amount, vendor, dateStr){
+  // 1. pending 상태 done 처리
+  db.collection('sms_pending').doc(id).update({
+    status:'done',
+    appliedAt:new Date().toISOString(),
+    appliedTo:'personal'
+  });
+  // 2. 개인 가계부 모달 열기
+  openPersonalModal();
+  // 3. 입력값 자동 채우기 (모달 렌더링 후)
+  setTimeout(function(){
+    var amtEl=document.getElementById('piAmount');
+    var memoEl=document.getElementById('piMemo');
+    var dateEl=document.getElementById('piDate');
+    if(amtEl)amtEl.value=amount;
+    if(memoEl)memoEl.value=vendor||'';
+    if(dateEl&&dateStr)dateEl.value=dateStr.slice(0,10);
+    showToast('✓ 개인 가계부에 자동 입력됐어요. 카테고리 선택 후 저장하세요');
+  }, 200);
+  // 4. 알림 모달 닫기
+  closeNotifModal();
+}
 // ── NUMPAD ──
 function numInput(n){if(amountStr.length>=10)return;amountStr+=n;updateAmountDisplay();}
 function numDelete(){amountStr=amountStr.slice(0,-1);updateAmountDisplay();}
