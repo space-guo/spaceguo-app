@@ -2969,7 +2969,7 @@ function renderDailyProcList(dayProcs, dateStr){
     return;
   }
   el.innerHTML=dayProcs.map(function(s,i){
-    var color=s.color||schColor(i);
+    var color=getProcColor(s.procName,i);
     var pct=parseInt(s.progress||0);
     return '<div class="daily-proc-card" id="dailyCard-'+i+'">'
       +'<div class="daily-proc-header" data-idx="'+i+'" data-schid="'+s.id+'">'
@@ -4059,7 +4059,7 @@ function renderSchCal(){
         var isStart=ds===s.startDate;
         var isEnd=ds===s.endDate;
         var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
-        var color=s.color||getProcColor(s.procName,si);
+        var color=getProcColor(s.procName,si)||s.color||'#5b8cf7';
         var label=isStart?(s.procName||'공정'):'';
         bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
       }
@@ -4095,7 +4095,7 @@ function renderSchList(){
   el.innerHTML=filtered.map(function(s,si){
     var pct=parseInt(s.progress||0);
     var isDone=pct>=100;
-    var color=s.color||getProcColor(s.procName,si);
+    var color=getProcColor(s.procName,si)||s.color||'#5b8cf7';
     return '<div class="sch-item" data-schid="'+s.id+'">'
       +'<div class="sch-item-top">'
       +'<div><div class="sch-item-name" style="color:'+color+'">'+( s.procName||'공정')+'</div>'
