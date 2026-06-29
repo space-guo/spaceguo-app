@@ -3973,11 +3973,10 @@ function subscribeSchedules(){
 }
 
 function renderSchTab(){
-  // 진단: schedules 배열 상태 확인
   showToast('공정 데이터: '+schedules.length+'건 / 필터: '+getFilteredSch().length+'건');
   renderSchSiteFilter();
-  renderSchCal();
-  renderSchList();
+  try{renderSchCal();}catch(e){showToast('달력오류: '+e.message);}
+  try{renderSchList();}catch(e){showToast('목록오류: '+e.message);}
   // 업무일지 이번달 기본값
   var monthEl=document.getElementById('journalMonthFilter');
   if(monthEl&&!monthEl.value){
