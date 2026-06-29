@@ -449,6 +449,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 
 
+.color-selected-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;flex-shrink:0;transition:transform .1s}
+.color-selected-dot:active{transform:scale(.9)}
+
 /* ── COLOR POPUP ── */
 .color-popup-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
 .color-popup-overlay.show{display:flex}
@@ -1502,6 +1505,9 @@ let editingProcIdx=-1, editingItemIdx=-1, currentProcForItem=-1;
 let pendingNotifs=[], unsubPending=null, notifFilter='pending';
 
 const CAT_ICONS={'자재비':{icon:'🧱',bg:'#2a1f0f'},'인건비':{icon:'👷',bg:'#1a2a1a'},'공구/장비':{icon:'🔧',bg:'#1a1a2a'},'교통/주차':{icon:'🚗',bg:'#2a1a2a'},'식대':{icon:'🍱',bg:'#2a1a1a'},'기타':{icon:'📦',bg:'#222'}};
+// 공정 색상 팔레트 (renderProcessList / getProcColor 에서 사용)
+var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
+var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
 
 // ── SYNC ──
 function setSyncStatus(s){
@@ -3938,9 +3944,7 @@ var schYear=new Date().getFullYear(), schMonth=new Date().getMonth();
 var schSiteFilter='전체', schedules=[], unsubSch=null;
 var editingSchId='';
 
-// 공정별 색상
-var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
-var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
+
 function schColor(idx){return SCH_COLORS_LIST[idx%SCH_COLORS_LIST.length];}
 function getProcColor(procName, fallbackIdx){
   var proc=processes.find(function(p){return p.name===procName;});
