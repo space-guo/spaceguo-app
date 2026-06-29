@@ -642,8 +642,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
   </div>
   <div class="tab-bar">
-    <button class="tab active" id="tab-input" onclick="switchTab('input')">입력</button>
-    <button class="tab" id="tab-list" onclick="switchTab('list')">내역</button>
+    <button class="tab active" id="tab-list" onclick="switchTab('list')">내역</button>
     <button class="tab" id="tab-cal" onclick="switchTab('cal')">캘린더</button>
     <button class="tab" id="tab-sch" onclick="switchTab('sch')">공정표</button>
     <button class="tab" id="tab-order" onclick="switchTab('order')">발주</button>
@@ -653,7 +652,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 
 <div id="viewContainer">
 <!-- INPUT -->
-<div class="view active" id="view-input">
+<div class="view" id="view-input">
 
   <!-- 대기 중인 카드 알림 -->
   <div class="pending-section" id="pendingSection">
@@ -838,7 +837,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 <!-- 알림 탭은 헤더 벨 모달로 이동 -->
 
 <!-- LIST (달력 + 내역 통합) -->
-<div class="view" id="view-list">
+<div class="view active" id="view-list">
   <!-- 상단 달력 -->
   <div class="cal-nav">
     <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
@@ -1710,7 +1709,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();loadVendors();subscribeRecords();loadPersonalBudgets();subscribePending();setSyncStatus('live');setTimeout(initDatePicker,100);
+    loadSettings();loadVendors();subscribeRecords();subscribePersonal();loadPersonalBudgets();subscribePending();setSyncStatus('live');setTimeout(function(){initDatePicker();switchTab('list');},100);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -1739,6 +1738,19 @@ function saveSettings(){
 }
 
 // ── REALTIME ──
+
+// ── HELPER: 사이트명 표시 ──
+function siteStr(site){
+  if(!site)return '<span style="color:var(--muted);font-size:11px">현장 미지정</span>';
+  return '<span style="font-size:12px">'+site+'</span>';
+}
+
+// ── HELPER: 개인 가계부 카테고리 이모지 ──
+function getCatEmoji(cat){
+  var map={'식비':'🍱','카페/음료':'☕','교통':'🚗','쇼핑':'🛍','문화/여가':'🎬','의료/건강':'💊','구독':'📱','기타':'📦'};
+  return map[cat]||'📦';
+}
+
 function subscribeRecords(){
   unsubRec=db.collection('expenses').orderBy('date','desc').onSnapshot(function(snap){
     records=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
@@ -2452,7 +2464,7 @@ function renderList(){
           +(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')
           +'</div>'
           +'<div class="record-right">'
-          +'<div class="record-amount">₩'+r.amount.toLocaleString('ko-KR')+'</div>'
+          +'<div class="record-amount">₩'+(r.amount||0).toLocaleString('ko-KR')+'</div>'
           +'<div class="record-date">'+time+'</div>'
           +'</div>'
           +'<button class="record-delete" data-rid="'+r.id+'" onclick="event.stopPropagation();deleteRecord(this.dataset.rid)">✕</button>'
@@ -3732,7 +3744,7 @@ function closeChecklistModal(){
 // checklistNewInp 엔터키
 document.addEventListener('DOMContentLoaded',function(){
   // ── 스와이프 네비게이션 ──
-  var TAB_ORDER_SW=['input','list','cal','sch','order','dash'];
+  var TAB_ORDER_SW=['list','cal','sch','order','dash'];
   var swStartX=0,swStartY=0,swStartTime=0;
   var vc=document.getElementById('viewContainer');
   if(vc){
@@ -4815,7 +4827,7 @@ function renderCalDetail(dateStr){
 
 // ── TABS ──
 function switchTab(tab){
-  var TAB_ORDER=['input','list','cal','sch','order','dash'];
+  var TAB_ORDER=['list','cal','sch','order','dash'];
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   var nextView=document.getElementById('view-'+tab);
@@ -4828,9 +4840,9 @@ function switchTab(tab){
     document.body.scrollTop=0;
     if(nextView)nextView.scrollTop=0;
   });
-  // FAB: 내역 탭에서만 표시
+  // FAB: 입력 탭 외 모든 탭에서 표시
   var fab=document.getElementById('listFab');
-  if(fab){tab==='list'?fab.classList.add('show'):fab.classList.remove('show');}
+  if(fab){tab==='input'?fab.classList.remove('show'):fab.classList.add('show');}
 
   if(tab==='list'){renderCal();renderFilterBar();renderList();}
   else if(tab==='cal'){
