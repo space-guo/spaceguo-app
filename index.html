@@ -447,17 +447,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .daily-check-confirm-box.checked::after{content:'✓';color:#fff;font-size:12px;font-weight:900}
 .daily-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
 
-/* ── COLOR POPUP ── */
-.color-popup-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5)}
-.color-popup-overlay.show{display:flex;align-items:center;justify-content:center}
-.color-popup-box{background:var(--surface);border-radius:16px;padding:18px;width:300px;max-width:90vw}
-.color-popup-title{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:.06em}
-.color-popup-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-.color-popup-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .1s;margin:0 auto;display:block}
-.color-popup-btn:active{transform:scale(.9)}
-.color-popup-btn.selected{border-color:#fff;transform:scale(1.15)}
-.color-selected-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;flex-shrink:0;transition:transform .1s}
-.color-selected-dot:active{transform:scale(.9)}
+
 
 /* ── COLOR POPUP ── */
 .color-popup-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
@@ -1114,16 +1104,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   </div>
 </div>
 
-<!-- COLOR POPUP -->
-<div class="color-popup-overlay" id="colorPopup" onclick="if(event.target===this)closeColorPopup()">
-  <div class="color-popup-box">
-    <div class="color-popup-title">🎨 색상 선택</div>
-    <div class="color-popup-grid" id="colorPopupGrid"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px">
-      <button onclick="closeColorPopup()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;font-weight:700;padding:8px 18px;cursor:pointer">닫기</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- COLOR POPUP -->
 <div class="color-popup-overlay" id="colorPopup" onclick="if(event.target===this)closeColorPopup()">
@@ -1879,7 +1860,7 @@ function updateVatInfo(){
 
 // ── CATEGORY ──
 function selectCat(btn,cat){
-  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('selected');});
+  document.querySelectorAll('#inputSectionWork .chip').forEach(function(c){c.classList.remove('selected');});
   btn.classList.add('selected');selectedCategory=cat;
 }
 
@@ -2211,13 +2192,13 @@ function renderSiteList(){
 
   el.innerHTML=parts.join('');
 
-    el.addEventListener('click', function(e){
+    el.onclick = function(e){
     var delBtn=e.target.closest('[data-del-site]');
     if(delBtn){deleteSite(parseInt(delBtn.getAttribute('data-del-site')));return;}
     if(e.target.classList.contains('drag-handle'))return;
     var card=e.target.closest('[data-site-action="edit"]');
     if(card)openSiteEditModal(parseInt(card.dataset.siteIdx));
-  });
+  };
     initDragList(el, sites, 'sites', function(){
     saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();});
   });
