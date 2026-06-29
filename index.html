@@ -3608,7 +3608,7 @@ document.addEventListener('DOMContentLoaded',function(){
     vc.addEventListener('touchstart',function(e){
       if(modalStack&&modalStack.length>0)return;
       // 가로 스크롤 영역 위에서 시작한 터치는 스와이프로 처리 안 함
-      var scrollTarget=e.target.closest('.sch-site-filter,.notif-tab-bar,.personal-tab-bar,.input-mode-bar,.filter-bar');
+      var scrollTarget=e.target.closest('.sch-site-filter,.notif-tab-bar,.personal-tab-bar,.input-mode-bar,.filter-bar,#orderStatusTabs,#siteStatusFilterRow,.dash-period');
       if(scrollTarget){swStartX=0;return;}
       swStartX=e.touches[0].clientX;
       swStartY=e.touches[0].clientY;
@@ -5220,7 +5220,6 @@ function renderOrderList(){
     return '<div class="site-card" data-oid="'+o.id+'" style="cursor:pointer;margin-bottom:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:13px;font-weight:800">'+o.name+'</span><span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:'+sC[st]+'30;color:'+sC[st]+'">'+sL[st]+'</span></div><div style="font-size:11px;color:var(--muted)">'+(o.site?'📍 '+o.site+(o.proc?' · 📦 '+o.proc:''):'')+' · '+( o.qty?o.qty+(o.unit?' '+o.unit:'')+'  ':'')+( o.amount?'₩'+parseInt(o.amount).toLocaleString():'')+'</div>'+(o.vendor?'<div style="font-size:11px;color:var(--muted);margin-top:2px">👷 '+o.vendor+'</div>':'')+(o.delivery?'<div style="font-size:11px;color:var(--muted);margin-top:2px">📅 납품예정: '+o.delivery+'</div>':'')+(o.memo?'<div style="font-size:11px;color:var(--muted);margin-top:2px">💬 '+o.memo+'</div>':'')+'</div></div>';
   }).join('');
   el.querySelectorAll('.site-card').forEach(function(card){
-    card.addEventListener('touchend',function(e){if(isScrolling)return;openOrderModalEdit(this.dataset.oid);},{passive:true});
     card.addEventListener('click',function(){openOrderModalEdit(this.dataset.oid);});
   });
 }
