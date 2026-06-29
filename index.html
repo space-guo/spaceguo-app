@@ -3607,6 +3607,9 @@ document.addEventListener('DOMContentLoaded',function(){
   if(vc){
     vc.addEventListener('touchstart',function(e){
       if(modalStack&&modalStack.length>0)return;
+      // 가로 스크롤 영역 위에서 시작한 터치는 스와이프로 처리 안 함
+      var scrollTarget=e.target.closest('.sch-site-filter,.notif-tab-bar,.personal-tab-bar,.input-mode-bar,.filter-bar');
+      if(scrollTarget){swStartX=0;return;}
       swStartX=e.touches[0].clientX;
       swStartY=e.touches[0].clientY;
       swStartTime=Date.now();
