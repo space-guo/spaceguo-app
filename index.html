@@ -2630,7 +2630,6 @@ var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
 function renderProcessList(){
   var el=document.getElementById('processList');
   if(!el)return;
-  var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
   if(!processes.length){
     el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">공정이 없어요</div>';
     return;
@@ -3957,6 +3956,7 @@ var editingSchId='';
 
 // 공정별 색상
 var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
+var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
 function schColor(idx){return SCH_COLORS_LIST[idx%SCH_COLORS_LIST.length];}
 function getProcColor(procName, fallbackIdx){
   var proc=processes.find(function(p){return p.name===procName;});
