@@ -1301,7 +1301,10 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <div class="field-row">
       <div class="field-label">공정</div>
-      <select class="field-select" id="schProcInp"></select>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="procColorDot" style="width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1px solid var(--border);transition:background .15s"></div>
+        <select class="field-select" id="schProcInp" style="flex:1"></select>
+      </div>
     </div>
 
     <div class="field-row">
@@ -3954,12 +3957,11 @@ var editingSchId='';
 
 // 공정별 색상
 var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
-function schColor(idx){return SCH_COLORS[idx%SCH_COLORS.length];}
-function getProcColor(procName,fallbackIdx){var SCH_C=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];var proc=processes.find(function(p){return p.name===procName;});if(proc&&proc.color)return proc.color;return SCH_C[fallbackIdx%SCH_C.length];}
+function schColor(idx){return SCH_COLORS_LIST[idx%SCH_COLORS_LIST.length];}
 function getProcColor(procName, fallbackIdx){
   var proc=processes.find(function(p){return p.name===procName;});
   if(proc&&proc.color)return proc.color;
-  return SCH_COLORS[fallbackIdx%SCH_COLORS.length];
+  return SCH_COLORS_LIST[(fallbackIdx||0)%SCH_COLORS_LIST.length];
 }
 
 function subscribeSchedules(){
@@ -4148,7 +4150,11 @@ function openSchModal(){
   processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;psel.appendChild(o);});
 
   // 공정 변경시 체크리스트 자동 로드
-  psel.onchange=function(){initSchChecklist(this.value);};
+  function _updateProcDot(){
+    var dot=document.getElementById('procColorDot');
+    if(dot){dot.style.background=psel.value?getProcColor(psel.value,0):'transparent';dot.style.border=psel.value?'none':'1px solid var(--border)';}
+  }
+  psel.onchange=function(){_updateProcDot();initSchChecklist(this.value);};
 
   renderVendorSelect();
   document.getElementById('schWorkerCountInp').value='';
@@ -4178,7 +4184,16 @@ function openSchModalEdit(id){
   var psel=document.getElementById('schProcInp');
   psel.innerHTML='<option value="">공정 선택</option>';
   processes.forEach(function(p){var o=document.createElement('option');o.value=p.name;o.textContent=p.name;if(p.name===s.procName)o.selected=true;psel.appendChild(o);});
-  psel.onchange=function(){initSchChecklist(this.value);};
+  psel.onchange=function(){
+    var dot=document.getElementById('procColorDot');
+    if(dot){dot.style.background=this.value?getProcColor(this.value,0):'transparent';dot.style.border=this.value?'none':'1px solid var(--border)';}
+    initSchChecklist(this.value);
+  };
+  // 현재 선택된 공정 색상 즉시 반영
+  setTimeout(function(){
+    var dot=document.getElementById('procColorDot');
+    if(dot&&s.procName){dot.style.background=getProcColor(s.procName,0);dot.style.border='none';}
+  },30);
 
   renderVendorSelect();
   document.getElementById('schWorkerInp').value=s.workerId||'';
