@@ -3973,6 +3973,8 @@ function subscribeSchedules(){
 }
 
 function renderSchTab(){
+  // 진단: schedules 배열 상태 확인
+  showToast('공정 데이터: '+schedules.length+'건 / 필터: '+getFilteredSch().length+'건');
   renderSchSiteFilter();
   renderSchCal();
   renderSchList();
