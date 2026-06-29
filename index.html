@@ -1566,7 +1566,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
     document.getElementById('userInfo').textContent='로그인: '+user.email;
-    loadSettings();loadVendors();subscribeRecords();subscribePersonal();loadPersonalBudgets();subscribeIncomes();subscribePending();subscribeSchedules();subscribeJournals();setSyncStatus('live');setTimeout(initDatePicker,100);
+    loadSettings();loadVendors();subscribeRecords();loadPersonalBudgets();subscribePending();setSyncStatus('live');setTimeout(initDatePicker,100);
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -4353,9 +4353,19 @@ function switchTab(tab){
     if(nextView)nextView.scrollTop=0;
   });
   if(tab==='list'){renderCal();renderFilterBar();renderList();}
-  else if(tab==='sch'){renderSchTab();renderJournalSiteFilter();renderJournalList();}
-  else if(tab==='order'){renderOrderSiteFilter();renderOrderList();}
-  else if(tab==='dash'){renderDash();}
+  else if(tab==='sch'){
+    if(!unsubSch)subscribeSchedules();
+    if(!unsubJournal)subscribeJournals();
+    renderSchTab();renderJournalSiteFilter();renderJournalList();
+  }
+  else if(tab==='order'){
+    if(!unsubOrders)subscribeOrders();
+    renderOrderSiteFilter();renderOrderList();
+  }
+  else if(tab==='dash'){
+    if(!unsubInc)subscribeIncomes();
+    renderDash();
+  }
 }
 
 // ── NOTIF MODAL ──
@@ -4836,6 +4846,7 @@ function loadPersonalBudgets(){
 
 function openPersonalModal(){
   personalTab='input';
+  if(!unsubPersonal)subscribePersonal();
   document.getElementById('personalModal').classList.add('show');
   modalStack.push('personalModal');
   renderPersonalBody();
