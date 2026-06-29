@@ -3961,7 +3961,10 @@ function schColor(idx){return SCH_COLORS_LIST[idx%SCH_COLORS_LIST.length];}
 function getProcColor(procName, fallbackIdx){
   var proc=processes.find(function(p){return p.name===procName;});
   if(proc&&proc.color)return proc.color;
-  return SCH_COLORS_LIST[(fallbackIdx||0)%SCH_COLORS_LIST.length];
+  // 공정명 기준 인덱스 → 같은 공정은 항상 같은 색
+  var procIdx=processes.findIndex(function(p){return p.name===procName;});
+  var idx=procIdx>=0?procIdx:(fallbackIdx||0);
+  return SCH_COLORS_LIST[idx%SCH_COLORS_LIST.length];
 }
 
 function subscribeSchedules(){
@@ -4062,7 +4065,7 @@ function renderSchCal(){
         var isStart=ds===s.startDate;
         var isEnd=ds===s.endDate;
         var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
-        var color=getProcColor(s.procName,si)||s.color||'#5b8cf7';
+        var color=getProcColor(s.procName,si);
         var label=isStart?(s.procName||'공정'):'';
         bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
       }
@@ -4098,7 +4101,7 @@ function renderSchList(){
   el.innerHTML=filtered.map(function(s,si){
     var pct=parseInt(s.progress||0);
     var isDone=pct>=100;
-    var color=getProcColor(s.procName,si)||s.color||'#5b8cf7';
+    var color=getProcColor(s.procName,si);
     return '<div class="sch-item" data-schid="'+s.id+'">'
       +'<div class="sch-item-top">'
       +'<div><div class="sch-item-name" style="color:'+color+'">'+( s.procName||'공정')+'</div>'
