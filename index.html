@@ -5747,11 +5747,11 @@ function renderPersonalInput(body){
   // 카드 칩
   var cardHtml=(cards||[]).map(function(c){
     var label=c.num?c.name+' ('+c.num+')':c.name;
-    return '<button class="pay-chip" data-method="'+escHtml(c.name)+'" data-type="card" onclick="selectPiPay(this,''+escHtml(c.name)+'','card')">'+escHtml(label)+'</button>';
+    return '<button class="pay-chip" data-method="'+escHtml(c.name)+'" data-type="card" onclick="selectPiPay(this,this.dataset.method,this.dataset.type)">'+escHtml(label)+'</button>';
   }).join('');
   // 계좌 칩
   var accHtml=(accounts||[]).map(function(a){
-    return '<button class="pay-chip" data-method="'+escHtml(a.name)+'" data-type="transfer" onclick="selectPiPay(this,''+escHtml(a.name)+'','transfer')">'+escHtml(a.name)+'</button>';
+    return '<button class="pay-chip" data-method="'+escHtml(a.name)+'" data-type="transfer" onclick="selectPiPay(this,this.dataset.method,this.dataset.type)">'+escHtml(a.name)+'</button>';
   }).join('');
   body.innerHTML=
     '<div style="padding:0 16px 80px">'
@@ -5769,18 +5769,18 @@ function renderPersonalInput(body){
     +(cardHtml?'<div class="pay-group"><div class="pay-group-label">💳 카드</div><div class="pay-chips" id="piCardChips">'+cardHtml+'</div></div>':'')
     +'<div class="pay-group" style="margin-top:8px"><div class="pay-group-label">💵 현금/이체</div>'
     +'<div class="pay-chips">'
-    +'<button class="pay-chip" onclick="selectPiPay(this,'현금 직접','cash')">현금 직접</button>'
-    +'<button class="pay-chip" onclick="selectPiPay(this,'카카오페이','cash')">카카오페이</button>'
-    +'<button class="pay-chip" onclick="selectPiPay(this,'토스','cash')">토스</button>'
+    +'<button class="pay-chip" data-method="현금 직접" data-type="cash" onclick="selectPiPay(this,this.dataset.method,this.dataset.type)">현금 직접</button>'
+    +'<button class="pay-chip" data-method="카카오페이" data-type="cash" onclick="selectPiPay(this,this.dataset.method,this.dataset.type)">카카오페이</button>'
+    +'<button class="pay-chip" data-method="토스" data-type="cash" onclick="selectPiPay(this,this.dataset.method,this.dataset.type)">토스</button>'
     +'</div></div>'
     +(accHtml?'<div class="pay-group" style="margin-top:8px"><div class="pay-group-label">🏦 계좌이체</div><div class="pay-chips">'+accHtml+'</div></div>':'')
     +'</div>'
     // 부가세
     +'<div class="field-row"><div class="field-label">부가세</div>'
     +'<div class="vat-row-ui">'
-    +'<button class="vat-btn selected" id="piVatNone" onclick="selectPiVat('none')">미발행</button>'
-    +'<button class="vat-btn" id="piVatIncluded" onclick="selectPiVat('included')">포함</button>'
-    +'<button class="vat-btn" id="piVatExcluded" onclick="selectPiVat('excluded')">별도</button>'
+    +'<button class="vat-btn selected" id="piVatNone" data-vat="none" onclick="selectPiVat(this.dataset.vat)">미발행</button>'
+    +'<button class="vat-btn" id="piVatIncluded" data-vat="included" onclick="selectPiVat(this.dataset.vat)">포함</button>'
+    +'<button class="vat-btn" id="piVatExcluded" data-vat="excluded" onclick="selectPiVat(this.dataset.vat)">별도</button>'
     +'</div></div>'
     // 구매처
     +'<div class="field-row"><div class="field-label">구매처 (선택)</div>'
