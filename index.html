@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>SpaceGuo · 현장 지출</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
@@ -1652,6 +1655,16 @@ const CAT_ICONS={'자재비':{icon:'🧱',bg:'#2a1f0f'},'인건비':{icon:'👷'
 var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
 var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
 
+// ── TOAST ──
+function showToast(msg,duration){
+  var el=document.getElementById('toast');
+  if(!el)return;
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(function(){el.classList.remove('show');},(duration||2500));
+}
+
 // ── SYNC ──
 function setSyncStatus(s){
   var dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
@@ -2186,7 +2199,17 @@ function saveRecord(){
     document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
     selectedPayMethod='';selectedPayType='';
     setSyncStatus('ok');showToast('✓ 저장됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+  }).catch(function(e){
+    setSyncStatus('err');
+    showToast('⚠️ 저장 실패: '+e.message, 6000);
+    console.error('saveRecord 실패:', e);
+    // 저장 실패 알림을 화면에도 표시
+    var errDiv=document.createElement('div');
+    errDiv.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;padding:12px 20px;border-radius:12px;z-index:9999;font-size:13px;font-weight:700;max-width:90vw;text-align:center';
+    errDiv.textContent='저장 실패: '+e.message;
+    document.body.appendChild(errDiv);
+    setTimeout(function(){errDiv.remove();},8000);
+  });
 }
 
 // ── DELETE ──
@@ -4448,14 +4471,29 @@ function subscribeSchedules(){
   unsubSch=db.collection('schedules').orderBy('startDate','asc').onSnapshot(function(snap){
     schedules=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     if(document.getElementById('view-sch').classList.contains('active'))renderSchTab();
+  },function(err){
+    showToast('공정 불러오기 실패: '+err.message,4000);
+    // orderBy 없이 재시도
+    if(unsubSch)unsubSch();
+    unsubSch=db.collection('schedules').onSnapshot(function(snap){
+      schedules=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+      if(document.getElementById('view-sch').classList.contains('active'))renderSchTab();
+    });
   });
 }
 
 function renderSchTab(){
-  showToast('공정 데이터: '+schedules.length+'건 / 필터: '+getFilteredSch().length+'건');
-  renderSchSiteFilter();
-  try{renderSchCal();}catch(e){showToast('달력오류: '+e.message);}
-  try{renderSchList();}catch(e){showToast('목록오류: '+e.message);}
+  try{renderSchSiteFilter();}catch(e){console.error('필터오류',e);}
+  try{renderSchCal();}catch(e){
+    console.error('달력오류',e);
+    var ec=document.getElementById('schCalBody');
+    if(ec)ec.innerHTML='<div style="color:var(--red);padding:12px;font-size:12px;text-align:center">달력 오류: '+e.message+'</div>';
+  }
+  try{renderSchList();}catch(e){
+    console.error('목록오류',e);
+    var el2=document.getElementById('schList');
+    if(el2)el2.innerHTML='<div style="color:var(--red);padding:12px;font-size:12px;text-align:center">목록 오류: '+e.message+'</div>';
+  }
   // 업무일지 이번달 기본값
   var monthEl=document.getElementById('journalMonthFilter');
   if(monthEl&&!monthEl.value){
@@ -4851,9 +4889,27 @@ function switchTab(tab){
     renderMyCal();
   }
   else if(tab==='sch'){
+    // 항상 최신 데이터로 fetch 후 렌더
+    var schListEl=document.getElementById('schList');
+    if(schListEl)schListEl.innerHTML='<div class="loading"><div class="spinner"></div>공정 불러오는 중...</div>';
+    var schCalEl=document.getElementById('schCalBody');
+    if(schCalEl)schCalEl.innerHTML='';
+    // subscription 설정
     if(!unsubSch)subscribeSchedules();
     if(!unsubJournal)subscribeJournals();
-    renderSchTab();renderJournalSiteFilter();renderJournalList();
+    // 즉시 1회 getDocs fetch (subscription 타이밍 무관)
+    db.collection('schedules').orderBy('startDate','asc').get().then(function(snap){
+      schedules=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+      if(document.getElementById('view-sch').classList.contains('active')){
+        renderSchTab();renderJournalSiteFilter();renderJournalList();
+      }
+    }).catch(function(e){
+      showToast('Firebase 오류: '+e.message,6000);
+      var el=document.getElementById('schList');
+      if(el)el.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;font-size:13px">⚠️ 데이터 불러오기 실패<br><small>'+e.message+'</small><br><br><button onclick="switchTab(&apos;sch&apos;)" style="background:var(--accent);border:none;border-radius:8px;color:#fff;padding:8px 16px;cursor:pointer">다시 시도</button></div>';
+    });
+    // journal은 즉시 (캐시 데이터로)
+    renderJournalSiteFilter();renderJournalList();
   }
   else if(tab==='order'){
     if(!unsubOrders)subscribeOrders();
