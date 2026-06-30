@@ -904,11 +904,11 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <button class="sch-nav-btn" onclick="schCalMove(1)">›</button>
   </div>
   <div class="sch-site-filter" id="schSiteFilter"></div>
-  <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-cal-wrap">
     <div class="sch-cal-header" id="schCalHeader"></div>
     <div class="sch-cal-body" id="schCalBody"></div>
   </div>
+  <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-list" id="schList"></div>
 
   <!-- 업무일지 섹션 -->
@@ -3513,6 +3513,14 @@ function setEditMode(mode){
   document.getElementById('editSectionWork').style.display=isWork?'':'none';
   document.getElementById('editSectionPersonal').style.display=isWork?'none':'';
 }
+function setInputMode(mode){
+  currentInputMode=mode==='personal'?'personal':'';
+  var isPersonal=mode==='personal';
+  document.getElementById('modeBtnWork').classList.toggle('active',!isPersonal);
+  document.getElementById('modeBtnPersonal').classList.toggle('active',isPersonal);
+  document.getElementById('inputSectionWork').style.display=isPersonal?'none':'';
+  document.getElementById('inputSectionPersonal').style.display=isPersonal?'':'none';
+}
 
 function selectEditPersonalCat(btn){
   var cat=btn.dataset.cat;
@@ -5171,27 +5179,27 @@ function switchTab(tab){
     renderMyCal();
   }
   else if(tab==='sch'){
-    // 항상 최신 데이터로 fetch 후 렌더
-    var schListEl=document.getElementById('schList');
-    if(schListEl)schListEl.innerHTML='<div class="loading"><div class="spinner"></div>공정 불러오는 중...</div>';
-    var schCalEl=document.getElementById('schCalBody');
-    if(schCalEl)schCalEl.innerHTML='';
-    // subscription 설정
+    // 구독 설정 (최초 1회)
     if(!unsubSch)subscribeSchedules();
     if(!unsubJournal)subscribeJournals();
-    // 즉시 1회 getDocs fetch (subscription 타이밍 무관)
-    db.collection('schedules').orderBy('startDate','asc').get().then(function(snap){
-      schedules=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-      if(document.getElementById('view-sch').classList.contains('active')){
-        renderSchTab();renderJournalSiteFilter();renderJournalList();
-      }
-    }).catch(function(e){
-      showToast('Firebase 오류: '+e.message,6000);
-      var el=document.getElementById('schList');
-      if(el)el.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;font-size:13px">⚠️ 데이터 불러오기 실패<br><small>'+e.message+'</small><br><br><button onclick="switchTab(&apos;sch&apos;)" style="background:var(--accent);border:none;border-radius:8px;color:#fff;padding:8px 16px;cursor:pointer">다시 시도</button></div>';
-    });
-    // journal은 즉시 (캐시 데이터로)
-    renderJournalSiteFilter();renderJournalList();
+    // 이미 데이터 있으면 즉시 렌더 (이중 렌더 플래시 방지)
+    if(schedules.length>0){
+      renderSchTab();renderJournalSiteFilter();renderJournalList();
+    } else {
+      // 첫 방문: 로딩 표시 후 getDocs
+      var schListEl=document.getElementById('schList');
+      if(schListEl)schListEl.innerHTML='<div class="loading"><div class="spinner"></div>공정 불러오는 중...</div>';
+      db.collection('schedules').orderBy('startDate','asc').get().then(function(snap){
+        schedules=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+        if(document.getElementById('view-sch').classList.contains('active')){
+          renderSchTab();renderJournalSiteFilter();renderJournalList();
+        }
+      }).catch(function(e){
+        showToast('Firebase 오류: '+e.message,6000);
+        var el=document.getElementById('schList');
+        if(el)el.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;font-size:13px">⚠️ 데이터 불러오기 실패<br><small>'+e.message+'</small><br><br><button onclick="switchTab(&apos;sch&apos;)" style="background:var(--accent);border:none;border-radius:8px;color:#fff;padding:8px 16px;cursor:pointer">다시 시도</button></div>';
+      });
+    }
   }
   else if(tab==='order'){
     if(!unsubOrders)subscribeOrders();
