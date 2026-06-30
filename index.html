@@ -2620,6 +2620,13 @@ function openCardModal(idx){
 }
 function closeCardModal(){if(modalStack.length>0)modalStack.pop();
   document.getElementById('cardModal').style.display='none';}
+function openSettingsModal(){
+  document.getElementById('settingsModal').style.display='flex';
+  pushModalState('settingsModal');
+  renderSiteList();renderCardList();renderAccountList();renderProcessList();
+}
+function closeSettingsModal(){if(modalStack.length>0)modalStack.pop();
+  document.getElementById('settingsModal').style.display='none';}
 function saveCardModal(){
   var name=document.getElementById('cardNameInp').value.trim();
   if(!name){showToast('카드 별칭을 입력해주세요');return;}
