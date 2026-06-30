@@ -794,10 +794,6 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         <button class="chip" data-cat="기타" onclick="personalToggleCatDirect(this)">기타</button>
       </div>
     </div>
-    <div class="field-row">
-      <div class="field-label">내용 (선택)</div>
-      <input class="field-input" id="piDirectMemo" placeholder="예: 스타벅스, 지하철">
-    </div>
   </div>
   <div class="field-row">
     <div class="field-label">결제수단</div>
@@ -5860,6 +5856,42 @@ function personalToggleCatDirect(btn){
   document.querySelectorAll('#piCatChips .chip').forEach(function(b){b.classList.remove('selected');});
   btn.classList.add('selected');
   piDirectSelectedCat=btn.dataset.cat||btn.textContent;
+}
+function savePersonalDirect(){
+  var amount=parseInt(amountStr||'0');
+  if(!amount){showToast('금액을 입력해주세요');return;}
+  if(!piDirectSelectedCat){showToast('카테고리를 선택해주세요');return;}
+  var saveDate;
+  if(selectedManualDate){saveDate=selectedManualDate;}
+  else{
+    var now=new Date();
+    saveDate=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+'T'+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':00.000+09:00';
+  }
+  var vendor=(document.getElementById('vendorInput')||{}).value||'';
+  var memo=(document.getElementById('memoInput')||{}).value||'';
+  var items=selectedItems.slice();
+  setSyncStatus('saving');
+  db.collection('personal_expenses').add({
+    date:saveDate,amount:amount,category:piDirectSelectedCat,
+    payMethod:selectedPayMethod,payType:selectedPayType,
+    vat:selectedVat,vendor:vendor.trim(),items:items,memo:memo.trim(),
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    // 초기화
+    piDirectSelectedCat='';
+    document.querySelectorAll('#piCatChips .chip').forEach(function(b){b.classList.remove('selected');});
+    amountStr='';updateAmountDisplay();
+    resetManualDate();
+    if(document.getElementById('memoInput'))document.getElementById('memoInput').value='';
+    if(document.getElementById('vendorInput'))document.getElementById('vendorInput').value='';
+    selectedItems=[];
+    var psel=document.getElementById('processSelect');if(psel)psel.value='';
+    var iarea=document.getElementById('itemCheckboxArea');if(iarea)iarea.innerHTML='';
+    var vinfo=document.getElementById('vatInfo');if(vinfo)vinfo.classList.remove('show');
+    document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
+    selectedPayMethod='';selectedPayType='';
+    setSyncStatus('ok');showToast('✓ 개인 지출 저장됐어요');
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
 }
 
 </script>
