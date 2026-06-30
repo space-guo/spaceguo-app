@@ -3791,6 +3791,20 @@ function closeChecklistModal(){
 
 // checklistNewInp 엔터키
 document.addEventListener('DOMContentLoaded',function(){
+  // ── PWA 뒤로 가기 트랩 ──
+  history.pushState({pwa:1},'');
+  window.addEventListener('popstate',function(){
+    history.pushState({pwa:1},''); // 항상 재트랩 → 앱 이탈 방지
+    if(modalStack&&modalStack.length>0){popModal();return;}
+    // 열린 모달 없으면 이전 탭으로
+    if(tabHistory.length>1){
+      tabHistory.pop();
+      var prev=tabHistory[tabHistory.length-1];
+      _noHistoryPush=true;
+      switchTab(prev);
+      _noHistoryPush=false;
+    }
+  });
   // ── 스와이프 네비게이션 ──
   var TAB_ORDER_SW=['list','cal','sch','order','dash'];
   var swStartX=0,swStartY=0,swStartTime=0;
@@ -5178,6 +5192,8 @@ function switchTab(tab){
   // FAB: 입력 탭 외 모든 탭에서 표시
   var fab=document.getElementById('listFab');
   if(fab){tab==='input'?fab.classList.remove('show'):fab.classList.add('show');}
+  // 탭 이력 기록 (뒤로 가기용)
+  if(!_noHistoryPush){tabHistory.push(tab);}
 
   if(tab==='list'){renderCal();renderFilterBar();renderList();}
   else if(tab==='cal'){
@@ -5320,6 +5336,8 @@ function getSelectedColor(){
 
 // ── HISTORY API (뒤로가기 처리) ──
 var modalStack=[];
+var tabHistory=['list'];   // 뒤로 가기용 탭 이력
+var _noHistoryPush=false; // 뒤로 가기 중 이중 푸시 방지
 
 function pushModalState(modalId){
   modalStack.push(modalId);
