@@ -5736,52 +5736,108 @@ function renderPersonalBody(){
 }
 
 // ── 입력 탭 ──
+var piSelectedCat='', piPayMethod='', piPayType='', piVat='none';
+
 function renderPersonalInput(body){
   var now=new Date();
   var dateVal=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   var catsHtml=PERSONAL_CATS.map(function(c){
     return '<button class="chip" data-cat="'+c+'" onclick="personalToggleCat(this)">'+c+'</button>';
   }).join('');
+  // 카드 칩
+  var cardHtml=(cards||[]).map(function(c){
+    var label=c.num?c.name+' ('+c.num+')':c.name;
+    return '<button class="pay-chip" data-method="'+escHtml(c.name)+'" data-type="card" onclick="selectPiPay(this,''+escHtml(c.name)+'','card')">'+escHtml(label)+'</button>';
+  }).join('');
+  // 계좌 칩
+  var accHtml=(accounts||[]).map(function(a){
+    return '<button class="pay-chip" data-method="'+escHtml(a.name)+'" data-type="transfer" onclick="selectPiPay(this,''+escHtml(a.name)+'','transfer')">'+escHtml(a.name)+'</button>';
+  }).join('');
   body.innerHTML=
-    '<div class="field-row"><div class="field-label">날짜</div>'
+    '<div style="padding:0 16px 80px">'
+    // 날짜
+    +'<div class="field-row"><div class="field-label">날짜</div>'
     +'<input class="field-input" id="piDate" type="date" value="'+dateVal+'"></div>'
+    // 금액
     +'<div class="field-row"><div class="field-label">금액 (원)</div>'
     +'<input class="field-input" id="piAmount" type="tel" inputmode="numeric" placeholder="0"></div>'
+    // 카테고리
     +'<div class="field-row"><div class="field-label">카테고리</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">'+catsHtml+'</div></div>'
-    +'<div class="field-row"><div class="field-label">내용 (선택)</div>'
-    +'<input class="field-input" id="piMemo" placeholder="예: 스타벅스, 점심"></div>'
-    +'<button class="modal-save" onclick="savePersonalRecord()" style="width:100%;margin-top:8px">저장</button>';
-  piSelectedCat='';
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="piCatArea">'+catsHtml+'</div></div>'
+    // 결제수단
+    +'<div class="field-row"><div class="field-label">결제수단</div>'
+    +(cardHtml?'<div class="pay-group"><div class="pay-group-label">💳 카드</div><div class="pay-chips" id="piCardChips">'+cardHtml+'</div></div>':'')
+    +'<div class="pay-group" style="margin-top:8px"><div class="pay-group-label">💵 현금/이체</div>'
+    +'<div class="pay-chips">'
+    +'<button class="pay-chip" onclick="selectPiPay(this,'현금 직접','cash')">현금 직접</button>'
+    +'<button class="pay-chip" onclick="selectPiPay(this,'카카오페이','cash')">카카오페이</button>'
+    +'<button class="pay-chip" onclick="selectPiPay(this,'토스','cash')">토스</button>'
+    +'</div></div>'
+    +(accHtml?'<div class="pay-group" style="margin-top:8px"><div class="pay-group-label">🏦 계좌이체</div><div class="pay-chips">'+accHtml+'</div></div>':'')
+    +'</div>'
+    // 부가세
+    +'<div class="field-row"><div class="field-label">부가세</div>'
+    +'<div class="vat-row-ui">'
+    +'<button class="vat-btn selected" id="piVatNone" onclick="selectPiVat('none')">미발행</button>'
+    +'<button class="vat-btn" id="piVatIncluded" onclick="selectPiVat('included')">포함</button>'
+    +'<button class="vat-btn" id="piVatExcluded" onclick="selectPiVat('excluded')">별도</button>'
+    +'</div></div>'
+    // 구매처
+    +'<div class="field-row"><div class="field-label">구매처 (선택)</div>'
+    +'<input class="field-input" id="piVendor" type="text" placeholder="예: 스타벅스, 쿠팡..."></div>'
+    // 구매목록
+    +'<div class="field-row"><div class="field-label">구매목록 (선택)</div>'
+    +'<input class="field-input" id="piItems" type="text" placeholder="예: 아메리카노, 샌드위치 (쉼표 구분)"></div>'
+    // 메모
+    +'<div class="field-row"><div class="field-label">메모 (선택)</div>'
+    +'<input class="field-input" id="piMemo" placeholder="특이사항..."></div>'
+    +'<button class="modal-save" onclick="savePersonalRecord()" style="width:100%;margin-top:8px">💾 저장</button>'
+    +'</div>';
+  piSelectedCat=''; piPayMethod=''; piPayType=''; piVat='none';
 }
 
-var piSelectedCat='';
 function personalToggleCat(btn){
-  var chips=document.querySelectorAll('#personalBody .chip');
-  chips.forEach(function(b){b.classList.remove('selected');});
+  document.querySelectorAll('#piCatArea .chip').forEach(function(b){b.classList.remove('selected');});
   btn.classList.add('selected');
   piSelectedCat=btn.dataset.cat||btn.textContent;
+}
+function selectPiPay(btn, method, type){
+  document.querySelectorAll('#personalBody .pay-chip').forEach(function(b){b.classList.remove('selected-card','selected-cash');});
+  if(piPayMethod===method){piPayMethod='';piPayType='';return;}
+  piPayMethod=method; piPayType=type;
+  btn.classList.add(type==='card'?'selected-card':'selected-cash');
+}
+function selectPiVat(type){
+  piVat=type;
+  ['piVatNone','piVatIncluded','piVatExcluded'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.classList.remove('selected');
+  });
+  var map={none:'piVatNone',included:'piVatIncluded',excluded:'piVatExcluded'};
+  var el=document.getElementById(map[type]);if(el)el.classList.add('selected');
 }
 
 function savePersonalRecord(){
   var dateEl=document.getElementById('piDate');
   var amtEl=document.getElementById('piAmount');
   var memoEl=document.getElementById('piMemo');
+  var vendorEl=document.getElementById('piVendor');
+  var itemsEl=document.getElementById('piItems');
   var date=dateEl?dateEl.value:'';
   var amount=parseInt(((amtEl?amtEl.value:'')||'0').replace(/[^0-9]/g,''),10);
   var memo=memoEl?memoEl.value.trim():'';
+  var vendor=vendorEl?vendorEl.value.trim():'';
+  var items=itemsEl&&itemsEl.value.trim()?itemsEl.value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean):[];
   if(!date){showToast('날짜를 선택해주세요');return;}
   if(!amount){showToast('금액을 입력해주세요');return;}
   if(!piSelectedCat){showToast('카테고리를 선택해주세요');return;}
   db.collection('personal_expenses').add({
-    date:date,
-    amount:amount,
-    cat:piSelectedCat,
-    memo:memo,
-    createdAt:new Date().toISOString()
+    date:date, amount:amount, category:piSelectedCat,
+    payMethod:piPayMethod, payType:piPayType, vat:piVat,
+    vendor:vendor, items:items, memo:memo,
+    ts:firebase.firestore.FieldValue.serverTimestamp()
   }).then(function(){
     showToast('✓ 저장됐어요');
-    piSelectedCat='';
+    piSelectedCat=''; piPayMethod=''; piPayType=''; piVat='none';
     renderPersonalBody();
   }).catch(function(e){showToast('저장 실패: '+e.message);});
 }
@@ -5793,12 +5849,19 @@ function renderPersonalList(body){
   }
   var html=personalRecords.slice(0,100).map(function(r){
     var amt=Number(r.amount||0).toLocaleString();
+    var cat=r.category||r.cat||'기타';
+    var sub=(r.date||'');
+    if(r.vendor)sub+=' · '+r.vendor;
+    if(r.memo)sub+=' · '+r.memo;
+    var payBadge=r.payMethod?'<span style="font-size:10px;background:var(--surface2);border-radius:4px;padding:1px 5px;margin-left:4px">'+r.payMethod+'</span>':'';
+    var vatBadge=r.vat&&r.vat!=='none'?'<span style="font-size:10px;color:var(--muted);margin-left:4px">VAT'+(r.vat==='included'?'포함':'별도')+'</span>':'';
     return '<div class="list-card" style="display:flex;justify-content:space-between;align-items:center">'
-      +'<div>'
-      +'<div style="font-size:13px;font-weight:700">'+(r.cat||'기타')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'+(r.date||'')+(r.memo?' · '+r.memo:'')+'</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:13px;font-weight:700">'+cat+payBadge+vatBadge+'</div>'
+      +(r.items&&r.items.length?'<div style="font-size:11px;color:var(--accent)">📦 '+r.items.join(', ')+'</div>':'')
+      +'<div style="font-size:11px;color:var(--muted)">'+sub+'</div>'
       +'</div>'
-      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
       +'<div style="font-size:14px;font-weight:800">'+amt+'원</div>'
       +'<button style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px" onclick="deletePersonalRecord(\''+r.id+'\')">✕</button>'
       +'</div>'
@@ -5816,7 +5879,8 @@ function deletePersonalRecord(id){
 function renderPersonalBudget(body){
   var catSums={};
   personalRecords.forEach(function(r){
-    if(r.cat)catSums[r.cat]=(catSums[r.cat]||0)+(r.amount||0);
+    var c=r.category||r.cat;
+    if(c)catSums[c]=(catSums[c]||0)+(r.amount||0);
   });
   var html=PERSONAL_CATS.map(function(c){
     var budget=Number(personalBudgets[c]||0);
