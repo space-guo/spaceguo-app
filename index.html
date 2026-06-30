@@ -3562,7 +3562,7 @@ function openEditModal(id){
     setEditMode('work');
     var sel=document.getElementById('editSite');
     sel.innerHTML='';
-    sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===siteStr(r.site))o.selected=true;sel.appendChild(o);});
+    sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===r.site)o.selected=true;sel.appendChild(o);});
     editSelectedCat=r.category||'자재비';
     document.querySelectorAll('#editCatChips .chip').forEach(function(b){b.classList.toggle('selected',b.textContent===editSelectedCat);});
     selectEditVat(r.vat||'none');
