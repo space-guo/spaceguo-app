@@ -102,6 +102,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .summary-card .s-count{font-size:12px;color:var(--muted);text-align:right}
 .section-header{font-size:11px;color:var(--muted);letter-spacing:.1em;font-weight:700;margin-bottom:8px;padding-left:4px}
 .record-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+/* ── ORDER ITEMS ── */
+.order-item{position:relative;overflow:hidden;border-radius:12px;margin-bottom:10px;background:var(--surface);border:1px solid var(--border)}
+.order-item-inner{padding:14px;background:var(--surface);position:relative;z-index:1;will-change:transform}
+.order-swipe-actions{position:absolute;right:0;top:0;bottom:0;display:flex;width:130px}
+.order-action-edit,.order-action-del{flex:1;border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.order-action-edit{background:#5b8cf7}
+.order-action-del{background:var(--red)}
+.order-status-badge{font-size:11px;font-weight:700;color:#fff;border-radius:20px;padding:2px 8px;white-space:nowrap}
 .record-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .record-info{flex:1;min-width:0}
 .record-site{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1657,6 +1665,7 @@ var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#21
 var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
 
 // ── TOAST ──
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function showToast(msg,duration){
   var el=document.getElementById('toast');
   if(!el)return;
@@ -3803,6 +3812,9 @@ document.addEventListener('DOMContentLoaded',function(){
 
 // ── VENDOR (거래처) MANAGE ──
 var vendors=[], editingVendorId='';
+// ── ORDER ──
+var orders=[], unsubOrders=null, currentOrderFilter='all';
+var editingOrderId=null, selectedOrderStatus='pending';
 
 function loadVendors(){
   db.collection('vendors').orderBy('company','asc').get().then(function(snap){
@@ -4865,6 +4877,275 @@ function renderCalDetail(dateStr){
 }
 
 // ── TABS ──
+// ─── ORDER TAB ───────────────────────────────────────────
+function subscribeOrders(){
+  if(unsubOrders)unsubOrders();
+  unsubOrders=db.collection('orders').orderBy('ts','desc').onSnapshot(function(snap){
+    orders=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById('view-order').classList.contains('active'))renderOrderList();
+  },function(err){
+    if(unsubOrders)unsubOrders();
+    unsubOrders=db.collection('orders').onSnapshot(function(snap){
+      orders=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+      if(document.getElementById('view-order').classList.contains('active'))renderOrderList();
+    });
+  });
+}
+
+function renderOrderSiteFilter(){
+  var el=document.getElementById('orderSiteFilter');
+  if(!el)return;
+  var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
+  var cur=el.value;
+  el.innerHTML=['전체'].concat(siteNames).map(function(s){
+    return '<option value="'+s+'"'+(cur===s?' selected':'')+'>'+s+'</option>';
+  }).join('');
+}
+
+function setOrderFilter(filter,btn){
+  currentOrderFilter=filter;
+  document.querySelectorAll('#orderStatusTabs .notif-filter-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  renderOrderList();
+}
+
+function renderOrderList(){
+  var el=document.getElementById('orderList');
+  if(!el)return;
+  var siteEl=document.getElementById('orderSiteFilter');
+  var siteFilter=siteEl?siteEl.value:'전체';
+
+  var filtered=orders.filter(function(o){
+    if(siteFilter&&siteFilter!=='전체'&&o.site!==siteFilter)return false;
+    if(currentOrderFilter!=='all'&&o.status!==currentOrderFilter)return false;
+    return true;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:48px 20px;color:var(--muted);font-size:14px">발주 내역이 없어요<br><span style="font-size:12px;opacity:.6">＋ 발주 추가 버튼으로 등록하세요</span></div>';
+    return;
+  }
+
+  var statusLabel={pending:'발주중',ordered:'발주완료',arrived:'입고완료'};
+  var statusBg={pending:'var(--accent)',ordered:'var(--blue)',arrived:'var(--green)'};
+
+  el.innerHTML=filtered.map(function(o){
+    var bg=statusBg[o.status]||'var(--muted)';
+    var lbl=statusLabel[o.status]||o.status;
+    var amtStr=o.amount?'₩'+Number(o.amount).toLocaleString('ko-KR'):'';
+    var qtyStr=o.qty?(o.qty+(o.unit?o.unit:'')):'';
+    return '<div class="order-item" data-id="'+o.id+'">'+
+      '<div class="order-item-inner">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
+          '<div style="font-size:15px;font-weight:700;color:var(--text);flex:1;margin-right:8px">'+escHtml(o.name||'')+'</div>'+
+          '<span class="order-status-badge" style="background:'+bg+'">'+lbl+'</span>'+
+        '</div>'+
+        '<div style="font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:2px">'+
+          (o.site?'<span>📍'+escHtml(o.site)+'</span>':'')+
+          (qtyStr?'<span>📦'+escHtml(qtyStr)+'</span>':'')+
+          (amtStr?'<span>💰'+amtStr+'</span>':'')+
+          (o.vendor?'<span>🏢'+escHtml(o.vendor)+'</span>':'')+
+        '</div>'+
+        (o.deliveryDate?'<div style="font-size:11px;color:var(--muted);margin-top:3px">납품예정 '+o.deliveryDate+'</div>':'')+
+        (o.memo?'<div style="font-size:12px;color:var(--muted);margin-top:5px;padding-top:5px;border-top:1px solid var(--border)">'+escHtml(o.memo)+'</div>':'')+
+      '</div>'+
+      '<div class="order-swipe-actions">'+
+        '<button class="order-action-edit" data-id="'+o.id+'">✏️<span>수정</span></button>'+
+        '<button class="order-action-del" data-id="'+o.id+'">🗑<span>삭제</span></button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  // 스와이프 & 탭 이벤트
+  el.querySelectorAll('.order-item').forEach(function(item){
+    var inner=item.querySelector('.order-item-inner');
+    var startX=0,startY=0,moved=false,swiping=false;
+
+    item.addEventListener('touchstart',function(e){
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+      moved=false;swiping=false;
+      inner.style.transition='';
+    },{passive:true});
+
+    item.addEventListener('touchmove',function(e){
+      var dx=e.touches[0].clientX-startX;
+      var dy=e.touches[0].clientY-startY;
+      if(!moved&&Math.abs(dx)>8){
+        if(Math.abs(dx)>Math.abs(dy)){swiping=true;}
+        moved=true;
+      }
+      if(swiping){
+        e.preventDefault();
+        // 닫힌 상태에서만 왼쪽 스와이프 허용
+        var cur=parseFloat(inner.style.transform.replace('translateX(','').replace('px)',''))||0;
+        var x=Math.min(0,Math.max(-130,cur+dx-(cur>-65?0:0)));
+        // 단순히 현재 터치 위치 기반으로
+        x=Math.min(0,Math.max(-130,dx));
+        inner.style.transform='translateX('+x+'px)';
+      }
+    },{passive:false});
+
+    item.addEventListener('touchend',function(e){
+      var dx=e.changedTouches[0].clientX-startX;
+      if(swiping){
+        inner.style.transition='transform .2s ease';
+        if(dx<-50){
+          inner.style.transform='translateX(-130px)';
+        } else {
+          inner.style.transform='translateX(0)';
+        }
+        setTimeout(function(){inner.style.transition='';},200);
+      } else if(!moved&&!isScrolling){
+        // 탭 → 수정 모달
+        openOrderModal(item.dataset.id);
+      }
+    },{passive:true});
+
+    // 수정 버튼
+    item.querySelector('.order-action-edit').addEventListener('click',function(e){
+      e.stopPropagation();
+      inner.style.transition='transform .15s ease';
+      inner.style.transform='translateX(0)';
+      setTimeout(function(){inner.style.transition='';},150);
+      openOrderModal(this.dataset.id);
+    });
+
+    // 삭제 버튼
+    item.querySelector('.order-action-del').addEventListener('click',function(e){
+      e.stopPropagation();
+      var id=this.dataset.id;
+      if(!confirm('삭제하시겠어요?'))return;
+      setSyncStatus('saving');
+      db.collection('orders').doc(id).delete().then(function(){
+        setSyncStatus('ok');showToast('삭제됐어요');
+      }).catch(function(err){setSyncStatus('err');showToast('삭제 실패: '+err.message);});
+    });
+  });
+
+  // 다른 곳 터치시 스와이프 닫기
+  function closeAll(e){
+    if(!e.target.closest('.order-item')){
+      el.querySelectorAll('.order-item-inner').forEach(function(inn){
+        inn.style.transition='transform .2s ease';
+        inn.style.transform='translateX(0)';
+        setTimeout(function(){inn.style.transition='';},200);
+      });
+      document.removeEventListener('touchstart',closeAll);
+    }
+  }
+  document.addEventListener('touchstart',closeAll,{passive:true});
+}
+
+function openOrderModal(id){
+  editingOrderId=id||null;
+  var modal=document.getElementById('orderModal');
+  // 현장
+  var siteInp=document.getElementById('orderSiteInp');
+  var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
+  siteInp.innerHTML='<option value="">현장 선택</option>'+siteNames.map(function(s){
+    return '<option value="'+escHtml(s)+'">'+escHtml(s)+'</option>';
+  }).join('');
+  // 공정 (processes 배열 있으면)
+  var procInp=document.getElementById('orderProcInp');
+  procInp.innerHTML='<option value="">선택 안 함</option>'+(typeof processes!=='undefined'?processes.map(function(p){
+    return '<option value="'+escHtml(p.name||'')+'">'+escHtml(p.name||'')+'</option>';
+  }).join(''):'');
+  // 거래처
+  var vendorInp=document.getElementById('orderVendorInp');
+  vendorInp.innerHTML='<option value="">선택 안 함</option>'+vendors.map(function(v){
+    var n=typeof v==='object'?v.name:v;
+    return '<option value="'+escHtml(n)+'">'+escHtml(n)+'</option>';
+  }).join('');
+
+  if(id){
+    document.getElementById('orderModalTitle').textContent='발주 수정';
+    document.getElementById('orderDeleteBtn').style.display='';
+    var o=orders.find(function(x){return x.id===id;});
+    if(o){
+      siteInp.value=o.site||'';
+      procInp.value=o.process||'';
+      document.getElementById('orderNameInp').value=o.name||'';
+      document.getElementById('orderQtyInp').value=o.qty||'';
+      document.getElementById('orderUnitInp').value=o.unit||'';
+      document.getElementById('orderAmountInp').value=o.amount||'';
+      vendorInp.value=o.vendor||'';
+      document.getElementById('orderDateInp').value=o.orderDate||'';
+      document.getElementById('orderDeliveryInp').value=o.deliveryDate||'';
+      document.getElementById('orderMemoInp').value=o.memo||'';
+      selectOrderStatus(o.status||'pending');
+    }
+  } else {
+    document.getElementById('orderModalTitle').textContent='발주 추가';
+    document.getElementById('orderDeleteBtn').style.display='none';
+    ['orderNameInp','orderQtyInp','orderUnitInp','orderAmountInp','orderMemoInp'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.value='';
+    });
+    siteInp.value='';procInp.value='';vendorInp.value='';
+    var t=new Date();
+    document.getElementById('orderDateInp').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+    document.getElementById('orderDeliveryInp').value='';
+    selectOrderStatus('pending');
+  }
+  modal.style.display='flex';
+  pushModalState('orderModal');
+}
+
+function closeOrderModal(){
+  if(modalStack.length>0)modalStack.pop();
+  document.getElementById('orderModal').style.display='none';
+  editingOrderId=null;
+}
+
+function selectOrderStatus(status){
+  selectedOrderStatus=status;
+  ['pending','ordered','arrived'].forEach(function(s){
+    var btn=document.getElementById('ostBtn-'+s);
+    if(btn)btn.classList.toggle('active-before',s===status);
+  });
+}
+
+function saveOrderModal(){
+  var name=document.getElementById('orderNameInp').value.trim();
+  if(!name){showToast('자재명을 입력해주세요');return;}
+  var data={
+    site:document.getElementById('orderSiteInp').value||'',
+    process:document.getElementById('orderProcInp').value||'',
+    name:name,
+    qty:parseFloat(document.getElementById('orderQtyInp').value)||0,
+    unit:document.getElementById('orderUnitInp').value.trim()||'',
+    amount:parseInt(document.getElementById('orderAmountInp').value)||0,
+    vendor:document.getElementById('orderVendorInp').value||'',
+    orderDate:document.getElementById('orderDateInp').value||'',
+    deliveryDate:document.getElementById('orderDeliveryInp').value||'',
+    status:selectedOrderStatus||'pending',
+    memo:document.getElementById('orderMemoInp').value.trim()||'',
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  setSyncStatus('saving');
+  var p=editingOrderId
+    ?db.collection('orders').doc(editingOrderId).update(data)
+    :db.collection('orders').add(data);
+  p.then(function(){
+    setSyncStatus('ok');
+    showToast(editingOrderId?'수정됐어요':'저장됐어요');
+    closeOrderModal();
+  }).catch(function(e){
+    setSyncStatus('err');
+    showToast('저장 실패: '+e.message);
+  });
+}
+
+function deleteOrder(){
+  if(!editingOrderId)return;
+  if(!confirm('삭제하시겠어요?'))return;
+  setSyncStatus('saving');
+  db.collection('orders').doc(editingOrderId).delete().then(function(){
+    setSyncStatus('ok');showToast('삭제됐어요');closeOrderModal();
+  }).catch(function(e){setSyncStatus('err');showToast('삭제 실패: '+e.message);});
+}
+
+// ─────────────────────────────────────────────────────────
 function switchTab(tab){
   var TAB_ORDER=['list','cal','sch','order','dash'];
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
