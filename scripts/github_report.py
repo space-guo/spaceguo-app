@@ -1,5 +1,5 @@
 """
-github_report.py — Firebase Firestore → 텔레그램 일일 보고
+github_report.py — Firebase Firestore → 텔레그램 종합 일일 보고
 GitHub Actions에서 실행됨 (컴퓨터 불필요)
 
 환경 변수:
@@ -9,7 +9,7 @@ GitHub Actions에서 실행됨 (컴퓨터 불필요)
 """
 
 import os, sys, json, requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 KST = timezone(timedelta(hours=9))
 
@@ -46,140 +46,144 @@ def send_telegram(message):
         sys.exit(1)
 
 
+# ── 날짜 유틸 ────────────────────────────────────────────
+def to_date_kst(val):
+    """Firebase Timestamp 또는 datetime → date (KST)"""
+    if val is None:
+        return None
+    try:
+        # Firestore Timestamp / DatetimeWithNanoseconds (datetime 서브클래스)
+        if hasattr(val, 'astimezone'):
+            return val.astimezone(KST).date()
+        # 혹시 raw Timestamp 객체인 경우
+        if hasattr(val, '_seconds'):
+            return datetime.fromtimestamp(val._seconds, tz=KST).date()
+    except Exception:
+        pass
+    return None
+
+
+def parse_date_str(s):
+    """'YYYY-MM-DD' 문자열 → date"""
+    if not s:
+        return None
+    try:
+        return datetime.strptime(str(s), "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+def days_until(d):
+    """date까지 남은 일수 (음수 = 지남)"""
+    if d is None:
+        return None
+    today = datetime.now(KST).date()
+    return (d - today).days
+
+
+def site_name(val):
+    """site 필드 → 문자열"""
+    if isinstance(val, dict):
+        return val.get("name", str(val))
+    return str(val) if val else "미분류"
+
+
 # ── Firebase 데이터 읽기 ─────────────────────────────────
-def get_recent_expenses(db, days=7):
-    """최근 N일 지출 합계"""
+def get_expenses(db, days=7):
     from google.cloud.firestore_v1.base_query import FieldFilter
-    now = datetime.now(KST)
-    cutoff = now - timedelta(days=days)
-
-    docs = (
-        db.collection("expenses")
-        .where(filter=FieldFilter("date", ">=", cutoff))
-        .stream()
-    )
-    items = [d.to_dict() for d in docs]
-    total = sum(int(i.get("amount", 0)) for i in items)
-    return total, len(items), items
+    cutoff = datetime.now(KST) - timedelta(days=days)
+    docs = db.collection("expenses").where(filter=FieldFilter("date", ">=", cutoff)).stream()
+    return [d.to_dict() for d in docs]
 
 
-def get_recent_incomes(db, days=7):
-    """최근 N일 수입 합계"""
+def get_incomes(db, days=7):
     from google.cloud.firestore_v1.base_query import FieldFilter
-    now = datetime.now(KST)
-    cutoff = now - timedelta(days=days)
-
-    docs = (
-        db.collection("incomes")
-        .where(filter=FieldFilter("date", ">=", cutoff))
-        .stream()
-    )
-    items = [d.to_dict() for d in docs]
-    total = sum(int(i.get("amount", 0)) for i in items)
-    return total, len(items)
+    cutoff = datetime.now(KST) - timedelta(days=days)
+    docs = db.collection("incomes").where(filter=FieldFilter("date", ">=", cutoff)).stream()
+    return [d.to_dict() for d in docs]
 
 
-def get_active_schedules(db):
-    """진행 중인 공정 (progress < 100)"""
+def get_schedules(db):
     docs = db.collection("schedules").stream()
-    items = [d.to_dict() for d in docs]
-    active = [i for i in items if int(i.get("progress", 0)) < 100]
-    active.sort(key=lambda x: int(x.get("progress", 0)), reverse=True)
-    return active
+    return [d.to_dict() for d in docs]
 
 
-def get_sites(db):
-    """현장 목록"""
-    docs = db.collection("settings").document("sites").get()
-    if docs.exists:
-        return docs.to_dict().get("sites", [])
-    # fallback: sites 컬렉션
-    docs2 = db.collection("sites").stream()
-    return [d.to_dict() for d in docs2]
+def get_orders(db):
+    docs = db.collection("orders").stream()
+    return [d.to_dict() for d in docs]
 
 
 # ── 보고서 생성 ──────────────────────────────────────────
 def build_report(db):
-    now = datetime.now(KST)
-    date_str = now.strftime("%Y년 %m월 %d일")
+    now   = datetime.now(KST)
+    today = now.date()
     weekdays = ['월', '화', '수', '목', '금', '토', '일']
     weekday  = weekdays[now.weekday()]
 
-    expense_total, exp_cnt, exp_items = get_recent_expenses(db, days=7)
-    income_total,  inc_cnt            = get_recent_incomes(db, days=7)
-    active_scheds                     = get_active_schedules(db)
+    # ── 데이터 수집 ──
+    expenses_7d = get_expenses(db, days=7)
+    incomes_7d  = get_incomes(db, days=7)
+    schedules   = get_schedules(db)
+    orders      = get_orders(db)
 
-    lines = [
-        "🏠 <b>공간구오 일일 보고</b>",
-        f"📅 {date_str} ({weekday}요일)\n",
-    ]
+    # 오늘 내역
+    expenses_today = [e for e in expenses_7d if to_date_kst(e.get("date")) == today]
+    incomes_today  = [i for i in incomes_7d  if to_date_kst(i.get("date")) == today]
 
-    # ── 재무 ──
-    lines.append("💰 <b>최근 7일 재무</b>")
-    if income_total == 0 and expense_total == 0:
-        lines.append("  · 기록 없음")
-    else:
-        if income_total > 0:
-            lines.append(f"  · 수입: {income_total:,}원 ({inc_cnt}건)")
-        if expense_total > 0:
-            lines.append(f"  · 지출: {expense_total:,}원 ({exp_cnt}건)")
-            # 카테고리별 상위 3개
-            cat_sum = {}
-            for item in exp_items:
-                cat = item.get("category", "기타")
-                cat_sum[cat] = cat_sum.get(cat, 0) + int(item.get("amount", 0))
-            top = sorted(cat_sum.items(), key=lambda x: x[1], reverse=True)[:3]
-            for cat, amt in top:
-                lines.append(f"    ↳ {cat}: {amt:,}원")
-        net  = income_total - expense_total
-        sign = "+" if net >= 0 else ""
-        lines.append(f"  · 순이익: <b>{sign}{net:,}원</b>")
-    lines.append("")
+    # 이번 주 내역 (월~오늘)
+    week_start    = today - timedelta(days=today.weekday())
+    expenses_week = [e for e in expenses_7d if (to_date_kst(e.get("date")) or date.min) >= week_start]
+    incomes_week  = [i for i in incomes_7d  if (to_date_kst(i.get("date")) or date.min) >= week_start]
 
-    # ── 공정 ──
-    lines.append("🔨 <b>진행 중인 공정</b>")
-    if not active_scheds:
-        lines.append("  · 진행 중인 공정 없음")
-    else:
-        lines.append(f"  · 총 {len(active_scheds)}건")
-        for s in active_scheds[:5]:
-            pct  = int(s.get("progress", 0))
-            name = s.get("procName", "미지정")
-            site_raw = s.get("site", "")
-            site = site_raw.get("name", str(site_raw)) if isinstance(site_raw, dict) else str(site_raw)
-            bar  = "█" * (pct // 20) + "░" * (5 - pct // 20)
-            lines.append(f"  · [{bar}] {pct}% {name} / {site}")
-        if len(active_scheds) > 5:
-            lines.append(f"  · +{len(active_scheds)-5}건 더...")
-    lines.append("")
+    # 공정 분류
+    active_scheds  = [s for s in schedules if int(s.get("progress", 0)) < 100]
+    overdue_scheds = []  # 마감일 지남
+    urgent_scheds  = []  # 마감 3일 이내
+    for s in active_scheds:
+        end = parse_date_str(s.get("endDate", ""))
+        if end is None:
+            continue
+        d = days_until(end)
+        if d < 0:
+            overdue_scheds.append((d, s))
+        elif d <= 3:
+            urgent_scheds.append((d, s))
 
-    lines.append("─────────────────")
-    lines.append(f"🤖 {now.strftime('%H:%M')} KST | GitHub Actions 자동보고")
+    overdue_scheds.sort(key=lambda x: x[0])
+    urgent_scheds.sort(key=lambda x: x[0])
 
-    return "\n".join(lines)
+    # 발주 분류
+    pending_orders = [o for o in orders if o.get("status") == "pending"]
+    ordered_orders = [o for o in orders if o.get("status") == "ordered"]
+    urgent_orders  = []  # 납품 예정 3일 이내 (미입고)
+    for o in orders:
+        if o.get("status") == "arrived":
+            continue
+        dd = parse_date_str(o.get("deliveryDate", ""))
+        if dd is None:
+            continue
+        d = days_until(dd)
+        if d <= 3:
+            urgent_orders.append((d, o))
+    urgent_orders.sort(key=lambda x: x[0])
 
+    # ──── 보고서 작성 ────
+    lines = []
+    lines.append("🏠 <b>공간구오 일일 보고</b>")
+    lines.append(f"📅 {now.strftime('%Y년 %m월 %d일')} ({weekday}요일) {now.strftime('%H:%M')}")
 
-# ── 메인 ────────────────────────────────────────────────
-def main():
-    if "--test" in sys.argv:
-        msg = (
-            "✅ <b>공간구오 보고봇 연결 테스트 성공!</b>\n\n"
-            "GitHub Actions에서 매일 오전 7:00(KST)에\n"
-            "일일 보고가 자동으로 전송됩니다.\n"
-            "컴퓨터를 꺼도 작동해요! 🎉"
-        )
-        send_telegram(msg)
-        return
+    # ── ⚠️ 긴급 경고 ──
+    warnings = []
 
-    print("Firebase 연결 중...")
-    db = init_firebase()
-    print("보고서 생성 중...")
-    report = build_report(db)
-    print("=== 발송 내용 ===")
-    print(report)
-    print("=================")
-    send_telegram(report)
+    for d, s in overdue_scheds:
+        name = s.get("procName", "미지정")
+        sname = site_name(s.get("site", ""))
+        end  = s.get("endDate", "")
+        warnings.append(f"🔴 공정 기한 초과 ({abs(d)}일): {name} / {sname} (~{end})")
 
-
-if __name__ == "__main__":
-    main()
+    for d, o in urgent_orders:
+        oname  = o.get("name", "")
+        vendor = o.get("vendor", "거래처미상")
+        dd_str = o.get("deliveryDate", "")
+        if d < 0:
+            warnings.append(f"🔴 납품 기한 초과 ({abs(d)}일): {oname} — {vendor} (
