@@ -1,0 +1,30 @@
+name: 공간구오 일일 보고 (텔레그램)
+
+on:
+  schedule:
+    # 매일 KST 07:00 = UTC 22:00 (전날)
+    - cron: '0 22 * * *'
+  workflow_dispatch:   # 수동 실행 버튼
+
+jobs:
+  daily-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: pip install firebase-admin requests
+
+      - name: 일일 보고 발송
+        env:
+          FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SA_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/github_report.py
