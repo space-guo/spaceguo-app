@@ -2737,20 +2737,14 @@ function renderCardList(){
       +'<button class="site-del" data-del-card="'+i+'">✕</button>'
       +'</div>';
   }).join('');
-  // 카드 탭 → 수정 모달 (click으로 통일, isScrolling 체크 제거)
-  el.querySelectorAll('.site-item').forEach(function(item){
-    item.addEventListener('click',function(e){
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      openCardModal(parseInt(this.dataset.cardIdx));
-    });
-  });
-  el.querySelectorAll('[data-del-card]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteCard(parseInt(this.getAttribute('data-del-card')));
-    });
-  });
+  // 카드 탭 → 수정 모달 (el.onclick 위임, renderSiteList와 동일 패턴)
+  el.onclick = function(e){
+    var delBtn=e.target.closest('[data-del-card]');
+    if(delBtn){deleteCard(parseInt(delBtn.getAttribute('data-del-card')));return;}
+    if(e.target.classList.contains('drag-handle'))return;
+    var item=e.target.closest('[data-card-idx]');
+    if(item)openCardModal(parseInt(item.dataset.cardIdx));
+  };
   initDragList(el, cards, 'cards', function(){
     saveSettings().then(function(){renderCardList();renderCardChips();});
   });
@@ -2821,20 +2815,14 @@ function renderAccountList(){
       +'<button class="site-del" data-del-acc="'+i+'">✕</button>'
       +'</div>';
   }).join('');
-  // 계좌 탭 → 수정 모달 (click으로 통일, isScrolling 체크 제거)
-  el.querySelectorAll('.site-item').forEach(function(item){
-    item.addEventListener('click',function(e){
-      if(e.target.classList.contains('drag-handle'))return;
-      if(e.target.classList.contains('site-del'))return;
-      openAccountModal(parseInt(this.dataset.accIdx));
-    });
-  });
-  el.querySelectorAll('[data-del-acc]').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      deleteAccount(parseInt(this.getAttribute('data-del-acc')));
-    });
-  });
+  // 계좌 탭 → 수정 모달 (el.onclick 위임, renderSiteList와 동일 패턴)
+  el.onclick = function(e){
+    var delBtn=e.target.closest('[data-del-acc]');
+    if(delBtn){deleteAccount(parseInt(delBtn.getAttribute('data-del-acc')));return;}
+    if(e.target.classList.contains('drag-handle'))return;
+    var item=e.target.closest('[data-acc-idx]');
+    if(item)openAccountModal(parseInt(item.dataset.accIdx));
+  };
   initDragList(el, accounts, 'accounts', function(){
     saveSettings().then(function(){renderAccountList();renderAccountChips();});
   });
@@ -3024,10 +3012,9 @@ function renderProcessList(){
 
   // ── 이벤트 바인딩 ──
 
-  // 카드 탭 → 아코디언 토글 (스크롤 vs 탭 구분)
+  // 공정 카드 탭 → 아코디언 토글 (card.onclick 직접 할당 - iOS 호환)
   grid.querySelectorAll('.proc-grid-card').forEach(function(card){
-    // 공정 카드 탭 → 아코디언 토글 (click으로 통일)
-    card.addEventListener('click',function(e){
+    card.onclick = function(e){
       if(e.target.classList.contains('proc-grid-color'))return;
       if(e.target.classList.contains('proc-grid-edit'))return;
       if(e.target.classList.contains('proc-grid-del'))return;
@@ -3035,7 +3022,7 @@ function renderProcessList(){
       var pi=parseInt(this.dataset.pi);
       openProcIdx=(openProcIdx===pi)?-1:pi;
       renderProcessList();
-    });
+    };
   });
 
   // 색상 점 → 팝업
@@ -6106,4 +6093,4 @@ function savePersonalDirect(){
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
