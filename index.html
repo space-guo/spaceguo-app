@@ -2775,6 +2775,7 @@ function openSettingsModal(){
   document.getElementById('settingsModal').style.display='flex';
   pushModalState('settingsModal');
   renderSiteList();renderCardList();renderAccountList();renderProcessList();
+  if(vendors.length)renderVendorMgmtList();else loadVendors();
 }
 function closeSettingsModal(){if(modalStack.length>0)modalStack.pop();
   document.getElementById('settingsModal').style.display='none';}
@@ -6110,9 +6111,4 @@ function savePersonalDirect(){
     document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
     selectedPayMethod='';selectedPayType='';
     setSyncStatus('ok');showToast('✓ 개인 지출 저장됐어요');
-  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
-}
-
-</script>
-</body>
-</html>
+  }).catch(function(e){setSyncStatus('err');showToas
