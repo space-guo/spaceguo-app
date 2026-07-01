@@ -2737,14 +2737,13 @@ function renderCardList(){
       +'<button class="site-del" data-del-card="'+i+'">✕</button>'
       +'</div>';
   }).join('');
-  // 카드 탭 → 수정 모달
+  // 카드 탭 → 수정 모달 (click으로 통일, isScrolling 체크 제거)
   el.querySelectorAll('.site-item').forEach(function(item){
-    item.addEventListener('touchend',function(e){
-      if(isScrolling)return;
+    item.addEventListener('click',function(e){
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
       openCardModal(parseInt(this.dataset.cardIdx));
-    },{passive:true});
+    });
   });
   el.querySelectorAll('[data-del-card]').forEach(function(btn){
     btn.addEventListener('click',function(e){
@@ -2822,14 +2821,13 @@ function renderAccountList(){
       +'<button class="site-del" data-del-acc="'+i+'">✕</button>'
       +'</div>';
   }).join('');
-  // 계좌 탭 → 수정 모달
+  // 계좌 탭 → 수정 모달 (click으로 통일, isScrolling 체크 제거)
   el.querySelectorAll('.site-item').forEach(function(item){
-    item.addEventListener('touchend',function(e){
-      if(isScrolling)return;
+    item.addEventListener('click',function(e){
       if(e.target.classList.contains('drag-handle'))return;
       if(e.target.classList.contains('site-del'))return;
       openAccountModal(parseInt(this.dataset.accIdx));
-    },{passive:true});
+    });
   });
   el.querySelectorAll('[data-del-acc]').forEach(function(btn){
     btn.addEventListener('click',function(e){
@@ -3028,14 +3026,8 @@ function renderProcessList(){
 
   // 카드 탭 → 아코디언 토글 (스크롤 vs 탭 구분)
   grid.querySelectorAll('.proc-grid-card').forEach(function(card){
-    var startX=0, startY=0;
-    var startX=0,startY=0;
-    card.addEventListener('touchstart',function(e){
-      startX=e.touches[0].clientX;
-      startY=e.touches[0].clientY;
-    },{passive:true});
-    card.addEventListener('touchend',function(e){
-      if(isScrolling)return;
+    // 공정 카드 탭 → 아코디언 토글 (click으로 통일)
+    card.addEventListener('click',function(e){
       if(e.target.classList.contains('proc-grid-color'))return;
       if(e.target.classList.contains('proc-grid-edit'))return;
       if(e.target.classList.contains('proc-grid-del'))return;
@@ -3043,7 +3035,7 @@ function renderProcessList(){
       var pi=parseInt(this.dataset.pi);
       openProcIdx=(openProcIdx===pi)?-1:pi;
       renderProcessList();
-    },{passive:true});
+    });
   });
 
   // 색상 점 → 팝업
@@ -4010,7 +4002,7 @@ function renderVendorMgmtList(){
   if(!el)return;
   if(!vendors.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">거래처가 없어요</div>';return;}
   el.innerHTML=vendors.map(function(v){
-    return '<div class="vendor-card" data-vid="'+v.id+'">'
+    return '<div class="vendor-card" data-vid="'+v.id+'" onclick="openVendorModal(\''+v.id+'\')">'
       +'<div class="vendor-card-name">🏢 '+(v.company||'')+(v.name?' · '+v.name:'')+'</div>'
       +'<div class="vendor-card-sub">'
       +(v.phone?'📞 '+v.phone+'<br>':'')
@@ -4019,9 +4011,6 @@ function renderVendorMgmtList(){
       +'</div>'
       +'</div>';
   }).join('');
-  el.querySelectorAll('.vendor-card').forEach(function(card){
-    card.addEventListener('click',function(){openVendorModal(this.dataset.vid);});
-  });
 }
 
 function renderVendorSelect(){
@@ -6117,3 +6106,4 @@ function savePersonalDirect(){
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                                                              
