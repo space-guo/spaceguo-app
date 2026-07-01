@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -631,6 +631,109 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 .ev-color-btn{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .1s}
 .ev-color-btn.sel{border-color:#fff;transform:scale(1.2)}
 .ev-color-btn:active{transform:scale(.9)}
+/* ═══════════════════════════════════════════════════════
+   📱 → 🖥  반응형 레이아웃 (Tablet & Laptop)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── 태블릿 세로 640px ── */
+@media (min-width:640px){
+  body{max-width:700px}
+
+  /* 모달: 바텀시트 → 중앙 팝업 */
+  .modal-overlay{align-items:center}
+  .modal-inner{border-radius:20px;max-height:86vh;overflow-y:auto;max-width:520px}
+  .edit-modal-overlay{align-items:center}
+  .edit-modal-inner{border-radius:20px;max-width:520px}
+
+  /* KPI 3열 */
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .kpi-card.full{grid-column:span 3}
+
+  /* 달력 셀 높이 */
+  .cal-cell{min-height:64px}
+
+  /* 숫자패드 너비 제한 */
+  .numpad{max-width:360px;margin-left:auto;margin-right:auto}
+  .amount-display{max-width:480px;margin-left:auto;margin-right:auto}
+
+  /* income FAB */
+  .income-fab{right:24px;transform:none}
+}
+
+/* ── 태블릿 가로 / 노트북 900px ── */
+@media (min-width:900px){
+  body{max-width:100%}
+
+  /* 앱 전체: 사이드바 + 콘텐츠 플렉스 */
+  #mainApp{display:flex;align-items:flex-start;min-height:100vh}
+
+  /* 헤더 → 왼쪽 사이드바 */
+  .header{
+    width:200px;min-width:200px;height:100vh;
+    position:sticky;top:0;flex-shrink:0;
+    border-bottom:none;border-right:1px solid var(--border);
+    padding:20px 12px;
+    display:flex;flex-direction:column;
+    overflow-y:auto;z-index:100
+  }
+  .header-top{
+    flex-direction:column;align-items:flex-start;
+    gap:4px;margin-bottom:16px
+  }
+  .header-right{flex-wrap:wrap;gap:4px;width:100%;margin-top:8px}
+  .app-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:0}
+  .today-total{font-size:12px}
+
+  /* 탭 → 세로 내비게이션 */
+  .tab-bar{flex-direction:column;gap:3px;flex:1;margin-top:4px}
+  .tab{text-align:left;padding:11px 14px;font-size:14px;border-radius:10px}
+
+  /* 뷰 컨테이너 */
+  #viewContainer{flex:1;min-width:0;overflow-x:hidden}
+  .view{max-width:920px;margin:0 auto;padding:28px 32px 120px}
+
+  /* 입력 폼은 너무 넓어지면 이상 — 최대 폭 제한 */
+  #view-input .amount-display,
+  #view-input .numpad,
+  #view-input .quick-amounts,
+  #view-input .field-row,
+  #view-input .vat-row-ui,
+  #view-input .chips,
+  #view-input .pay-chips,
+  #view-input .submit-btn,
+  #view-input .sms-paste-bar{max-width:480px}
+
+  /* KPI 4열 */
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .kpi-card.full{grid-column:span 4}
+
+  /* 공정 그리드 4열 */
+  .proc-grid{grid-template-columns:repeat(4,1fr)}
+
+  /* 달력 셀 더 크게 */
+  .cal-cell{min-height:82px}
+  .sch-cal-cell{min-height:52px}
+
+  /* 모달 더 넓게 */
+  .modal-inner{max-width:600px}
+  .edit-modal-inner{max-width:600px}
+
+  /* income FAB */
+  .income-fab{right:24px;transform:none}
+
+  /* 토스트: 콘텐츠 영역 중앙 */
+  .toast{left:calc(100px + 50vw)}
+}
+
+/* ── 큰 노트북 1200px ── */
+@media (min-width:1200px){
+  .header{width:220px;min-width:220px}
+  .view{max-width:1060px;padding:32px 40px 120px}
+  .toast{left:calc(110px + 50vw)}
+
+  /* KPI 값 크기 업 */
+  .kpi-value{font-size:24px}
+}
 </style>
 </head>
 <body>
