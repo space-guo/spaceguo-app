@@ -1349,6 +1349,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="field-row"><div class="field-label">이메일</div><input class="field-input" id="vendorEmailInp" type="email" placeholder="example@email.com"></div>
     <div class="field-row"><div class="field-label">사업자등록번호</div><input class="field-input" id="vendorBizInp" type="tel" placeholder="000-00-00000"></div>
     <div class="field-row"><div class="field-label">주민등록번호 (선택)</div><input class="field-input" id="vendorIdInp" type="tel" placeholder="000000-0000000"></div>
+    <div class="field-row">
+      <div class="field-label">담당 공정 <span style="color:var(--muted);font-size:11px">(복수 선택 가능)</span></div>
+      <div id="vendorProcCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;min-height:28px">
+        <span style="font-size:12px;color:var(--muted)">공정을 먼저 추가해주세요</span>
+      </div>
+    </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeVendorModal()">취소</button>
       <button class="modal-save" onclick="saveVendorModal()">저장</button>
@@ -4089,6 +4095,15 @@ function renderVendorMgmtList(){
   if(!el)return;
   if(!vendors.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">거래처가 없어요</div>';return;}
   el.innerHTML=vendors.map(function(v){
+    var procBadges='';
+    if(v.processes&&v.processes.length){
+      procBadges='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'
+        +v.processes.map(function(pn){
+          var col=getProcColor(pn,0);
+          return '<span style="background:'+col+'22;color:'+col+';border:1px solid '+col+'44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">'+pn+'</span>';
+        }).join('')
+        +'</div>';
+    }
     return '<div class="vendor-card" data-vid="'+v.id+'" onclick="openVendorModal(\''+v.id+'\')">'
       +'<div class="vendor-card-name">🏢 '+(v.company||'')+(v.name?' · '+v.name:'')+'</div>'
       +'<div class="vendor-card-sub">'
@@ -4096,17 +4111,29 @@ function renderVendorMgmtList(){
       +(v.email?'✉️ '+v.email+'<br>':'')
       +(v.biz?'사업자: '+v.biz:'')
       +'</div>'
+      +procBadges
       +'</div>';
   }).join('');
 }
 
-function renderVendorSelect(){
-  // 공정표 담당자 선택 드롭다운 업데이트
+function renderVendorSelect(procName){
+  // 공정표 담당자 선택 드롭다운 업데이트 (procName 있으면 해당 공정 거래처만 표시)
   var sel=document.getElementById('schWorkerInp');
   if(!sel)return;
   var cur=sel.value;
   sel.innerHTML='<option value="">선택 안 함</option>';
-  vendors.forEach(function(v){
+  var filtered=vendors.filter(function(v){
+    if(!procName)return true;                         // 공정 미선택 → 전체
+    if(!v.processes||!v.processes.length)return true; // 공정 미설정 거래처 → 항상 노출
+    return v.processes.indexOf(procName)>=0;
+  });
+  if(procName&&filtered.length===0){
+    var o=document.createElement('option');
+    o.value='';o.disabled=true;
+    o.textContent='— 이 공정에 등록된 거래처 없음 —';
+    sel.appendChild(o);
+  }
+  filtered.forEach(function(v){
     var o=document.createElement('option');
     o.value=v.id;
     o.textContent=(v.company||'')+(v.name?' ('+v.name+')':'');
@@ -4134,6 +4161,24 @@ function openVendorModal(id){
       document.getElementById(id).value='';
     });
   }
+  // 공정 체크박스 렌더링
+  var vpbox=document.getElementById('vendorProcCheckboxes');
+  if(vpbox){
+    if(!processes.length){
+      vpbox.innerHTML='<span style="font-size:12px;color:var(--muted)">설정 탭에서 공정을 먼저 추가해주세요</span>';
+    } else {
+      var editV=isEdit?vendors.find(function(x){return x.id===id;}):null;
+      var savedProcs=(editV&&editV.processes)||[];
+      vpbox.innerHTML=processes.map(function(p){
+        var col=getProcColor(p.name,0);
+        var chk=savedProcs.indexOf(p.name)>=0?'checked':'';
+        return '<label style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;transition:border .15s" data-pname="'+p.name+'">'
+          +'<input type="checkbox" value="'+p.name+'" '+chk+' style="accent-color:'+col+';width:13px;height:13px"> '
+          +'<span style="color:'+col+'">'+p.name+'</span>'
+          +'</label>';
+      }).join('');
+    }
+  }
   document.getElementById('vendorModal').style.display='flex';
   pushModalState('vendorModal');
 }
@@ -4144,6 +4189,10 @@ function closeVendorModal(){if(modalStack.length>0)modalStack.pop();
 function saveVendorModal(){
   var company=document.getElementById('vendorCompanyInp').value.trim();
   if(!company){showToast('업체명을 입력해주세요');return;}
+  var selProcs=[];
+  document.querySelectorAll('#vendorProcCheckboxes input[type=checkbox]:checked').forEach(function(cb){
+    selProcs.push(cb.value);
+  });
   var data={
     company:company,
     name:document.getElementById('vendorNameInp').value.trim(),
@@ -4151,6 +4200,7 @@ function saveVendorModal(){
     email:document.getElementById('vendorEmailInp').value.trim(),
     biz:document.getElementById('vendorBizInp').value.trim(),
     idnum:document.getElementById('vendorIdInp').value.trim(),
+    processes:selProcs,
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
   setSyncStatus('saving');
@@ -4942,9 +4992,9 @@ function openSchModal(){
     var dot=document.getElementById('procColorDot');
     if(dot){dot.style.background=psel.value?getProcColor(psel.value,0):'transparent';dot.style.border=psel.value?'none':'1px solid var(--border)';}
   }
-  psel.onchange=function(){_updateProcDot();initSchChecklist(this.value);};
+  psel.onchange=function(){_updateProcDot();initSchChecklist(this.value);renderVendorSelect(this.value);};
 
-  renderVendorSelect();
+  renderVendorSelect('');
   document.getElementById('schWorkerCountInp').value='';
 
   var today=new Date().toISOString().slice(0,10);
@@ -4976,6 +5026,7 @@ function openSchModalEdit(id){
     var dot=document.getElementById('procColorDot');
     if(dot){dot.style.background=this.value?getProcColor(this.value,0):'transparent';dot.style.border=this.value?'none':'1px solid var(--border)';}
     initSchChecklist(this.value);
+    renderVendorSelect(this.value);
   };
   // 현재 선택된 공정 색상 즉시 반영
   setTimeout(function(){
@@ -4983,7 +5034,7 @@ function openSchModalEdit(id){
     if(dot&&s.procName){dot.style.background=getProcColor(s.procName,0);dot.style.border='none';}
   },30);
 
-  renderVendorSelect();
+  renderVendorSelect(s.procName||'');
   document.getElementById('schWorkerInp').value=s.workerId||'';
   document.getElementById('schWorkerCountInp').value=s.workerCount||'';
   document.getElementById('schStartInp').value=s.startDate||'';
