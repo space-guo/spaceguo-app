@@ -123,9 +123,12 @@ def build_report(db):
     schedules   = get_schedules(db)
     orders      = get_orders(db)
 
+    yesterday      = today - timedelta(days=1)
     week_start     = today - timedelta(days=today.weekday())
     expenses_today = [e for e in expenses_7d if to_date_kst(e.get("date")) == today]
     incomes_today  = [i for i in incomes_7d  if to_date_kst(i.get("date")) == today]
+    expenses_yesterday = [e for e in expenses_7d if to_date_kst(e.get("date")) == yesterday]
+    incomes_yesterday  = [i for i in incomes_7d  if to_date_kst(i.get("date")) == yesterday]
     expenses_week  = [e for e in expenses_7d if (to_date_kst(e.get("date")) or date.min) >= week_start]
     incomes_week   = [i for i in incomes_7d  if (to_date_kst(i.get("date")) or date.min) >= week_start]
 
@@ -204,6 +207,32 @@ def build_report(db):
         lines.append(f"  · 오늘 마감 공정: {len(today_scheds)}건")
         for _, s in today_scheds:
             lines.append(f"    └ {s.get('procName','미지정')} / {site_name(s.get('site',''))}")
+
+    # ── 📋 어제 내역 합산 ─────────────────────────────────
+    exp_yesterday_sum = sum(int(e.get("amount",0)) for e in expenses_yesterday)
+    inc_yesterday_sum = sum(int(i.get("amount",0)) for i in incomes_yesterday)
+
+    lines.append("")
+    lines.append(f"📋 <b>어제 내역</b> ({yesterday.strftime('%m/%d')})")
+    if not expenses_yesterday and not incomes_yesterday:
+        lines.append("  · 어제 등록된 내역 없음")
+    else:
+        if inc_yesterday_sum:
+            lines.append(f"  · 수입: {fmt_money(inc_yesterday_sum)} ({len(incomes_yesterday)}건)")
+        if exp_yesterday_sum:
+            lines.append(f"  · 지출: {fmt_money(exp_yesterday_sum)} ({len(expenses_yesterday)}건)")
+            cat_yest = defaultdict(int)
+            for e in expenses_yesterday:
+                cat_yest[e.get("category","기타")] += int(e.get("amount",0))
+            for cat, amt in sorted(cat_yest.items(), key=lambda x: -x[1])[:3]:
+                pct = int(amt / exp_yesterday_sum * 100) if exp_yesterday_sum else 0
+                lines.append(f"    ├ {cat}: {fmt_money(amt)} ({pct}%)")
+            site_yest = defaultdict(int)
+            for e in expenses_yesterday:
+                site_yest[site_name(e.get("site","미분류"))] += int(e.get("amount",0))
+            if site_yest:
+                top_sites = sorted(site_yest.items(), key=lambda x: -x[1])[:3]
+                lines.append(f"    └ 현장: " + " / ".join(f"{s} {fmt_money(a)}" for s, a in top_sites))
 
     # 이번 주 브리핑
     exp_week_sum = sum(int(e.get("amount",0)) for e in expenses_week)
