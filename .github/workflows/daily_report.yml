@@ -2,8 +2,10 @@ name: 공간구오 일일 보고 (텔레그램)
 
 on:
   schedule:
-    # 매일 KST 07:00 = UTC 22:00 (전날)
-    - cron: '0 22 * * *'
+    # 매일 KST 07:05 = UTC 21:05 (전날) — 정시 회피
+    - cron: '5 21 * * *'
+    # 백업: 위 실행이 실패/건너뛴 경우 30분 후 재시도
+    - cron: '35 21 * * *'
   workflow_dispatch:   # 수동 실행 버튼
 
 jobs:
@@ -25,6 +27,4 @@ jobs:
       - name: 일일 보고 발송
         env:
           FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SA_JSON }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/github_report.py
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BO
