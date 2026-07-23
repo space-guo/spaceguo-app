@@ -1583,11 +1583,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <input class="field-input" id="schEndInp" type="date">
     </div>
     <div class="field-row">
-      <div class="field-label">진행률 <span id="schPctLabel" style="color:var(--accent);font-weight:800">0%</span></div>
-      <input type="range" id="schPctInp" min="0" max="100" value="0" step="5"
-        style="width:100%;accent-color:var(--accent);margin-top:6px"
-        oninput="document.getElementById('schPctLabel').textContent=this.value+'%'">
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px"><span>0%</span><span>50%</span><span>100%</span></div>
+      <div class="field-label">진행 상태</div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button type="button" id="schStatusIncomplete" class="chip selected" onclick="setSchStatus(0)" style="flex:1;border-radius:10px;padding:10px 0;font-size:14px">⏳ 미완료</button>
+        <button type="button" id="schStatusComplete" class="chip" onclick="setSchStatus(100)" style="flex:1;border-radius:10px;padding:10px 0;font-size:14px">✅ 완료</button>
+      </div>
+      <input type="hidden" id="schPctInp" value="0">
     </div>
     <div class="field-row">
       <div class="field-label">메모</div>
@@ -4971,6 +4972,11 @@ function openSchModalFromDate(dateStr){
     if(endInp)   endInp.value   = dateStr;
   }, 50);
 }
+function setSchStatus(val){
+  document.getElementById('schPctInp').value=val;
+  document.getElementById('schStatusIncomplete').classList.toggle('selected',val===0);
+  document.getElementById('schStatusComplete').classList.toggle('selected',val===100);
+}
 function openSchModal(){
   editingSchId='';
   document.getElementById('schModalTitle').textContent='공정 일정 추가';
@@ -5000,8 +5006,7 @@ function openSchModal(){
   var today=new Date().toISOString().slice(0,10);
   document.getElementById('schStartInp').value=today;
   document.getElementById('schEndInp').value=today;
-  document.getElementById('schPctInp').value=0;
-  document.getElementById('schPctLabel').textContent='0%';
+  setSchStatus(0);
   document.getElementById('schMemoInp').value='';
   document.getElementById('schCheckNewInp').value='';
   document.getElementById('schModal').style.display='flex';
@@ -5040,8 +5045,7 @@ function openSchModalEdit(id){
   document.getElementById('schStartInp').value=s.startDate||'';
   document.getElementById('schEndInp').value=s.endDate||'';
   var pct=parseInt(s.progress||0);
-  document.getElementById('schPctInp').value=pct;
-  document.getElementById('schPctLabel').textContent=pct+'%';
+  setSchStatus(pct>=100?100:0);
   document.getElementById('schMemoInp').value=s.memo||'';
   document.getElementById('schJournalInp').value=s.journal||'';
   document.getElementById('schCheckNewInp').value='';
