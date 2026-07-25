@@ -1015,6 +1015,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <button class="sch-nav-btn" onclick="schCalMove(-1)">‹</button>
     <span class="sch-month-label" id="schMonthLabel"></span>
     <button class="sch-nav-btn" onclick="schCalMove(1)">›</button>
+    <button class="sch-nav-btn" onclick="exportSchImage()" title="공정표 이미지 저장" style="font-size:16px;margin-left:4px">📷</button>
   </div>
   <div class="sch-site-filter" id="schSiteFilter"></div>
   <div class="sch-cal-wrap">
@@ -1750,6 +1751,8 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 <div class="toast" id="toast"></div>
 
 <!-- Firebase compat (전역 방식) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -4787,6 +4790,93 @@ function getProcColor(procName, fallbackIdx){
   return SCH_COLORS_LIST[idx%SCH_COLORS_LIST.length];
 }
 
+function getSiteColor(siteName){
+  var idx=sites.findIndex(function(s){return s===siteName;});
+  return SCH_COLORS[idx>=0?idx%SCH_COLORS.length:0];
+}
+function getSchBarColor(s, si){
+  var siteName=typeof s.site==='object'?s.site.name:s.site;
+  if(schSiteFilter==='전체') return getSiteColor(siteName);
+  return getProcColor(s.procName, si);
+}
+function buildGanttHTML(){
+  var filtered=getFilteredSch();
+  if(!filtered.length) return '<p style="text-align:center;color:#999;padding:16px">공정 일정 없음</p>';
+  var year=schYear, month=schMonth;
+  var firstDay=new Date(year,month,1);
+  var lastDay=new Date(year,month+1,0);
+  var weeks=[];
+  var cur=new Date(firstDay);
+  while(cur<=lastDay){
+    var wStart=new Date(cur);
+    var wEnd=new Date(cur); wEnd.setDate(wEnd.getDate()+6);
+    if(wEnd>lastDay) wEnd=new Date(lastDay);
+    weeks.push({start:new Date(wStart),end:new Date(wEnd)});
+    cur.setDate(cur.getDate()+7);
+  }
+  function ds(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  var html='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html+='<tr style="background:#f0f0f0">';
+  html+='<th style="padding:6px 8px;text-align:left;border:1px solid #ddd;min-width:80px;color:#111">현장</th>';
+  html+='<th style="padding:6px 8px;text-align:left;border:1px solid #ddd;min-width:70px;color:#111">공정</th>';
+  weeks.forEach(function(w,wi){
+    var label=(wi+1)+'주차<br><span style="font-weight:400;font-size:9px">'+
+      (w.start.getMonth()+1)+'/'+w.start.getDate()+'~'+
+      (w.end.getMonth()+1)+'/'+w.end.getDate()+'</span>';
+    html+='<th style="padding:4px 6px;text-align:center;border:1px solid #ddd;min-width:52px;color:#111">'+label+'</th>';
+  });
+  html+='</tr>';
+  filtered.forEach(function(s,si){
+    var color=getSchBarColor(s,si);
+    var siteName=typeof s.site==='object'?s.site.name:s.site;
+    var isDone=(parseInt(s.progress||0))>=100;
+    html+='<tr>';
+    html+='<td style="padding:5px 8px;border:1px solid #ddd;font-weight:700;color:#111">'+siteName+'</td>';
+    html+='<td style="padding:5px 8px;border:1px solid #ddd;color:'+color+';font-weight:700">'+(s.procName||'공정')+(isDone?' ✅':'')+'</td>';
+    weeks.forEach(function(w){
+      var wStartDs=ds(w.start), wEndDs=ds(w.end);
+      var overlap=s.startDate&&s.endDate&&s.startDate<=wEndDs&&s.endDate>=wStartDs;
+      if(overlap){
+        html+='<td style="padding:3px;border:1px solid #ddd;background:'+color+'20;text-align:center">'
+          +'<div style="background:'+color+';border-radius:4px;height:16px;min-width:20px"></div></td>';
+      } else {
+        html+='<td style="border:1px solid #ddd"></td>';
+      }
+    });
+    html+='</tr>';
+  });
+  html+='</table>';
+  return html;
+}
+function exportSchImage(){
+  showToast('이미지 생성 중...', 2000);
+  var wrap=document.createElement('div');
+  wrap.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff;padding:20px;font-family:inherit;z-index:-1';
+  var title=schYear+'년 '+(schMonth+1)+'월 공정표';
+  if(schSiteFilter!=='전체') title+=' — '+schSiteFilter;
+  wrap.innerHTML='<div style="font-size:18px;font-weight:800;color:#111;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111">'+title+'</div>';
+  var calClone=document.querySelector('.sch-cal-wrap').cloneNode(true);
+  calClone.style.cssText='margin-bottom:20px;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:12px';
+  calClone.querySelectorAll('.sch-bar').forEach(function(el){el.style.color='#fff';});
+  calClone.querySelectorAll('.sch-day-num').forEach(function(el){el.style.color='#333';});
+  calClone.querySelectorAll('.sch-cal-dow').forEach(function(el){if(!el.style.color)el.style.color='#333';});
+  wrap.appendChild(calClone);
+  var ganttSection=document.createElement('div');
+  ganttSection.innerHTML='<div style="font-size:14px;font-weight:700;color:#111;margin-bottom:10px">📊 주차별 공정 현황</div>'+buildGanttHTML();
+  wrap.appendChild(ganttSection);
+  document.body.appendChild(wrap);
+  html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){
+    document.body.removeChild(wrap);
+    var link=document.createElement('a');
+    link.download=title.replace(/[\s—]/g,'_')+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    showToast('이미지 저장 완료!');
+  }).catch(function(e){
+    document.body.removeChild(wrap);
+    showToast('저장 실패: '+e.message,3000);
+  });
+}
 function subscribeSchedules(){
   if(unsubSch)unsubSch();
   unsubSch=db.collection('schedules').orderBy('startDate','asc').onSnapshot(function(snap){
@@ -4900,8 +4990,9 @@ function renderSchCal(){
         var isStart=ds===s.startDate;
         var isEnd=ds===s.endDate;
         var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
-        var color=getProcColor(s.procName,si);
-        var label=isStart?(s.procName||'공정'):'';
+        var color=getSchBarColor(s,si);
+        var siteName2=typeof s.site==='object'?s.site.name:s.site;
+        var label=isStart?(schSiteFilter==='전체'?(siteName2||'현장'):(s.procName||'공정')):'';
         bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
       }
     });
@@ -4936,7 +5027,7 @@ function renderSchList(){
   el.innerHTML=filtered.map(function(s,si){
     var pct=parseInt(s.progress||0);
     var isDone=pct>=100;
-    var color=getProcColor(s.procName,si);
+    var color=getSchBarColor(s,si);
     return '<div class="sch-item" data-schid="'+s.id+'">'
       +'<div class="sch-item-top">'
       +'<div><div class="sch-item-name" style="color:'+color+'">'+( s.procName||'공정')+'</div>'
