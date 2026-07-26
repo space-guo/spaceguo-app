@@ -30,10 +30,15 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .pw-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;line-height:1}
 .login-btn.forgot{background:none;border:none;color:var(--muted);font-size:13px;font-weight:500;text-decoration:underline;padding:4px;cursor:pointer;width:auto;align-self:flex-end}
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px 10px;position:sticky;top:0;z-index:100}
-.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
+.brand{display:flex;align-items:center;gap:7px;min-width:0}
+.brand-logo{height:19px;width:auto;color:var(--accent);flex-shrink:0;display:block}
+.icon-btn{position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;border-radius:9px;color:var(--muted);cursor:pointer;padding:0;transition:background .15s,color .15s}
+.icon-btn:active{background:var(--surface2);color:var(--accent)}
+.icon-btn svg{width:18px;height:18px}
 .app-title{font-size:13px;color:var(--muted);letter-spacing:.08em;font-weight:500}
 .header-right{display:flex;align-items:center;gap:10px}
-.today-total{font-size:12px;color:var(--accent2);font-weight:700}
+.today-total{font-size:13px;color:var(--text);font-weight:800;letter-spacing:-.02em;margin-right:2px;white-space:nowrap}
 .logout-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit}
 .tab-bar{display:flex;gap:4px}
 .tab{flex:1;padding:8px;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted)}
@@ -189,12 +194,12 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .modal-btn-row{display:flex;gap:8px;margin-top:6px}
 .modal-cancel{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:inherit;font-size:14px;font-weight:700;padding:14px;cursor:pointer}
 .modal-save{flex:2;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:14px;cursor:pointer}
-.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;background:var(--muted)}
+.sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--muted);flex-shrink:0}
 .sync-dot.ok{background:var(--green)}
 .sync-dot.saving{background:var(--accent2);animation:pulse .8s ease-in-out infinite}
 .sync-dot.err{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-label{font-size:11px;color:var(--muted)}
+.sync-label{font-size:10px;color:var(--muted);font-weight:600}
 .income-fab{position:fixed;bottom:24px;right:50%;transform:translateX(calc(50% + 100px));background:var(--blue);border:none;border-radius:50px;color:#fff;font-family:inherit;font-size:13px;font-weight:800;padding:12px 20px;cursor:pointer;z-index:90;box-shadow:0 4px 20px rgba(91,140,247,.4)}
 
 /* ── SMS PASTE ── */
@@ -344,7 +349,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 
 /* ── NOTIF BELL ── */
 .notif-bell-btn{position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px;line-height:1}
-.notif-bell-badge{position:absolute;top:-2px;right:-2px;background:var(--accent);color:#fff;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;min-width:16px;text-align:center}
+.notif-bell-badge{position:absolute;top:1px;right:1px;background:var(--accent);color:#fff;font-size:9px;font-weight:900;border-radius:8px;padding:1px 5px;min-width:16px;text-align:center}
 
 .pending-del-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;z-index:10}
 .pending-del-btn:active{color:var(--red);background:var(--surface2)}
@@ -680,7 +685,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     gap:4px;margin-bottom:16px
   }
   .header-right{flex-wrap:wrap;gap:4px;width:100%;margin-top:8px}
-  .app-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:0}
+  .brand-logo{height:22px}
   .today-total{font-size:12px}
 
   /* 탭 → 세로 내비게이션 (flex:none 으로 늘어남 방지) */
@@ -763,14 +768,16 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 <div id="mainApp" style="display:none">
 <div class="header">
   <div class="header-top">
-    <span class="app-title">⚒ SpaceGuo</span>
+    <div class="brand">
+      <svg class="brand-logo" viewBox="0 0 4010 979" fill="currentColor" aria-label="공간구오"><path d="M1418 978C1310 974 1208 935 1124 865L1112 855L1294 672L1477 489L1294 307L1112 124L1116 121C1125 113 1147 96 1160 87C1264 15 1391 -13 1518 7C1601 21 1680 56 1748 111C1765 125 1799 159 1813 176C1875 251 1912 337 1924 436C1926 457 1926 522 1924 544C1914 622 1889 694 1846 758C1779 861 1675 935 1556 964C1522 972 1492 977 1462 978C1453 978 1444 978 1442 978C1439 978 1428 978 1418 978Z M516 720L516 462L258 462C8 462 0 462 0 460C0 454 3 424 6 408C41 200 208 36 417 6C444 2 453 2 488 2C522 1 533 2 560 6C681 24 793 88 869 184C932 262 968 353 976 453C977 470 977 509 976 526C972 577 961 625 942 673C935 690 919 723 909 739C835 863 711 948 571 972C554 975 526 978 519 978L516 978L516 720Z M2516 720L2516 462L2258 462L1999 462L1999 458C2000 455 2000 448 2001 442C2008 365 2035 288 2079 222C2133 138 2213 73 2305 36C2335 24 2369 14 2400 9C2448 -0 2504 -1 2552 5C2692 24 2816 101 2894 218C2908 240 2916 252 2927 275C2969 360 2985 455 2973 550C2955 697 2872 827 2744 907C2727 917 2687 937 2668 945C2623 962 2572 974 2525 978L2516 978L2516 720Z M3470 974C3357 962 3256 914 3176 834C3084 742 3033 620 3033 489C3033 379 3069 274 3137 188C3210 93 3320 28 3437 8C3469 3 3482 2 3520 2C3556 1 3567 2 3596 7C3731 27 3852 105 3928 220C3983 303 4011 399 4009 500C4008 540 4004 571 3994 608C3967 716 3902 814 3813 881C3751 927 3678 957 3604 970C3587 973 3560 976 3552 976L3549 976L3549 718L3549 461L3521 461L3493 461L3493 718L3493 976L3488 976C3485 976 3477 975 3470 974Z"/></svg>
+      <span class="sync-dot" id="syncDot" title="동기화 상태"></span><span class="sync-label" id="syncLabel"></span>
+    </div>
     <div class="header-right">
       <span class="today-total" id="headerTotal"></span>
-      <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
-      <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()">🔔<span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
-      <button class="logout-btn" onclick="openPersonalModal()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">👤</button>
-      <button class="logout-btn" id="themeToggleBtn" onclick="toggleTheme()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">🌙</button>
-      <button class="logout-btn" onclick="openSettingsModal()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">⚙️</button>
+      <button class="icon-btn" id="notifBellBtn" onclick="openNotifModal()" title="알림"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
+      <button class="icon-btn" onclick="openPersonalModal()" title="개인 가계부"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+      <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="테마 전환"></button>
+      <button class="icon-btn" onclick="openSettingsModal()" title="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
   <div class="tab-bar">
@@ -1779,7 +1786,10 @@ let pendingNotifs=[], unsubPending=null, notifFilter='pending';
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme',t);
   try{localStorage.setItem('sg_theme',t);}catch(e){}
-  var b=document.getElementById('themeToggleBtn');if(b)b.textContent=t==='dark'?'☀️':'🌙';
+  var b=document.getElementById('themeToggleBtn');
+  if(b)b.innerHTML=t==='dark'
+    ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8"/></svg>';
   var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#0f0f0f':'#023a25';
 }
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
@@ -1804,10 +1814,11 @@ function showToast(msg,duration){
 // ── SYNC ──
 function setSyncStatus(s){
   var dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
-  if(s==='ok'){dot.className='sync-dot ok';lbl.textContent='저장됨';}
+  if(s==='ok'){dot.className='sync-dot ok';lbl.textContent='';}
   if(s==='saving'){dot.className='sync-dot saving';lbl.textContent='저장 중';}
-  if(s==='err'){dot.className='sync-dot err';lbl.textContent='오류';}
-  if(s==='live'){dot.className='sync-dot ok';lbl.textContent='실시간';}
+  if(s==='err'){dot.className='sync-dot err';lbl.textContent='저장 실패';lbl.style.color='var(--red)';}
+  if(s==='live'){dot.className='sync-dot ok';lbl.textContent='';}
+  if(s!=='err')lbl.style.color='var(--muted)';
 }
 
 // ── AUTH ──
