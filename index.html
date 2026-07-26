@@ -4861,6 +4861,7 @@ function buildGanttHTML(){
   var weeks=[];var cur=new Date(firstDay);
   while(cur<=lastDay){var wS=new Date(cur);var wE=new Date(cur);wE.setDate(wE.getDate()+6);if(wE>lastDay)wE=new Date(lastDay);weeks.push({start:wS,end:wE});cur.setDate(cur.getDate()+7);}
   function ds(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function dnum(str){var p=String(str).split('-');return Date.UTC(+p[0],+p[1]-1,+p[2])/86400000;}
   var showSite=schSiteFilter==='전체';
   var html='<table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff">';
   html+='<tr>';
@@ -4883,8 +4884,20 @@ function buildGanttHTML(){
     }
     html+='<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:'+color+';font-weight:700">'+(s.procName||'공정')+(isDone?' <span style="font-size:9px">✔</span>':'')+'</td>';
     weeks.forEach(function(w){
-      var o=s.startDate&&s.endDate&&s.startDate<=ds(w.end)&&s.endDate>=ds(w.start);
-      html+='<td style="padding:4px 3px;border-bottom:1px solid #edece8">'+(o?'<div style="background:'+color+';border-radius:5px;height:14px"></div>':'')+'</td>';
+      var wS=ds(w.start), wE=ds(w.end);
+      var o=s.startDate&&s.endDate&&s.startDate<=wE&&s.endDate>=wS;
+      if(o){
+        var wDays=dnum(wE)-dnum(wS)+1;
+        var oS=s.startDate>wS?s.startDate:wS;
+        var oE=s.endDate<wE?s.endDate:wE;
+        var left=(dnum(oS)-dnum(wS))/wDays*100;
+        var width=(dnum(oE)-dnum(oS)+1)/wDays*100;
+        var rl=s.startDate>=wS?'5px':'0';
+        var rr=s.endDate<=wE?'5px':'0';
+        html+='<td style="padding:4px 0;border-bottom:1px solid #edece8"><div style="margin-left:'+left+'%;width:'+width+'%;background:'+color+';border-radius:'+rl+' '+rr+' '+rr+' '+rl+';height:14px"></div></td>';
+      } else {
+        html+='<td style="border-bottom:1px solid #edece8"></td>';
+      }
     });
     html+='</tr>';
   });
@@ -4908,7 +4921,7 @@ function exportSchImage(){
     if(addr)parts.push('📍 '+addr);
     if(siteObj.startDate||siteObj.endDate)parts.push('🗓 공사기간 '+(siteObj.startDate||'')+' ~ '+(siteObj.endDate||''));
     if(siteObj.sqm||siteObj.pyeong)parts.push('📐 면적 '+(siteObj.sqm?siteObj.sqm+'㎡':'')+(siteObj.pyeong?' ('+siteObj.pyeong+'평)':''));
-    if(parts.length)info='<div style="font-size:12px;color:#4a4944;font-weight:600;margin-bottom:18px;display:flex;gap:18px;flex-wrap:wrap">'+parts.map(function(p){return '<span>'+p+'</span>';}).join('')+'</div>';
+    if(parts.length)info='<div style="font-size:12px;color:#4a4944;font-weight:600;margin-bottom:18px;line-height:2.1">'+parts.map(function(p){return '<div>'+p+'</div>';}).join('')+'</div>';
   }
   var cal='<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>';
   var gantt='<div style="font-size:14px;font-weight:800;color:#023a25;margin-bottom:8px">주차별 공정 현황</div>'
