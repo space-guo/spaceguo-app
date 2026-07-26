@@ -1577,10 +1577,6 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       </select>
     </div>
     <div class="field-row">
-      <div class="field-label">작업자 수 (담당자 포함)</div>
-      <input class="field-input" id="schWorkerCountInp" type="tel" inputmode="numeric" placeholder="예: 3" style="width:120px">
-    </div>
-    <div class="field-row">
       <div class="field-label">시작일</div>
       <input class="field-input" id="schStartInp" type="date">
     </div>
@@ -1613,18 +1609,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       </div>
     </div>
     <div class="field-row">
-      <div class="field-label">📝 업무일지</div>
-      <textarea class="field-input" id="schJournalInp" rows="4" placeholder="날씨, 인원, 진행 내용, 특이사항 등..." style="resize:none;line-height:1.6" oninput="autoResize(this)" rows="4" placeholder="날씨, 인원, 진행 내용, 특이사항 등..." style="resize:none;line-height:1.6"></textarea>
-    </div>
-    <div class="field-row">
-      <div class="field-label">날씨</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap" id="schWeatherChips">
-        <button class="chip" data-weather="☀️ 맑음">☀️ 맑음</button>
-        <button class="chip" data-weather="⛅ 구름">⛅ 구름</button>
-        <button class="chip" data-weather="🌧️ 비">🌧️ 비</button>
-        <button class="chip" data-weather="❄️ 눈">❄️ 눈</button>
-        <button class="chip" data-weather="💨 바람">💨 바람</button>
-      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--muted);line-height:1.6">💡 작업자 수·날씨·업무일지는 <b style="color:var(--text)">달력에서 날짜를 탭</b>하면 날짜별로 따로 기록할 수 있어요</div>
     </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeSchModal()">취소</button>
@@ -3483,6 +3468,13 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
         '<div style="padding-top:10px">'
         +'<div class="field-label">작업자 수</div>'
         +'<input class="field-input" id="dailyWorkerCount" type="tel" inputmode="numeric" placeholder="예: 3" value="'+(log.workerCount||'')+'" style="width:120px;margin-bottom:10px">'
+        +'<div class="field-label">오늘 작업 상태</div>'
+        +'<div style="display:flex;gap:6px;margin-bottom:10px" id="dailyStatusChips">'
+        +'<button class="chip'+(log.status==='진행중'?' selected':'')+'" data-st="진행중">🔨 진행중</button>'
+        +'<button class="chip'+(log.status==='완료'?' selected':'')+'" data-st="완료">✅ 완료</button>'
+        +'</div>'
+        +'<div class="field-label">메모</div>'
+        +'<input class="field-input" id="dailyMemo" type="text" placeholder="특이사항 짧게..." value="'+String(log.memo||'').replace(/"/g,'&quot;')+'" style="margin-bottom:10px">'
         +'<div class="field-label">업무일지</div>'
         +'<textarea class="field-input" id="dailyJournal" rows="4" placeholder="날씨, 진행 내용, 특이사항..." style="resize:none;line-height:1.6;margin-bottom:6px" oninput="autoResize(this)" rows="4" placeholder="날씨, 진행 내용, 특이사항..." style="resize:none;line-height:1.6;margin-bottom:6px">'+(log.journal||'')+'</textarea>'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="dailyWeatherChips">'
@@ -3501,6 +3493,15 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
         btn.addEventListener('click',function(){
           bodyEl.querySelectorAll('#dailyWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
           this.classList.add('selected');
+        });
+      });
+
+      // 상태 칩 이벤트 (다시 누르면 해제)
+      bodyEl.querySelectorAll('#dailyStatusChips .chip').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var was=this.classList.contains('selected');
+          bodyEl.querySelectorAll('#dailyStatusChips .chip').forEach(function(b){b.classList.remove('selected');});
+          if(!was)this.classList.add('selected');
         });
       });
 
@@ -3532,6 +3533,8 @@ function saveDailyLog(showToastMsg){
   var journalEl=document.getElementById('dailyJournal');
   var workerEl=document.getElementById('dailyWorkerCount');
   var weatherEl=body.querySelector('#dailyWeatherChips .chip.selected');
+  var memoEl=document.getElementById('dailyMemo');
+  var statusEl=body.querySelector('#dailyStatusChips .chip.selected');
   if(!journalEl&&!workerEl)return;
 
   var data={
@@ -3540,6 +3543,8 @@ function saveDailyLog(showToastMsg){
     journal:journalEl?journalEl.value.trim():'',
     workerCount:workerEl?parseInt(workerEl.value)||0:0,
     weather:weatherEl?weatherEl.dataset.w:'',
+    memo:memoEl?memoEl.value.trim():'',
+    status:statusEl?statusEl.dataset.st:'',
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
 
@@ -5068,7 +5073,7 @@ function renderSchCal(){
         bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
       }
     });
-    return '<div class="sch-cal-cell">'+dayNumHtml+bars+'</div>';
+    return '<div class="sch-cal-cell" data-date="'+ds+'">'+dayNumHtml+bars+'</div>';
   }).join('');
 
   document.getElementById('schCalBody').innerHTML=html;
@@ -5086,6 +5091,17 @@ function renderSchCal(){
       openDailyModal(dateStr);
     });
   });
+  // 일별 기록 있는 날짜에 점 표시
+  var mFirst=dateStr(schYear,schMonth,1), mLast=dateStr(schYear,schMonth,lastDate);
+  db.collection('dailylogs').where('date','>=',mFirst).where('date','<=',mLast).get().then(function(snap){
+    snap.docs.forEach(function(dd){
+      var v=dd.data();if(!v.date)return;
+      var num=document.querySelector('#schCalBody .sch-cal-cell[data-date="'+v.date+'"] .sch-day-num');
+      if(num&&!num.querySelector('.daily-dot')){
+        num.insertAdjacentHTML('beforeend','<span class="daily-dot" style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent2);margin-left:3px;vertical-align:2px"></span>');
+      }
+    });
+  }).catch(function(e){});
 }
 
 function renderSchList(){
@@ -5145,8 +5161,6 @@ function openSchModal(){
   document.getElementById('schModalTitle').textContent='공정 일정 추가';
   document.getElementById('schDeleteBtn').style.display='none';
   schCheckItems=[];renderSchChecklist();
-  document.getElementById('schJournalInp').value='';
-  document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){b.classList.remove('selected');});
 
   var sel=document.getElementById('schSiteInp');
   sel.innerHTML='<option value="">현장 선택</option>';
@@ -5164,7 +5178,6 @@ function openSchModal(){
   psel.onchange=function(){_updateProcDot();initSchChecklist(this.value);renderVendorSelect(this.value);};
 
   renderVendorSelect('');
-  document.getElementById('schWorkerCountInp').value='';
 
   var today=new Date().toISOString().slice(0,10);
   document.getElementById('schStartInp').value=today;
@@ -5174,7 +5187,6 @@ function openSchModal(){
   document.getElementById('schCheckNewInp').value='';
   document.getElementById('schModal').style.display='flex';
   pushModalState('schModal');
-  bindWeatherChips();
 }
 function openSchModalEdit(id){
   var s=schedules.find(function(x){return x.id===id;});
@@ -5204,25 +5216,17 @@ function openSchModalEdit(id){
 
   renderVendorSelect(s.procName||'');
   document.getElementById('schWorkerInp').value=s.workerId||'';
-  document.getElementById('schWorkerCountInp').value=s.workerCount||'';
   document.getElementById('schStartInp').value=s.startDate||'';
   document.getElementById('schEndInp').value=s.endDate||'';
   var pct=parseInt(s.progress||0);
   setSchStatus(pct>=100?100:0);
   document.getElementById('schMemoInp').value=s.memo||'';
-  document.getElementById('schJournalInp').value=s.journal||'';
   document.getElementById('schCheckNewInp').value='';
-
-  // 날씨
-  document.querySelectorAll('#schWeatherChips .chip').forEach(function(b){
-    b.classList.toggle('selected',b.dataset.weather===s.weather);
-  });
 
   // 체크리스트 로드
   loadSchChecklist(id, s.procName);
   document.getElementById('schModal').style.display='flex';
   pushModalState('schModal');
-  bindWeatherChips();
 }
 function closeSchModal(){if(modalStack.length>0)modalStack.pop();
   document.getElementById('schModal').style.display='none';}
@@ -5237,10 +5241,6 @@ function saveSchModal(){
   if(!startDate||!endDate){showToast('날짜를 입력해주세요');return;}
   if(startDate>endDate){showToast('종료일이 시작일보다 빠릅니다');return;}
 
-  // 날씨 선택값
-  var weatherEl=document.querySelector('#schWeatherChips .chip.selected');
-  var weather=weatherEl?weatherEl.dataset.weather:'';
-
   // 담당자 ID → 이름
   var workerSel=document.getElementById('schWorkerInp');
   var workerId=workerSel.value;
@@ -5249,12 +5249,9 @@ function saveSchModal(){
   var data={
     site:site, procName:proc,
     workerId:workerId, worker:workerName,
-    workerCount:parseInt(document.getElementById('schWorkerCountInp').value)||0,
     startDate:startDate, endDate:endDate,
     progress:parseInt(document.getElementById('schPctInp').value)||0,
     memo:document.getElementById('schMemoInp').value.trim(),
-    journal:document.getElementById('schJournalInp').value.trim(),
-    weather:weather,
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
 
