@@ -10,9 +10,10 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css');
-:root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--accent:#ff6b35;--accent2:#ffad33;--text:#f0f0f0;--muted:#888;--green:#4caf82;--red:#e05252;--blue:#5b8cf7}
+:root{--bg:#f9f8f6;--surface:#ffffff;--surface2:#f0efe9;--border:#e3e2da;--accent:#023a25;--accent2:#b8860b;--text:#26251f;--muted:#8b8a80;--green:#2e7d51;--red:#c2453f;--blue:#3f66b0;--tint-blue:#e9eefa;--tint-green:#e4f0e8;--tint-amber:#f6ecd4;--tint-gray:#eceae4;--tint-purple:#f0e8f4;--tint-red:#f8e7e5;--banner-bg:linear-gradient(135deg,#f6ecd4,#f2e4bd)}
+[data-theme="dark"]{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;--accent:#ff6b35;--accent2:#ffad33;--text:#f0f0f0;--muted:#888;--green:#4caf82;--red:#e05252;--blue:#5b8cf7;--tint-blue:var(--tint-blue);--tint-green:var(--tint-green);--tint-amber:var(--tint-amber);--tint-gray:var(--tint-gray);--tint-purple:#2a1a2a;--tint-red:#2a1a1a;--banner-bg:var(--banner-bg)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto}
+body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto}
 #loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;gap:16px}
 .login-logo{font-size:40px;margin-bottom:8px}
 .login-title{font-size:22px;font-weight:900;letter-spacing:-0.5px}
@@ -63,8 +64,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .chips,.pay-chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip,.pay-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:7px 14px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .chip.selected{background:var(--accent);border-color:var(--accent);color:#fff}
-.pay-chip.selected-card{background:#1a1f2e;border-color:var(--blue);color:var(--blue)}
-.pay-chip.selected-cash{background:#1a2a1a;border-color:var(--green);color:var(--green)}
+.pay-chip.selected-card{background:var(--tint-blue);border-color:var(--blue);color:var(--blue)}
+.pay-chip.selected-cash{background:var(--tint-green);border-color:var(--green);color:var(--green)}
 .vat-row-ui{display:flex;gap:6px;margin-bottom:6px}
 .vat-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:700;padding:10px 8px;cursor:pointer;text-align:center}
 .vat-btn.selected{background:var(--surface);border-color:var(--accent2);color:var(--accent2)}
@@ -74,11 +75,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .vat-row-info:last-child{margin-bottom:0}
 .vat-val{color:var(--text);font-weight:700}
 .vat-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}
-.vat-badge.included{background:#1a2a1a;color:var(--green)}
+.vat-badge.included{background:var(--tint-green);color:var(--green)}
 .vat-badge.excluded{background:#2a1a0a;color:var(--accent2)}
 .pay-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}
-.pay-badge.card{background:#1a1f2e;color:var(--blue)}
-.pay-badge.cash{background:#1a2a1a;color:var(--green)}
+.pay-badge.card{background:var(--tint-blue);color:var(--blue)}
+.pay-badge.cash{background:var(--tint-green);color:var(--green)}
 .pay-group{margin-bottom:8px}
 .pay-group-label{font-size:10px;color:var(--muted);letter-spacing:.1em;font-weight:700;margin-bottom:5px;padding-left:2px}
 .items-area{margin-bottom:6px}
@@ -153,7 +154,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .dash-filter-row::-webkit-scrollbar{display:none}
 .dash-sub-title{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;margin-bottom:7px;padding-left:2px}
 .d-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.d-chip.site-on{background:#1a1f2e;border-color:var(--blue);color:var(--blue)}
+.d-chip.site-on{background:var(--tint-blue);border-color:var(--blue);color:var(--blue)}
 .d-chip.cat-on{background:#1a2000;border-color:var(--green);color:var(--green)}
 .donut-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
 .donut-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:12px;justify-content:center}
@@ -225,11 +226,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 /* 품목 체크박스 */
 .item-check-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .item-check-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
-.item-check-btn.checked{background:#1a2a1a;border-color:var(--green);color:var(--green)}
+.item-check-btn.checked{background:var(--tint-green);border-color:var(--green);color:var(--green)}
 .item-check-btn .unit{font-size:10px;color:inherit;opacity:.7}
 
 /* ── ACTIVE INPUT BANNER ── */
-.active-input-banner{display:none;background:linear-gradient(135deg,#2a1f00,#1a1200);border:1px solid var(--accent2);border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+.active-input-banner{display:none;background:var(--banner-bg);border:1px solid var(--accent2);border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden}
 .active-input-banner.show{display:block;animation:bannerIn .25s ease}
 @keyframes bannerIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .active-input-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
@@ -248,7 +249,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .pending-section{margin-bottom:14px}
 .pending-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .pending-title{font-size:11px;color:var(--accent2);letter-spacing:.1em;font-weight:700}
-.pending-count{font-size:11px;color:var(--accent2);font-weight:700;background:#2a1f00;border:1px solid var(--accent2);border-radius:10px;padding:2px 8px}
+.pending-count{font-size:11px;color:var(--accent2);font-weight:700;background:var(--tint-amber);border:1px solid var(--accent2);border-radius:10px;padding:2px 8px}
 .pending-card{background:var(--surface);border:1px solid var(--accent2);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
 .pending-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent2)}
 .pending-card:active{transform:scale(.98);opacity:.85}
@@ -276,7 +277,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .notif-actions{display:flex;gap:6px;margin-top:8px}
 .notif-apply-btn{flex:1;background:var(--accent2);border:none;border-radius:8px;color:#000;font-family:inherit;font-size:12px;font-weight:800;padding:8px;cursor:pointer}
 .notif-del-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:8px 12px;cursor:pointer}
-.notif-done-badge{font-size:10px;font-weight:700;background:#1a2a1a;color:var(--green);border-radius:4px;padding:2px 6px;margin-left:6px}
+.notif-done-badge{font-size:10px;font-weight:700;background:var(--tint-green);color:var(--green);border-radius:4px;padding:2px 6px;margin-left:6px}
 
 /* 공정 관리 */
 .process-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px}
@@ -339,7 +340,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .sch-progress-wrap{background:var(--surface2);border-radius:4px;height:6px;margin-top:6px;overflow:hidden}
 .sch-progress-bar{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
 .sch-item-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:var(--muted)}
-.sch-done-badge{background:#1a2a1a;color:var(--green);border:1px solid var(--green);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700}
+.sch-done-badge{background:var(--tint-green);color:var(--green);border:1px solid var(--green);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700}
 
 /* ── NOTIF BELL ── */
 .notif-bell-btn{position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px;line-height:1}
@@ -374,7 +375,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .date-mini-cell.selected.sun,.date-mini-cell.selected.sat{color:#fff}
 .date-mini-cell.sat{color:var(--blue)}
 .date-confirm-btn{width:100%;background:var(--accent);border:none;border-top:1px solid var(--border);color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:13px;cursor:pointer}
-.date-display-badge{display:inline-block;background:#1a1f2e;border:1px solid var(--blue);border-radius:8px;color:var(--blue);font-size:12px;font-weight:700;padding:4px 10px;margin-top:6px}
+.date-display-badge{display:inline-block;background:var(--tint-blue);border:1px solid var(--blue);border-radius:8px;color:var(--blue);font-size:12px;font-weight:700;padding:4px 10px;margin-top:6px}
 
 /* ── ITEM SORT ── */
 .proc-item-tag{cursor:default}
@@ -451,7 +452,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 /* ── COLOR PICKER ── */
 .color-pick-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .color-pick-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .1s}
-.color-pick-btn.selected{border-color:#fff;transform:scale(1.2)}
+.color-pick-btn.selected{border-color:var(--text);transform:scale(1.2)}
 .color-pick-btn:active{transform:scale(.9)}
 
 /* ── DAILY LOG MODAL ── */
@@ -495,16 +496,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* ── SITE STATUS ── */
 .site-status-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;margin-left:6px;vertical-align:middle}
-.site-status-badge.meeting{background:#1a1f2e;color:var(--blue)}
-.site-status-badge.before{background:#2a1f00;color:var(--accent2)}
-.site-status-badge.ongoing{background:#1a2a1a;color:var(--green)}
-.site-status-badge.done{background:#222;color:var(--muted)}
+.site-status-badge.meeting{background:var(--tint-blue);color:var(--blue)}
+.site-status-badge.before{background:var(--tint-amber);color:var(--accent2)}
+.site-status-badge.ongoing{background:var(--tint-green);color:var(--green)}
+.site-status-badge.done{background:var(--tint-gray);color:var(--muted)}
 .site-status-row{display:flex;gap:6px;flex-wrap:wrap}
 .site-status-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:8px 4px;cursor:pointer;text-align:center;min-width:60px}
-.site-status-btn.active-meeting{background:#1a1f2e;border-color:var(--blue);color:var(--blue)}
-.site-status-btn.active-before{background:#2a1f00;border-color:var(--accent2);color:var(--accent2)}
-.site-status-btn.active-ongoing{background:#1a2a1a;border-color:var(--green);color:var(--green)}
-.site-status-btn.active-done{background:#2a2a2a;border-color:var(--muted);color:var(--muted)}
+.site-status-btn.active-meeting{background:var(--tint-blue);border-color:var(--blue);color:var(--blue)}
+.site-status-btn.active-before{background:var(--tint-amber);border-color:var(--accent2);color:var(--accent2)}
+.site-status-btn.active-ongoing{background:var(--tint-green);border-color:var(--green);color:var(--green)}
+.site-status-btn.active-done{background:var(--tint-gray);border-color:var(--muted);color:var(--muted)}
 .site-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;cursor:pointer;transition:border-color .15s}
 .site-card:active{border-color:var(--accent)}
 
@@ -576,7 +577,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 .my-cal-month-label{font-size:16px;font-weight:800}
 .my-cal-toggle-row{display:flex;gap:8px;margin-bottom:12px;align-items:center}
 .my-cal-sch-toggle{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);transition:all .15s;flex:1;justify-content:center}
-.my-cal-sch-toggle.on{background:#1a2a1a;border-color:var(--green);color:var(--green)}
+.my-cal-sch-toggle.on{background:var(--tint-green);border-color:var(--green);color:var(--green)}
 .my-cal-add-btn{background:var(--accent);border:none;border-radius:20px;color:#fff;font-family:inherit;font-size:12px;font-weight:800;padding:7px 18px;cursor:pointer;white-space:nowrap}
 .my-cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
 .my-cal-header{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
@@ -614,8 +615,8 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 .my-ev-title.done{text-decoration:line-through;color:var(--muted)}
 .my-ev-meta{font-size:11px;color:var(--muted);margin-top:3px}
 .my-ev-type-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
-.my-ev-type-badge.schedule{background:#1a1f2e;color:var(--blue)}
-.my-ev-type-badge.todo{background:#1a2a1a;color:var(--green)}
+.my-ev-type-badge.schedule{background:var(--tint-blue);color:var(--blue)}
+.my-ev-type-badge.todo{background:var(--tint-green);color:var(--green)}
 .my-ev-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
 
 /* 이벤트 입력 모달 */
@@ -732,6 +733,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   .kpi-value{font-size:24px}
 }
 </style>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('sg_theme')||'light');}catch(e){}</script>
 </head>
 <body>
 
@@ -767,6 +769,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <span><span class="sync-dot" id="syncDot"></span><span class="sync-label" id="syncLabel"></span></span>
       <button class="notif-bell-btn" id="notifBellBtn" onclick="openNotifModal()">🔔<span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
       <button class="logout-btn" onclick="openPersonalModal()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">👤</button>
+      <button class="logout-btn" id="themeToggleBtn" onclick="toggleTheme()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">🌙</button>
       <button class="logout-btn" onclick="openSettingsModal()" style="font-size:18px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:8px">⚙️</button>
     </div>
   </div>
@@ -1773,7 +1776,16 @@ let editingAccIdx=-1;
 let editingProcIdx=-1, editingItemIdx=-1, currentProcForItem=-1;
 let pendingNotifs=[], unsubPending=null, notifFilter='pending';
 
-const CAT_ICONS={'자재비':{icon:'🧱',bg:'#2a1f0f'},'인건비':{icon:'👷',bg:'#1a2a1a'},'공구/장비':{icon:'🔧',bg:'#1a1a2a'},'교통/주차':{icon:'🚗',bg:'#2a1a2a'},'식대':{icon:'🍱',bg:'#2a1a1a'},'기타':{icon:'📦',bg:'#222'}};
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  try{localStorage.setItem('sg_theme',t);}catch(e){}
+  var b=document.getElementById('themeToggleBtn');if(b)b.textContent=t==='dark'?'☀️':'🌙';
+  var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#0f0f0f':'#023a25';
+}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
+applyTheme((function(){try{return localStorage.getItem('sg_theme')||'light';}catch(e){return 'light';}})());
+
+const CAT_ICONS={'자재비':{icon:'🧱',bg:'var(--tint-amber)'},'인건비':{icon:'👷',bg:'var(--tint-green)'},'공구/장비':{icon:'🔧',bg:'var(--tint-blue)'},'교통/주차':{icon:'🚗',bg:'var(--tint-purple)'},'식대':{icon:'🍱',bg:'var(--tint-red)'},'기타':{icon:'📦',bg:'var(--tint-gray)'}};
 // 공정 색상 팔레트 (renderProcessList / getProcColor 에서 사용)
 var SCH_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800'];
 var SCH_COLORS_LIST=['#5b8cf7','#2196f3','#0288d1','#0097a7','#1565c0','#4caf82','#43a047','#2e7d32','#66bb6a','#a5d6a7','#e05252','#e91e63','#c62828','#f06292','#ad1457','#ff6b35','#ff9800','#ffad33','#fdd835','#f57f17','#9c6bf7','#7b1fa2','#ab47bc','#6a1b9a','#ce93d8','#795548','#6d4c41','#546e7a','#607d8b','#78909c'];
@@ -2766,7 +2778,7 @@ function renderDash(){
   var incRows=fInc.length
     ?fInc.map(function(r){
         return '<div class="record-item" style="margin-bottom:8px">'
-          +'<div class="record-icon" style="background:#1a1f2e">💰</div>'
+          +'<div class="record-icon" style="background:var(--tint-blue)">💰</div>'
           +'<div class="record-info"><div class="record-site">'+siteStr(r.site)+'</div>'
           +'<div class="record-cat">'+(r.memo||'매출')+(r.vat==='included'?' · VAT포함':r.vat==='excluded'?' · VAT별도':' · 미발행')+'</div>'
           +'<div class="record-cat">'+r.date+'</div></div>'
