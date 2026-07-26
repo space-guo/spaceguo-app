@@ -38,7 +38,10 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .icon-btn svg{width:18px;height:18px}
 .app-title{font-size:13px;color:var(--muted);letter-spacing:.08em;font-weight:500}
 .header-right{display:flex;align-items:center;gap:10px}
-.today-total{font-size:13px;color:var(--text);font-weight:800;letter-spacing:-.02em;margin-right:2px;white-space:nowrap}
+.today-line{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;padding:0 2px}
+.today-line-label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.today-line-val{font-size:17px;font-weight:900;color:var(--text);letter-spacing:-.03em}
+.today-line-cnt{font-size:11px;color:var(--muted)}
 .logout-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit}
 .tab-bar{display:flex;gap:4px}
 .tab{flex:1;padding:8px;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted)}
@@ -686,7 +689,6 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   }
   .header-right{flex-wrap:wrap;gap:4px;width:100%;margin-top:8px}
   .brand-logo{height:22px}
-  .today-total{font-size:12px}
 
   /* 탭 → 세로 내비게이션 (flex:none 으로 늘어남 방지) */
   .tab-bar{flex-direction:column;gap:4px;margin-top:4px}
@@ -773,7 +775,6 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <span class="sync-dot" id="syncDot" title="동기화 상태"></span><span class="sync-label" id="syncLabel"></span>
     </div>
     <div class="header-right">
-      <span class="today-total" id="headerTotal"></span>
       <button class="icon-btn" id="notifBellBtn" onclick="openNotifModal()" title="알림"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
       <button class="icon-btn" onclick="openPersonalModal()" title="개인 가계부"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
       <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="테마 전환"></button>
@@ -984,6 +985,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   <!-- 구분선 -->
   <div style="height:1px;background:var(--border);margin:14px 0"></div>
   <!-- 하단 내역 -->
+  <div class="today-line" id="todayLine" style="display:none"><span class="today-line-label">오늘</span><span class="today-line-val" id="headerTotal"></span><span class="today-line-cnt" id="todayCount"></span></div>
   <div class="filter-bar" id="filterBar"><button class="filter-chip active" onclick="setFilter('전체',this)">전체</button></div>
   <div class="summary-card">
     <div><div class="s-label">필터 합계</div><div class="s-value" id="filteredTotal">₩0</div></div>
@@ -2645,8 +2647,19 @@ function renderList(){
 
 function updateHeaderTotal(){
   var today=new Date().toDateString();
-  var t=records.filter(function(r){return new Date(r.date).toDateString()===today;}).reduce(function(a,r){return a+r.amount;},0);
-  document.getElementById('headerTotal').textContent=t?'오늘 ₩'+t.toLocaleString('ko-KR'):'';
+  var todayRecs=records.filter(function(r){return new Date(r.date).toDateString()===today;});
+  var t=todayRecs.reduce(function(a,r){return a+r.amount;},0);
+  var line=document.getElementById('todayLine');
+  var val=document.getElementById('headerTotal');
+  var cnt=document.getElementById('todayCount');
+  if(!line||!val)return;
+  if(t){
+    line.style.display='flex';
+    val.textContent='₩'+t.toLocaleString('ko-KR');
+    if(cnt)cnt.textContent=todayRecs.length+'건';
+  } else {
+    line.style.display='none';
+  }
 }
 
 // ── DASHBOARD ──
