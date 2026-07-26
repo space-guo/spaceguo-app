@@ -2534,8 +2534,12 @@ function renderSiteList(){
     if(card)openSiteEditModal(parseInt(card.dataset.siteIdx));
   };
     initDragList(el, sites, 'sites', function(){
-    saveSettings().then(function(){renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();});
-  });
+    saveSettings().then(function(){
+      renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();
+      if(document.getElementById('view-sch').classList.contains('active')){renderSchCal();renderSchList();}
+      showToast('✓ 순서 변경됐어요');
+    });
+  }, 'data-site-idx');
 }
 
 
@@ -2543,7 +2547,7 @@ function pushSiteCard(parts, s, i){
   var name=typeof s==='object'?s.name:String(s);
   if(!name||name==='[object Object]')name='(이름 없음)';
   var st=typeof s==='object'?s.status||'ongoing':'ongoing';
-  parts.push('<div class="site-card drag-item" data-site-idx="'+i+'" data-site-action="edit">'
+  parts.push('<div class="site-card drag-item" data-group="'+st+'" data-site-idx="'+i+'" data-site-action="edit">'
     +'<span class="drag-handle">☰</span>'
     +'<div style="flex:1;min-width:0">'
     +'<div style="font-size:13px;font-weight:700">'+name+'</div>'
@@ -3650,7 +3654,34 @@ function showInsertLine(container, toIdx){
   }
 }
 
-function initDragList(containerEl, arr, listKey, onDone){
+// 그룹/필터가 적용된 목록에서도 실제 배열 인덱스를 기준으로 재정렬
+function applyDragReorder(container, arr, srcEl, domToIdx, idxAttr){
+  if(!srcEl)return false;
+  var all=Array.from(container.querySelectorAll('.drag-item'));
+  var srcDom=all.indexOf(srcEl);
+  if(srcDom<0)return false;
+  var srcReal=parseInt(srcEl.getAttribute(idxAttr));
+  if(isNaN(srcReal))return false;
+  var grp=srcEl.getAttribute('data-group')||'';
+  var groupEls=all.filter(function(el){return (el.getAttribute('data-group')||'')===grp;});
+  if(groupEls.length<2)return false;
+  var srcPos=groupEls.indexOf(srcEl);
+  var destPos=0;
+  for(var i=0;i<domToIdx&&i<all.length;i++){
+    if(all[i]!==srcEl&&(all[i].getAttribute('data-group')||'')===grp)destPos++;
+  }
+  if(destPos===srcPos)return false;
+  var slots=groupEls.map(function(el){return parseInt(el.getAttribute(idxAttr));})
+                    .filter(function(v){return !isNaN(v);}).sort(function(a,b){return a-b;});
+  if(slots.length!==groupEls.length)return false;
+  var order=groupEls.map(function(el){return arr[parseInt(el.getAttribute(idxAttr))];});
+  var moved=order.splice(srcPos,1)[0];
+  order.splice(destPos,0,moved);
+  slots.forEach(function(slot,k){arr[slot]=order[k];});
+  return true;
+}
+
+function initDragList(containerEl, arr, listKey, onDone, idxAttr){
   var items=Array.from(containerEl.querySelectorAll('.drag-item'));
 
   items.forEach(function(item, idx){
@@ -3673,6 +3704,7 @@ function initDragList(containerEl, arr, listKey, onDone){
         dragState.container=containerEl;
         dragState.lastToIdx=-2;
         dragState.longPressTimer=null;
+        dragState.idxAttr=idxAttr||null;
         self.classList.add('dragging');
       },400);
     },{passive:true});
@@ -3711,16 +3743,22 @@ function initDragList(containerEl, arr, listKey, onDone){
       var srcIdx=dragState.srcIdx;
       var savedArr=dragState.arr;
       var savedOnDone=dragState.onDone;
+      var savedEl=dragState.el;
+      var savedContainer=dragState.container;
+      var savedAttr=dragState.idxAttr;
 
-      dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0};
+      dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0,idxAttr:null};
 
-      // 실제 이동 - toIdx가 srcIdx 뒤면 -1 보정
-      var realTo=toIdx>(srcIdx)?toIdx-1:toIdx;
-      if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
-        vibrate([25,15,25]);
-        var tmp=savedArr.splice(srcIdx,1)[0];
-        savedArr.splice(realTo,0,tmp);
-        savedOnDone();
+      if(savedAttr){
+        if(applyDragReorder(savedContainer,savedArr,savedEl,toIdx,savedAttr)){vibrate([25,15,25]);savedOnDone();}
+      } else {
+        var realTo=toIdx>(srcIdx)?toIdx-1:toIdx;
+        if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
+          vibrate([25,15,25]);
+          var tmp=savedArr.splice(srcIdx,1)[0];
+          savedArr.splice(realTo,0,tmp);
+          savedOnDone();
+        }
       }
     },{passive:true});
 
@@ -3741,6 +3779,7 @@ function initDragList(containerEl, arr, listKey, onDone){
         dragState.container=containerEl;
         dragState.lastToIdx=-2;
         dragState.longPressTimer=null;
+        dragState.idxAttr=idxAttr||null;
         self.classList.add('dragging');
         document.body.style.cursor='grabbing';
       },400);
@@ -3778,15 +3817,22 @@ function initDragList(containerEl, arr, listKey, onDone){
     var srcIdx=dragState.srcIdx;
     var savedArr=dragState.arr;
     var savedOnDone=dragState.onDone;
+    var savedEl=dragState.el;
+    var savedContainer=dragState.container;
+    var savedAttr=dragState.idxAttr;
 
-    dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0};
+    dragState={active:false,srcIdx:-1,toIdx:-1,el:null,ghost:null,arr:null,onDone:null,container:null,lastToIdx:-2,longPressTimer:null,offsetX:0,offsetY:0,idxAttr:null};
 
-    var realTo=toIdx>srcIdx?toIdx-1:toIdx;
-    if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
-      vibrate([25,15,25]);
-      var tmp=savedArr.splice(srcIdx,1)[0];
-      savedArr.splice(realTo,0,tmp);
-      savedOnDone();
+    if(savedAttr){
+      if(applyDragReorder(savedContainer,savedArr,savedEl,toIdx,savedAttr)){vibrate([25,15,25]);savedOnDone();}
+    } else {
+      var realTo=toIdx>srcIdx?toIdx-1:toIdx;
+      if(realTo!==srcIdx&&toIdx!==srcIdx&&toIdx!==srcIdx+1){
+        vibrate([25,15,25]);
+        var tmp=savedArr.splice(srcIdx,1)[0];
+        savedArr.splice(realTo,0,tmp);
+        savedOnDone();
+      }
     }
   });
 }
@@ -5055,10 +5101,20 @@ function schCalMove(dir){
   renderSchList();
 }
 
+function siteOrderIdx(name){
+  var i=sites.findIndex(function(s){return (typeof s==='object'?s.name:s)===name;});
+  return i<0?9999:i;
+}
 function getFilteredSch(){
   return schedules.filter(function(s){
     var siteName=typeof s.site==='object'?s.site.name:s.site;
     return schSiteFilter==='전체'||siteName===schSiteFilter;
+  }).sort(function(a,b){
+    var an=typeof a.site==='object'?a.site.name:a.site;
+    var bn=typeof b.site==='object'?b.site.name:b.site;
+    var d=siteOrderIdx(an)-siteOrderIdx(bn);
+    if(d!==0)return d;
+    return String(a.startDate||'').localeCompare(String(b.startDate||''));
   });
 }
 
