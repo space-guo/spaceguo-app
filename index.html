@@ -1248,6 +1248,10 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <div class="field-row"><div class="field-label">공용 비밀번호</div><input class="field-input" id="siteCommonPwInp" type="tel" placeholder="예: 1234#"></div>
     <div class="field-row"><div class="field-label">세대 비밀번호</div><input class="field-input" id="siteUnitPwInp" type="tel" placeholder="예: 1234*"></div>
+    <div class="field-row">
+      <div class="field-label">현장 색상 <span style="font-size:10px;color:var(--muted)">(공정표 전체보기에서 사용)</span></div>
+      <div id="siteColorPicker" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+    </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
       <button class="modal-save" onclick="saveSiteEdit()">저장</button>
@@ -4791,7 +4795,11 @@ function getProcColor(procName, fallbackIdx){
 }
 
 function getSiteColor(siteName){
-  var idx=sites.findIndex(function(s){return s===siteName;});
+  var idx=sites.findIndex(function(s){return (typeof s==='object'?s.name:s)===siteName;});
+  if(idx>=0){
+    var st=sites[idx];
+    if(typeof st==='object'&&st.color)return st.color;
+  }
   return SCH_COLORS[idx>=0?idx%SCH_COLORS.length:0];
 }
 function getSchBarColor(s, si){
@@ -4920,7 +4928,14 @@ function renderSchSiteFilter(){
   var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
   var all=['전체'].concat(siteNames);
   el.innerHTML=all.map(function(s){
-    return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" data-site="'+s+'">'+s+'</button>';
+    if(s==='전체'){
+      return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" data-site="'+s+'">'+s+'</button>';
+    }
+    var col=getSiteColor(s);
+    var isActive=schSiteFilter===s;
+    var style=isActive?'border-color:'+col+';color:'+col:'';
+    return '<button class="filter-chip'+(isActive?' active':'')+'" data-site="'+s+'" style="'+style+'">'
+      +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+col+';margin-right:5px;vertical-align:1px"></span>'+s+'</button>';
   }).join('');
   el.querySelectorAll('button').forEach(function(btn){
     btn.addEventListener('click',function(){setSchSiteFilter(this.dataset.site);});
@@ -4991,8 +5006,7 @@ function renderSchCal(){
         var isEnd=ds===s.endDate;
         var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
         var color=getSchBarColor(s,si);
-        var siteName2=typeof s.site==='object'?s.site.name:s.site;
-        var label=isStart?(schSiteFilter==='전체'?(siteName2||'현장'):(s.procName||'공정')):'';
+        var label=isStart?(s.procName||'공정'):'';
         bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
       }
     });
@@ -5920,7 +5934,7 @@ function deleteSite(i){
   });
 }
 
-var editingSiteIdx=-1, editingSiteStatus='ongoing';
+var editingSiteIdx=-1, editingSiteStatus='ongoing', editingSiteColor='';
 function openSiteEditModal(i){
   editingSiteIdx=i;
   var s=sites[i];
@@ -5941,6 +5955,20 @@ function openSiteEditModal(i){
   document.getElementById('sitePyeongInp').value=s.pyeong||'';
   document.getElementById('siteCommonPwInp').value=s.commonPw||'';
   document.getElementById('siteUnitPwInp').value=s.unitPw||'';
+  editingSiteColor=s.color||'';
+  var cpEl=document.getElementById('siteColorPicker');
+  if(cpEl){
+    cpEl.innerHTML=SCH_COLORS.map(function(col){
+      return '<button type="button" class="color-pick-btn'+(editingSiteColor===col?' selected':'')+'" data-color="'+col+'" style="background:'+col+'"></button>';
+    }).join('');
+    cpEl.querySelectorAll('.color-pick-btn').forEach(function(btn){
+      btn.onclick=function(){
+        editingSiteColor=this.dataset.color;
+        cpEl.querySelectorAll('.color-pick-btn').forEach(function(bb){bb.classList.remove('selected');});
+        this.classList.add('selected');
+      };
+    });
+  }
   var statusClass={meeting:'active-meeting',before:'active-before',ongoing:'active-ongoing',done:'active-done'};
   document.querySelectorAll('#siteStatusRow .site-status-btn').forEach(function(btn){
     btn.className='site-status-btn'+(btn.dataset.status===editingSiteStatus?' '+statusClass[editingSiteStatus]:'');
@@ -5977,11 +6005,13 @@ function saveSiteEdit(){
     sqm:(document.getElementById('siteSqmInp').value||'').trim(),
     pyeong:(document.getElementById('sitePyeongInp').value||'').trim(),
     commonPw:(document.getElementById('siteCommonPwInp').value||'').trim(),
-    unitPw:(document.getElementById('siteUnitPwInp').value||'').trim()
+    unitPw:(document.getElementById('siteUnitPwInp').value||'').trim(),
+    color:editingSiteColor||''
   };
   saveSettings().then(function(){
     closeSiteEditModal();
-    renderSiteSelect();renderSiteList();renderFilterBar();
+    renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();
+    if(document.getElementById('view-sch').classList.contains('active')){renderSchCal();renderSchList();}
     showToast('✓ 현장 정보 저장됐어요');
   });
 }
