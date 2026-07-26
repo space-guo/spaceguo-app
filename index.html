@@ -38,10 +38,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .icon-btn svg{width:18px;height:18px}
 .app-title{font-size:13px;color:var(--muted);letter-spacing:.08em;font-weight:500}
 .header-right{display:flex;align-items:center;gap:10px}
-.today-line{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;padding:0 2px}
-.today-line-label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em}
-.today-line-val{font-size:17px;font-weight:900;color:var(--text);letter-spacing:-.03em}
-.today-line-cnt{font-size:11px;color:var(--muted)}
+.today-total{font-size:13px;color:var(--text);font-weight:800;letter-spacing:-.02em;margin-right:2px;white-space:nowrap}
 .logout-btn{font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit}
 .tab-bar{display:flex;gap:4px}
 .tab{flex:1;padding:8px;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted)}
@@ -214,7 +211,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .cal-nav-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;padding:6px 16px;cursor:pointer}
 .cal-month-label{font-size:16px;font-weight:800;color:var(--text)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin-bottom:14px}
 .cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:.06em}
 .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 4px;min-height:52px;cursor:pointer;transition:all .15s;position:relative}
 .cal-cell:active{background:var(--surface2)}
@@ -323,17 +320,17 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .sch-site-filter{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:4px}
 .sch-site-filter::-webkit-scrollbar{display:none}
 .sch-cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
-.sch-cal-header{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
+.sch-cal-header{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--border)}
 .sch-cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:8px 2px}
-.sch-cal-body{display:grid;grid-template-columns:repeat(7,1fr)}
-.sch-cal-cell{min-height:40px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top}
+.sch-cal-body{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.sch-cal-cell{min-width:0;overflow:hidden;min-height:40px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top}
 .sch-cal-cell:nth-child(7n){border-right:none}
 .sch-day-num{font-size:10px;font-weight:700;color:var(--text);margin-bottom:2px;text-align:center}
 .sch-day-num.today-mark{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 2px}
 .sch-day-num.sun{color:var(--red)}
 .sch-day-num.sat{color:var(--blue)}
 .sch-day-num.other{color:var(--border)}
-.sch-bar{font-size:9px;font-weight:700;padding:2px 4px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3}
+.sch-bar{max-width:100%;min-width:0;font-size:9px;font-weight:700;padding:2px 4px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3}
 .sch-bar.start{border-radius:6px 0 0 6px;padding-left:5px}
 .sch-bar.end{border-radius:0 6px 6px 0}
 .sch-bar.mid{border-radius:0}
@@ -372,7 +369,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .date-mini-cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .date-mini-cal-btn{background:none;border:none;color:var(--muted);font-size:18px;padding:4px 10px;cursor:pointer}
 .date-mini-cal-label{font-size:13px;font-weight:800;color:var(--text)}
-.date-mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.date-mini-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
 .date-mini-dow{font-size:9px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0}
 .date-mini-cell{font-size:11px;font-weight:600;text-align:center;padding:6px 2px;border-radius:6px;cursor:pointer;color:var(--text);border:1px solid transparent}
 .date-mini-cell:active{background:var(--accent2);color:#000}
@@ -588,13 +585,13 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 .my-cal-sch-toggle.on{background:var(--tint-green);border-color:var(--green);color:var(--green)}
 .my-cal-add-btn{background:var(--accent);border:none;border-radius:20px;color:#fff;font-family:inherit;font-size:12px;font-weight:800;padding:7px 18px;cursor:pointer;white-space:nowrap}
 .my-cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
-.my-cal-header{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
+.my-cal-header{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--border)}
 .my-cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:8px 2px}
-.my-cal-body{display:grid;grid-template-columns:repeat(7,1fr)}
-.my-cal-cell{min-height:62px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top;cursor:pointer;transition:background .1s}
+.my-cal-body{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.my-cal-cell{min-width:0;overflow:hidden;min-height:62px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top;cursor:pointer;transition:background .1s}
 .my-cal-cell:nth-child(7n){border-right:none}
 .my-cal-cell:active{background:var(--surface2)}
-.my-cal-cell.today-cell{background:rgba(255,107,53,.07)}
+.my-cal-cell.today-cell{background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .my-cal-cell.other-month-cell{opacity:.4}
 .my-day-num{font-size:10px;font-weight:700;color:var(--text);text-align:center;margin-bottom:2px}
 .my-day-num.today-mark{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 2px}
@@ -602,11 +599,11 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 .my-day-num.sat{color:var(--blue)}
 .my-day-num.other{color:var(--border)}
 /* 내 일정 이벤트 칩 */
-.my-ev-chip{font-size:9px;font-weight:700;padding:2px 4px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;display:block}
+.my-ev-chip{max-width:100%;min-width:0;font-size:9px;font-weight:700;padding:2px 4px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;display:block}
 .my-ev-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin:1px auto;cursor:pointer}
 .my-ev-todo-check{text-decoration:line-through;opacity:.5}
 /* 공정표 오버레이 바 */
-.my-sch-bar{font-size:8px;font-weight:700;padding:2px 3px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3;opacity:.85}
+.my-sch-bar{max-width:100%;min-width:0;font-size:8px;font-weight:700;padding:2px 3px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3;opacity:.85}
 .my-sch-bar.bar-start{border-radius:5px 0 0 5px;padding-left:4px}
 .my-sch-bar.bar-end{border-radius:0 5px 5px 0}
 .my-sch-bar.bar-mid{border-radius:0}
@@ -689,6 +686,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   }
   .header-right{flex-wrap:wrap;gap:4px;width:100%;margin-top:8px}
   .brand-logo{height:22px}
+  .today-total{font-size:12px}
 
   /* 탭 → 세로 내비게이션 (flex:none 으로 늘어남 방지) */
   .tab-bar{flex-direction:column;gap:4px;margin-top:4px}
@@ -775,6 +773,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <span class="sync-dot" id="syncDot" title="동기화 상태"></span><span class="sync-label" id="syncLabel"></span>
     </div>
     <div class="header-right">
+      <span class="today-total" id="headerTotal"></span>
       <button class="icon-btn" id="notifBellBtn" onclick="openNotifModal()" title="알림"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="notif-bell-badge" id="notifBellBadge" style="display:none"></span></button>
       <button class="icon-btn" onclick="openPersonalModal()" title="개인 가계부"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
       <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="테마 전환"></button>
@@ -985,7 +984,6 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   <!-- 구분선 -->
   <div style="height:1px;background:var(--border);margin:14px 0"></div>
   <!-- 하단 내역 -->
-  <div class="today-line" id="todayLine" style="display:none"><span class="today-line-label">오늘</span><span class="today-line-val" id="headerTotal"></span><span class="today-line-cnt" id="todayCount"></span></div>
   <div class="filter-bar" id="filterBar"><button class="filter-chip active" onclick="setFilter('전체',this)">전체</button></div>
   <div class="summary-card">
     <div><div class="s-label">필터 합계</div><div class="s-value" id="filteredTotal">₩0</div></div>
@@ -2647,19 +2645,8 @@ function renderList(){
 
 function updateHeaderTotal(){
   var today=new Date().toDateString();
-  var todayRecs=records.filter(function(r){return new Date(r.date).toDateString()===today;});
-  var t=todayRecs.reduce(function(a,r){return a+r.amount;},0);
-  var line=document.getElementById('todayLine');
-  var val=document.getElementById('headerTotal');
-  var cnt=document.getElementById('todayCount');
-  if(!line||!val)return;
-  if(t){
-    line.style.display='flex';
-    val.textContent='₩'+t.toLocaleString('ko-KR');
-    if(cnt)cnt.textContent=todayRecs.length+'건';
-  } else {
-    line.style.display='none';
-  }
+  var t=records.filter(function(r){return new Date(r.date).toDateString()===today;}).reduce(function(a,r){return a+r.amount;},0);
+  document.getElementById('headerTotal').textContent=t?'오늘 ₩'+t.toLocaleString('ko-KR'):'';
 }
 
 // ── DASHBOARD ──
