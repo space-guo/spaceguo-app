@@ -1627,9 +1627,10 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         <input class="field-input" id="schDecCat" placeholder="분류" style="width:66px;padding-left:9px;padding-right:9px">
         <input class="field-input" id="schDecLabel" placeholder="결정 항목" style="flex:1;min-width:0">
       </div>
-      <div style="display:flex;gap:6px;margin-top:6px">
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+        <span style="font-size:11px;color:var(--muted);font-weight:700;flex-shrink:0;width:52px">기한</span>
         <input class="field-input" id="schDecDue" type="date" style="flex:1;min-width:0">
-        <button class="add-site-btn" onclick="addSchDecision()" style="padding:12px 16px">추가</button>
+        <button class="add-site-btn" onclick="addSchDecision()" style="padding:12px 16px;flex-shrink:0">추가</button>
       </div>
     </div>
     <div class="field-row">
@@ -5049,7 +5050,15 @@ function buildGanttHTML(){
   return html;
 }
 function exportSchImage(){
-  showToast('이미지 생성 중...', 2000);
+  if(schSiteFilter!=='전체'){
+    showToast('이미지 생성 중...',2000);
+    loadSiteDecisions(schSiteFilter,function(){runExportSchImage(true);});
+    return;
+  }
+  runExportSchImage(false);
+}
+function runExportSchImage(skipToast){
+  if(!skipToast)showToast('이미지 생성 중...', 2000);
   var wrap=document.createElement('div');
   wrap.style.cssText="position:fixed;left:-9999px;top:0;width:840px;background:#f9f8f6;padding:32px;font-family:'SUIT','Noto Sans KR',sans-serif;z-index:-1";
   var title=schYear+'년 '+(schMonth+1)+'월 공정표';
@@ -5500,6 +5509,7 @@ function renderSchModalDecisions(){
       +(d.custom?'<button type="button" onclick="removeSchDecision(\''+k+'\')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>':'<span style="font-size:9px;color:var(--muted);flex-shrink:0">기본</span>')
       +'</div>'
       +'<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-left:26px">'
+      +'<span style="font-size:10px;color:var(--muted);font-weight:700">기한</span>'
       +'<input type="date" value="'+(d.due||'')+'" onchange="setSchDecisionDue(\''+k+'\',this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 8px">'
       +(d.auto&&d.due?'<span style="font-size:10px;color:var(--muted)">자동</span>':'')
       +'</div></div>';
