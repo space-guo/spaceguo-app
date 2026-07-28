@@ -1037,6 +1037,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   </div>
   <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-list" id="schList"></div>
+  <div id="schDecisionSection" style="display:none"></div>
 
   <!-- 업무일지 섹션 -->
   <div class="journal-section">
@@ -1168,6 +1169,17 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         <input class="field-input" id="procModalNewItem" placeholder="품목명" style="flex:1">
         <input class="field-input" id="procModalNewUnit" placeholder="단위" style="width:80px">
         <button class="add-site-btn" onclick="addProcModalItem()">추가</button>
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:14px">
+      <div class="field-label" style="margin-bottom:2px">📋 고객 결정 항목</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.5">고객이 이 공정 전에 미리 정해야 할 것 (자재·색상·모델 등). D-는 공정 시작 며칠 전까지 정해야 하는지</div>
+      <div id="procDecisionList"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input class="field-input" id="procDecCat" placeholder="분류" style="width:70px;padding-left:10px;padding-right:10px">
+        <input class="field-input" id="procDecLabel" placeholder="결정 항목" style="flex:1;min-width:0">
+        <input class="field-input" id="procDecLead" type="tel" inputmode="numeric" placeholder="D-" style="width:52px;padding-left:8px;padding-right:8px;text-align:center">
+        <button class="add-site-btn" onclick="addProcDecision()" style="padding:12px 14px">추가</button>
       </div>
     </div>
     <div class="modal-btn-row">
@@ -3045,10 +3057,39 @@ function toggleItem(btn,label){
     selectedItems.push(label);
   }
 }
+var procDecisions=[];
+function renderProcDecisions(){
+  var el=document.getElementById('procDecisionList');
+  if(!el)return;
+  if(!procDecisions.length){el.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 2px">아직 항목이 없어요</div>';return;}
+  el.innerHTML=procDecisions.map(function(d,i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:5px">'
+      +(d.cat?'<span style="font-size:10px;font-weight:800;color:var(--accent);background:var(--surface);border-radius:5px;padding:2px 6px;flex-shrink:0">'+d.cat+'</span>':'')
+      +'<span style="flex:1;font-size:12px;min-width:0;word-break:break-all">'+d.label+'</span>'
+      +'<span style="font-size:10px;color:var(--muted);font-weight:800;flex-shrink:0">D-'+(d.lead||0)+'</span>'
+      +'<button type="button" onclick="removeProcDecision('+i+')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>'
+      +'</div>';
+  }).join('');
+}
+function addProcDecision(){
+  var cat=(document.getElementById('procDecCat').value||'').trim();
+  var label=(document.getElementById('procDecLabel').value||'').trim();
+  var lead=parseInt(document.getElementById('procDecLead').value)||0;
+  if(!label){showToast('결정 항목을 입력해주세요');return;}
+  procDecisions.push({cat:cat,label:label,lead:lead});
+  document.getElementById('procDecLabel').value='';
+  renderProcDecisions();
+  document.getElementById('procDecLabel').focus();
+}
+function removeProcDecision(i){procDecisions.splice(i,1);renderProcDecisions();}
+
 function openProcessModal(idx){
   editingProcIdx=idx===undefined?-1:idx;
   document.getElementById('processModalTitle').textContent=editingProcIdx>=0?'공정 수정':'공정 추가';
   document.getElementById('procNameInp').value=editingProcIdx>=0?(processes[editingProcIdx].name||''):'';
+  procDecisions=editingProcIdx>=0?JSON.parse(JSON.stringify(processes[editingProcIdx].decisions||[])):[];
+  ['procDecCat','procDecLabel','procDecLead'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  renderProcDecisions();
   document.getElementById('processModal').style.display='flex';
   pushModalState('processModal');
   setTimeout(function(){document.getElementById('procNameInp').focus();},100);
@@ -3058,8 +3099,8 @@ function closeProcessModal(){if(modalStack.length>0)modalStack.pop();
 function saveProcessModal(){
   var name=document.getElementById('procNameInp').value.trim();
   if(!name){showToast('공정명을 입력해주세요');return;}
-  if(editingProcIdx>=0){processes[editingProcIdx].name=name;}
-  else{processes.push({name:name,items:[]});}
+  if(editingProcIdx>=0){processes[editingProcIdx].name=name;processes[editingProcIdx].decisions=procDecisions;}
+  else{processes.push({name:name,items:[],decisions:procDecisions});}
   saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
 }
 function deleteProcess(pi){
@@ -5013,6 +5054,7 @@ function exportSchImage(){
   var cal='<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>';
   var gantt='<div style="font-size:14px;font-weight:800;color:#023a25;margin-bottom:8px">주차별 공정 현황</div>'
     +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)">'+buildGanttHTML()+'</div>'
+    +buildDecisionTableHTML()
     +'<div style="text-align:right;font-size:10px;color:#9a998f;margin-top:14px">공간구오 · Space GUO · 나로부터 시작되는 완전한 공간</div>';
   wrap.innerHTML=head+info+cal+gantt;
   document.body.appendChild(wrap);
@@ -5066,6 +5108,7 @@ function renderSchTab(){
   }
   renderJournalSiteFilter();
   renderJournalList();
+  try{loadSiteDecisions(schSiteFilter,renderSchDecisions);}catch(e){}
 }
 
 function renderSchSiteFilter(){
@@ -5091,6 +5134,7 @@ function setSchSiteFilter(s){
   renderSchCal();
   renderSchList();
   renderSchSiteFilter();
+  loadSiteDecisions(s,renderSchDecisions);
 }
 
 function schCalMove(dir){
@@ -5116,6 +5160,118 @@ function getFilteredSch(){
     if(d!==0)return d;
     return String(a.startDate||'').localeCompare(String(b.startDate||''));
   });
+}
+
+var siteDecisions={};
+function addDaysStr(ds,n){
+  var p=String(ds).split('-');
+  var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+  d.setUTCDate(d.getUTCDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function computeDecisions(siteName){
+  var out=[];
+  var scheds=schedules.filter(function(s){return (typeof s.site==='object'?s.site.name:s.site)===siteName;});
+  var ov=siteDecisions.overrides||{};
+  processes.forEach(function(p){
+    if(!p.decisions||!p.decisions.length)return;
+    var starts=scheds.filter(function(s){return s.procName===p.name&&s.startDate;}).map(function(s){return s.startDate;}).sort();
+    var start=starts.length?starts[0]:'';
+    p.decisions.forEach(function(d){
+      var key=p.name+'|'+d.label;
+      var o=ov[key]||{};
+      var due=o.due||(start?addDaysStr(start,-(parseInt(d.lead)||0)):'');
+      out.push({proc:p.name,cat:d.cat||'',label:d.label,due:due,done:!!o.done,key:key});
+    });
+  });
+  out.sort(function(a,b){return (a.due||'9999-99-99').localeCompare(b.due||'9999-99-99');});
+  return out;
+}
+function loadSiteDecisions(site,cb){
+  if(!site||site==='전체'){siteDecisions={};if(cb)cb();return;}
+  db.collection('sitedecisions').doc(site).get().then(function(s){
+    siteDecisions=s.exists?s.data():{};
+    if(cb)cb();
+  }).catch(function(){siteDecisions={};if(cb)cb();});
+}
+function saveSiteDecisions(){
+  if(schSiteFilter==='전체')return;
+  db.collection('sitedecisions').doc(schSiteFilter).set({overrides:siteDecisions.overrides||{}},{merge:true});
+}
+function renderSchDecisions(){
+  var el=document.getElementById('schDecisionSection');
+  if(!el)return;
+  if(schSiteFilter==='전체'){el.style.display='none';el.innerHTML='';return;}
+  var list=computeDecisions(schSiteFilter);
+  if(!list.length){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='block';
+  var today=new Date().toISOString().slice(0,10);
+  var soonLimit=addDaysStr(today,7);
+  var doneN=list.filter(function(d){return d.done;}).length;
+  var html='<div class="journal-section-header" style="margin-top:16px"><span class="journal-section-title">📋 고객 결정 항목</span>'
+    +'<span style="font-size:11px;color:var(--muted);font-weight:800">'+doneN+' / '+list.length+'</span></div>';
+  list.forEach(function(d){
+    var late=!d.done&&d.due&&d.due<today;
+    var soon=!d.done&&d.due&&!late&&d.due<=soonLimit;
+    var accent=late?'var(--red)':soon?'var(--accent2)':'var(--muted)';
+    var dueTxt=d.due?d.due.slice(5).replace('-','/')+'까지':'일정 미정';
+    var k=d.key.replace(/'/g,"\\'");
+    html+='<div class="sch-item" style="padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleDecision(\''+k+'\')">'
+      +'<div style="width:19px;height:19px;border-radius:6px;border:2px solid '+(d.done?'var(--green)':'var(--border)')+';background:'+(d.done?'var(--green)':'transparent')+';color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(d.done?'✓':'')+'</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:13px;font-weight:700;color:'+(d.done?'var(--muted)':'var(--text)')+';'+(d.done?'text-decoration:line-through':'')+'">'
+      +(d.cat?'<span style="font-size:10px;color:var(--accent);margin-right:5px;font-weight:800">'+d.cat+'</span>':'')+d.label+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+d.proc+' · <span style="color:'+accent+';font-weight:700">'+dueTxt+'</span>'+(late?' ⚠️':'')+'</div>'
+      +'</div>'
+      +'<button onclick="event.stopPropagation();editDecisionDue(\''+k+'\')" style="background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;padding:5px 8px;cursor:pointer;flex-shrink:0">날짜</button>'
+      +'</div>';
+  });
+  el.innerHTML=html;
+}
+function toggleDecision(key){
+  if(!siteDecisions.overrides)siteDecisions.overrides={};
+  var cur=siteDecisions.overrides[key]||{};
+  cur.done=!cur.done;
+  siteDecisions.overrides[key]=cur;
+  renderSchDecisions();
+  saveSiteDecisions();
+}
+function editDecisionDue(key){
+  var ov=(siteDecisions.overrides||{})[key]||{};
+  var v=prompt('결정 기한 (YYYY-MM-DD)\n비우고 확인하면 공정 일정 기준으로 자동 계산합니다', ov.due||'');
+  if(v===null)return;
+  v=v.trim();
+  if(!siteDecisions.overrides)siteDecisions.overrides={};
+  var o=siteDecisions.overrides[key]||{};
+  if(v){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(v)){showToast('날짜는 2026-08-15 형식으로 입력해주세요');return;}
+    o.due=v;
+  } else { delete o.due; }
+  siteDecisions.overrides[key]=o;
+  renderSchDecisions();
+  saveSiteDecisions();
+  showToast('✓ 기한 저장됐어요');
+}
+function buildDecisionTableHTML(){
+  if(schSiteFilter==='전체')return '';
+  var list=computeDecisions(schSiteFilter).filter(function(d){return !d.done;});
+  if(!list.length)return '';
+  var h='<div style="font-size:14px;font-weight:800;color:#023a25;margin:24px 0 4px">고객 확인 사항</div>'
+    +'<div style="font-size:11px;color:#6b6a63;margin-bottom:9px">아래 항목은 표기된 기한까지 결정해 주셔야 공정이 예정대로 진행됩니다</div>'
+    +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)"><table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff">'
+    +'<tr><th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:76px">공정</th>'
+    +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:58px">분류</th>'
+    +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px">결정 항목</th>'
+    +'<th style="padding:9px 10px;text-align:center;background:#023a25;color:#f9f8f6;font-size:11px;width:88px">결정 기한</th></tr>';
+  list.forEach(function(d){
+    h+='<tr>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26;font-weight:700">'+d.proc+'</td>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#6b6a63">'+(d.cat||'-')+'</td>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26">'+d.label+'</td>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;text-align:center;font-weight:800;color:#023a25">'+(d.due||'일정 미정')+'</td>'
+      +'</tr>';
+  });
+  return h+'</table></div>';
 }
 
 function renderSchCal(){
