@@ -1630,6 +1630,10 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
         <span style="font-size:11px;color:var(--muted);font-weight:700;flex-shrink:0;width:52px">기한</span>
         <input class="field-input" id="schDecDue" type="date" style="flex:1;min-width:0">
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+        <span style="font-size:11px;color:var(--muted);font-weight:700;flex-shrink:0;width:52px">금액</span>
+        <input class="field-input" id="schDecAmt" type="tel" inputmode="numeric" placeholder="증감액 (예: 500000, -200000)" style="flex:1;min-width:0">
         <button class="add-site-btn" onclick="addSchDecision()" style="padding:12px 16px;flex-shrink:0">추가</button>
       </div>
     </div>
@@ -5206,11 +5210,11 @@ function computeDecisions(siteName){
       var key=p.name+'|'+d.label;
       var o=ov[key]||{};
       var due=o.due||(start?addDaysStr(start,-(parseInt(d.lead)||0)):'');
-      out.push({proc:p.name,cat:d.cat||'',label:d.label,due:due,done:!!o.done,key:key});
+      out.push({proc:p.name,cat:d.cat||'',label:d.label,due:due,done:!!o.done,key:key,amount:parseInt(o.amount)||0});
     });
   });
   (siteDecisions.custom||[]).forEach(function(cs){
-    out.push({proc:cs.proc||'',cat:cs.cat||'',label:cs.label,due:cs.due||'',done:!!cs.done,key:'custom:'+cs.id});
+    out.push({proc:cs.proc||'',cat:cs.cat||'',label:cs.label,due:cs.due||'',done:!!cs.done,key:'custom:'+cs.id,amount:parseInt(cs.amount)||0});
   });
   out.sort(function(a,b){return (a.due||'9999-99-99').localeCompare(b.due||'9999-99-99');});
   return out;
@@ -5236,8 +5240,11 @@ function renderSchDecisions(){
   var today=new Date().toISOString().slice(0,10);
   var soonLimit=addDaysStr(today,7);
   var doneN=list.filter(function(d){return d.done;}).length;
+  var amtSum=list.reduce(function(a,d){return a+(d.amount||0);},0);
   var html='<div class="journal-section-header" style="margin-top:16px"><span class="journal-section-title">📋 고객 결정 항목</span>'
-    +'<span style="font-size:11px;color:var(--muted);font-weight:800">'+doneN+' / '+list.length+'</span></div>';
+    +'<span style="font-size:11px;color:var(--muted);font-weight:800">'
+    +(amtSum?'<span style="color:'+(amtSum>0?'var(--red)':'var(--blue)')+';margin-right:8px">'+(amtSum>0?'+':'')+amtSum.toLocaleString('ko-KR')+'원</span>':'')
+    +doneN+' / '+list.length+'</span></div>';
   list.forEach(function(d){
     var late=!d.done&&d.due&&d.due<today;
     var soon=!d.done&&d.due&&!late&&d.due<=soonLimit;
@@ -5249,7 +5256,8 @@ function renderSchDecisions(){
       +'<div style="flex:1;min-width:0">'
       +'<div style="font-size:13px;font-weight:700;color:'+(d.done?'var(--muted)':'var(--text)')+';'+(d.done?'text-decoration:line-through':'')+'">'
       +(d.cat?'<span style="font-size:10px;color:var(--accent);margin-right:5px;font-weight:800">'+d.cat+'</span>':'')+d.label+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+d.proc+' · <span style="color:'+accent+';font-weight:700">'+dueTxt+'</span>'+(late?' ⚠️':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+d.proc+' · <span style="color:'+accent+';font-weight:700">'+dueTxt+'</span>'+(late?' ⚠️':'')
+      +(d.amount?' · <span style="color:'+(d.amount>0?'var(--red)':'var(--blue)')+';font-weight:800">'+(d.amount>0?'+':'')+d.amount.toLocaleString('ko-KR')+'원</span>':'')+'</div>'
       +'</div>'
       +'<button onclick="event.stopPropagation();editDecisionDue(\''+k+'\')" style="background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;padding:5px 8px;cursor:pointer;flex-shrink:0">날짜</button>'
       +'</div>';
@@ -5298,24 +5306,50 @@ function editDecisionDue(key){
 }
 function buildDecisionTableHTML(){
   if(schSiteFilter==='전체')return '';
-  var list=computeDecisions(schSiteFilter).filter(function(d){return !d.done;});
-  if(!list.length)return '';
-  var h='<div style="font-size:14px;font-weight:800;color:#023a25;margin:24px 0 4px">고객 확인 사항</div>'
-    +'<div style="font-size:11px;color:#6b6a63;margin-bottom:9px">아래 항목은 표기된 기한까지 결정해 주셔야 공정이 예정대로 진행됩니다</div>'
-    +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)"><table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff">'
-    +'<tr><th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:76px">공정</th>'
-    +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:58px">분류</th>'
-    +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px">결정 항목</th>'
-    +'<th style="padding:9px 10px;text-align:center;background:#023a25;color:#f9f8f6;font-size:11px;width:88px">결정 기한</th></tr>';
-  list.forEach(function(d){
-    h+='<tr>'
-      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26;font-weight:700">'+d.proc+'</td>'
-      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#6b6a63">'+(d.cat||'-')+'</td>'
-      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26">'+d.label+'</td>'
-      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;text-align:center;font-weight:800;color:#023a25">'+(d.due||'일정 미정')+'</td>'
-      +'</tr>';
-  });
-  return h+'</table></div>';
+  var all=computeDecisions(schSiteFilter);
+  var pending=all.filter(function(d){return !d.done;});
+  var priced=all.filter(function(d){return d.amount;});
+  var out='';
+  if(pending.length){
+    out+='<div style="font-size:14px;font-weight:800;color:#023a25;margin:24px 0 4px">고객 확인 사항</div>'
+      +'<div style="font-size:11px;color:#6b6a63;margin-bottom:9px">아래 항목은 표기된 기한까지 결정해 주셔야 공정이 예정대로 진행됩니다</div>'
+      +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)"><table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff">'
+      +'<tr><th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:76px">공정</th>'
+      +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:58px">분류</th>'
+      +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px">결정 항목</th>'
+      +'<th style="padding:9px 10px;text-align:center;background:#023a25;color:#f9f8f6;font-size:11px;width:88px">결정 기한</th></tr>';
+    pending.forEach(function(d){
+      out+='<tr>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26;font-weight:700">'+d.proc+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#6b6a63">'+(d.cat||'-')+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26">'+d.label+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;text-align:center;font-weight:800;color:#023a25">'+(d.due||'일정 미정')+'</td>'
+        +'</tr>';
+    });
+    out+='</table></div>';
+  }
+  if(priced.length){
+    var sum=priced.reduce(function(a,d){return a+d.amount;},0);
+    out+='<div style="font-size:14px;font-weight:800;color:#023a25;margin:24px 0 4px">변경 · 추가 금액</div>'
+      +'<div style="font-size:11px;color:#6b6a63;margin-bottom:9px">고객 선택에 따라 최초 견적에서 증감된 금액입니다 (부가세 별도)</div>'
+      +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)"><table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff">'
+      +'<tr><th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px;width:76px">공정</th>'
+      +'<th style="padding:9px 10px;text-align:left;background:#023a25;color:#f9f8f6;font-size:11px">변경 내용</th>'
+      +'<th style="padding:9px 10px;text-align:center;background:#023a25;color:#f9f8f6;font-size:11px;width:66px">상태</th>'
+      +'<th style="padding:9px 10px;text-align:right;background:#023a25;color:#f9f8f6;font-size:11px;width:96px">금액</th></tr>';
+    priced.forEach(function(d){
+      out+='<tr>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26;font-weight:700">'+d.proc+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;color:#2b2a26">'+(d.cat?'<span style="color:#6b6a63">'+d.cat+' · </span>':'')+d.label+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;text-align:center;color:'+(d.done?'#2e7d51':'#b8860b')+';font-weight:700">'+(d.done?'확정':'검토중')+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;text-align:right;font-weight:800;color:'+(d.amount>0?'#c2453f':'#3f66b0')+'">'+(d.amount>0?'+':'')+d.amount.toLocaleString('ko-KR')+'</td>'
+        +'</tr>';
+    });
+    out+='<tr><td colspan="3" style="padding:9px 10px;background:#f4f3f0;text-align:right;font-weight:800;color:#023a25">합계</td>'
+      +'<td style="padding:9px 10px;background:#f4f3f0;text-align:right;font-weight:900;color:'+(sum>0?'#c2453f':'#3f66b0')+'">'+(sum>0?'+':'')+sum.toLocaleString('ko-KR')+'</td></tr>';
+    out+='</table></div>';
+  }
+  return out;
 }
 
 function renderSchCal(){
@@ -5480,11 +5514,11 @@ function schModalDecItems(){
       var o=ov[key]||{};
       out.push({key:key,cat:d.cat||'',label:d.label,
         due:o.due||(start?addDaysStr(start,-(parseInt(d.lead)||0)):''),
-        auto:!o.due,done:!!o.done,custom:false});
+        auto:!o.due,done:!!o.done,custom:false,amount:parseInt(o.amount)||0});
     });
     (schModalDecData.custom||[]).forEach(function(cs){
       if(cs.proc!==proc)return;
-      out.push({key:'custom:'+cs.id,cat:cs.cat||'',label:cs.label,due:cs.due||'',auto:false,done:!!cs.done,custom:true,id:cs.id});
+      out.push({key:'custom:'+cs.id,cat:cs.cat||'',label:cs.label,due:cs.due||'',auto:false,done:!!cs.done,custom:true,id:cs.id,amount:parseInt(cs.amount)||0});
     });
   }
   return out;
@@ -5508,10 +5542,15 @@ function renderSchModalDecisions(){
       +'<span style="flex:1;font-size:12px;min-width:0;word-break:break-all;'+(d.done?'text-decoration:line-through;color:var(--muted)':'')+'">'+d.label+'</span>'
       +(d.custom?'<button type="button" onclick="removeSchDecision(\''+k+'\')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>':'<span style="font-size:9px;color:var(--muted);flex-shrink:0">기본</span>')
       +'</div>'
-      +'<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-left:26px">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-left:26px;flex-wrap:wrap">'
       +'<span style="font-size:10px;color:var(--muted);font-weight:700">기한</span>'
       +'<input type="date" value="'+(d.due||'')+'" onchange="setSchDecisionDue(\''+k+'\',this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 8px">'
       +(d.auto&&d.due?'<span style="font-size:10px;color:var(--muted)">자동</span>':'')
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-top:5px;padding-left:26px">'
+      +'<span style="font-size:10px;color:var(--muted);font-weight:700">금액</span>'
+      +'<input type="tel" inputmode="numeric" value="'+(d.amount?d.amount:'')+'" placeholder="증감액" onchange="setSchDecisionAmt(\''+k+'\',this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:'+(d.amount>0?'var(--red)':d.amount<0?'var(--blue)':'var(--text)')+';font-family:inherit;font-size:11px;padding:5px 8px;width:110px;font-weight:700">'
+      +(d.amount?'<span style="font-size:11px;font-weight:800;color:'+(d.amount>0?'var(--red)':'var(--blue)')+'">'+(d.amount>0?'+':'')+d.amount.toLocaleString('ko-KR')+'원</span>':'')
       +'</div></div>';
   }).join('');
 }
@@ -5532,10 +5571,13 @@ function addSchDecision(){
   if(!label){showToast('결정 항목을 입력해주세요');return;}
   var cat=(document.getElementById('schDecCat').value||'').trim();
   var due=(document.getElementById('schDecDue').value||'').trim();
+  var amtEl=document.getElementById('schDecAmt');
+  var amt=parseInt(String(amtEl?amtEl.value:'').replace(/[^0-9-]/g,''))||0;
   if(!schModalDecData.custom)schModalDecData.custom=[];
-  schModalDecData.custom.push({id:'d'+Date.now()+Math.floor(Math.random()*1000),proc:proc,cat:cat,label:label,due:due,done:false});
+  schModalDecData.custom.push({id:'d'+Date.now()+Math.floor(Math.random()*1000),proc:proc,cat:cat,label:label,due:due,done:false,amount:amt});
   document.getElementById('schDecLabel').value='';
   document.getElementById('schDecDue').value='';
+  if(amtEl)amtEl.value='';
   renderSchModalDecisions();
   saveSchModalDec();
   showToast('✓ 추가됐어요');
@@ -5559,6 +5601,21 @@ function toggleSchDecision(key){
   }
   renderSchModalDecisions();
   saveSchModalDec();
+}
+function setSchDecisionAmt(key,val){
+  var amt=parseInt(String(val).replace(/[^0-9-]/g,''))||0;
+  if(key.indexOf('custom:')===0){
+    var id=key.slice(7);
+    (schModalDecData.custom||[]).forEach(function(x){if(x.id===id)x.amount=amt;});
+  } else {
+    if(!schModalDecData.overrides)schModalDecData.overrides={};
+    var o=schModalDecData.overrides[key]||{};
+    if(amt)o.amount=amt; else delete o.amount;
+    schModalDecData.overrides[key]=o;
+  }
+  renderSchModalDecisions();
+  saveSchModalDec();
+  showToast(amt?'✓ '+(amt>0?'+':'')+amt.toLocaleString('ko-KR')+'원 저장':'✓ 금액 삭제됨');
 }
 function setSchDecisionDue(key,val){
   if(key.indexOf('custom:')===0){
@@ -5607,7 +5664,7 @@ function openSchModal(){
   setSchStatus(0);
   document.getElementById('schMemoInp').value='';
   document.getElementById('schCheckNewInp').value='';
-  ['schDecCat','schDecLabel','schDecDue'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  ['schDecCat','schDecLabel','schDecDue','schDecAmt'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
   refreshSchModalDecisions();
   document.getElementById('schModal').style.display='flex';
   pushModalState('schModal');
@@ -5651,7 +5708,7 @@ function openSchModalEdit(id){
 
   // 체크리스트 로드
   loadSchChecklist(id, s.procName);
-  ['schDecCat','schDecLabel','schDecDue'].forEach(function(x){var e=document.getElementById(x);if(e)e.value='';});
+  ['schDecCat','schDecLabel','schDecDue','schDecAmt'].forEach(function(x){var e=document.getElementById(x);if(e)e.value='';});
   document.getElementById('schStartInp').onchange=function(){renderSchModalDecisions();};
   schModalDecSite='';schModalDecData={};
   refreshSchModalDecisions();
