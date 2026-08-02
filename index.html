@@ -7312,34 +7312,138 @@ function deletePersonalRecord(id){
     .catch(function(){showToast('삭제 실패');});
 }
 
-function renderPersonalBudget(body){
-  var catSums={};
+var PERSONAL_CAT_COLORS={'식비':'#c2453f','카페/음료':'#b8860b','교통':'#3f66b0','쇼핑':'#8e5aa8','문화/여가':'#2e7d51','의료/건강':'#d16b4e','구독':'#5b8cf7','기타':'#8b8a80'};
+var pbYM=(function(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
+function pbMove(dir){
+  var p=pbYM.split('-'); var d=new Date(+p[0], +p[1]-1+dir, 1);
+  pbYM=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  var body=document.getElementById('personalBody');
+  if(body)renderPersonalBudget(body);
+}
+function pbSumsFor(ym){
+  var s={};
   personalRecords.forEach(function(r){
-    var c=r.category||r.cat;
-    if(c)catSums[c]=(catSums[c]||0)+(r.amount||0);
+    var d=String(r.date||''); if(d.slice(0,7)!==ym)return;
+    var cat=r.category||r.cat||'기타';
+    s[cat]=(s[cat]||0)+(Number(r.amount)||0);
   });
-  var html=PERSONAL_CATS.map(function(c){
-    var budget=Number(personalBudgets[c]||0);
-    var used=catSums[c]||0;
-    var pct=budget?Math.min(Math.round(used/budget*100),100):0;
-    var barColor=pct>=90?'#e05252':pct>=70?'#ffad33':'#4caf82';
+  return s;
+}
+function pbDonut(items,total){
+  var R=52, C=2*Math.PI*R, off=0;
+  var segs=items.map(function(it){
+    var len=total?(it.amt/total)*C:0;
+    var s='<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="'+it.color+'" stroke-width="21"'
+      +' stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'"'
+      +' stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 70 70)"></circle>';
+    off+=len; return s;
+  }).join('');
+  return '<svg width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0">'
+    +'<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="var(--surface2)" stroke-width="21"></circle>'
+    +segs
+    +'<text x="70" y="65" text-anchor="middle" font-size="10" fill="var(--muted)" font-weight="700">이번 달 지출</text>'
+    +'<text x="70" y="84" text-anchor="middle" font-size="15" fill="var(--text)" font-weight="900">'+(total>=10000?Math.round(total/10000)+'만':total.toLocaleString())+'</text>'
+    +'</svg>';
+}
+function renderPersonalBudget(body){
+  var p=pbYM.split('-');
+  var sums=pbSumsFor(pbYM);
+  var prevD=new Date(+p[0], +p[1]-2, 1);
+  var prevYM=prevD.getFullYear()+'-'+String(prevD.getMonth()+1).padStart(2,'0');
+  var prevSums=pbSumsFor(prevYM);
+
+  var totalUsed=0, totalBudget=0, prevTotal=0;
+  PERSONAL_CATS.forEach(function(cat){
+    totalUsed+=(sums[cat]||0);
+    totalBudget+=Number(personalBudgets[cat]||0);
+    prevTotal+=(prevSums[cat]||0);
+  });
+
+  var items=PERSONAL_CATS.map(function(cat){
+    return {cat:cat, amt:sums[cat]||0, color:PERSONAL_CAT_COLORS[cat]||'#8b8a80'};
+  }).filter(function(x){return x.amt>0;}).sort(function(a,b){return b.amt-a.amt;});
+
+  var now=new Date();
+  var isCur=(pbYM===now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  var daysInM=new Date(+p[0], +p[1], 0).getDate();
+  var dayPassed=isCur?now.getDate():daysInM;
+  var pace=Math.round(dayPassed/daysInM*100);
+  var usedPct=totalBudget?Math.round(totalUsed/totalBudget*100):0;
+  var diff=prevTotal?Math.round((totalUsed-prevTotal)/prevTotal*100):0;
+
+  var h='<div style="overflow-y:auto;padding:0 16px 90px">';
+
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 12px">'
+    +'<button onclick="pbMove(-1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:16px;padding:5px 13px;cursor:pointer">‹</button>'
+    +'<span style="font-size:15px;font-weight:900">'+(+p[0])+'년 '+(+p[1])+'월</span>'
+    +'<button onclick="pbMove(1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:16px;padding:5px 13px;cursor:pointer">›</button>'
+    +'</div>';
+
+  if(!items.length){
+    h+='<div style="text-align:center;color:var(--muted);padding:34px 0;font-size:13px">이 달 지출 내역이 없습니다</div>';
+  } else {
+    h+='<div style="display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">'
+      +pbDonut(items,totalUsed)
+      +'<div style="flex:1;min-width:0">'
+      +items.slice(0,6).map(function(it){
+        var pct=totalUsed?Math.round(it.amt/totalUsed*100):0;
+        return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+          +'<span style="width:9px;height:9px;border-radius:3px;background:'+it.color+';flex-shrink:0"></span>'
+          +'<span style="flex:1;font-size:11px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+it.cat+'</span>'
+          +'<span style="font-size:11px;color:var(--muted);flex-shrink:0">'+pct+'%</span>'
+          +'<span style="font-size:11px;font-weight:800;flex-shrink:0;min-width:52px;text-align:right">'+it.amt.toLocaleString()+'</span>'
+          +'</div>';
+      }).join('')
+      +(items.length>6?'<div style="font-size:10px;color:var(--muted);margin-top:2px">외 '+(items.length-6)+'개</div>':'')
+      +'</div></div>';
+
+    h+='<div style="display:flex;gap:8px;margin-bottom:12px">'
+      +'<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 12px">'
+        +'<div style="font-size:10px;color:var(--muted);font-weight:700">예산 대비</div>'
+        +'<div style="font-size:17px;font-weight:900;color:'+(usedPct>100?'var(--red)':usedPct>pace+10?'var(--accent2)':'var(--green)')+';margin-top:2px">'+(totalBudget?usedPct+'%':'미설정')+'</div>'
+        +(totalBudget?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+(totalUsed<=totalBudget?'남은 '+(totalBudget-totalUsed).toLocaleString()+'원':'초과 '+(totalUsed-totalBudget).toLocaleString()+'원')+'</div>':'')
+      +'</div>'
+      +'<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 12px">'
+        +'<div style="font-size:10px;color:var(--muted);font-weight:700">전월 대비</div>'
+        +'<div style="font-size:17px;font-weight:900;color:'+(diff>0?'var(--red)':diff<0?'var(--blue)':'var(--text)')+';margin-top:2px">'+(prevTotal?(diff>0?'+':'')+diff+'%':'—')+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+(prevTotal?prevTotal.toLocaleString()+'원':'전월 기록 없음')+'</div>'
+      +'</div></div>';
+
+    if(totalBudget&&isCur){
+      h+='<div style="font-size:11px;color:var(--muted);background:var(--surface2);border-radius:10px;padding:9px 12px;margin-bottom:12px;line-height:1.5">'
+        +'한 달의 <b style="color:var(--text)">'+pace+'%</b>가 지났고 예산의 <b style="color:'+(usedPct>pace?'var(--red)':'var(--green)')+'">'+usedPct+'%</b>를 썼어요. '
+        +(usedPct>pace?'이 속도면 예산을 넘습니다.':'예산 안쪽 속도입니다.')
+        +'</div>';
+    }
+  }
+
+  h+='<div style="font-size:11px;font-weight:800;color:var(--muted);margin:14px 0 8px;letter-spacing:.05em">카테고리별 예산</div>';
+  h+=PERSONAL_CATS.map(function(cat){
+    var budget=Number(personalBudgets[cat]||0);
+    var used=sums[cat]||0;
+    var prev=prevSums[cat]||0;
+    var pct=budget?Math.round(used/budget*100):0;
+    var barW=Math.min(pct,100);
+    var barColor=pct>100?'var(--red)':pct>=90?'#c2453f':pct>=70?'var(--accent2)':'var(--green)';
+    var dot=PERSONAL_CAT_COLORS[cat]||'#8b8a80';
     return '<div class="personal-cat-card">'
       +'<div class="personal-cat-header">'
-      +'<div class="personal-cat-name">'+c+'</div>'
+      +'<div class="personal-cat-name"><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:'+dot+';margin-right:6px"></span>'+cat+'</div>'
       +'<div class="personal-cat-amt">'+used.toLocaleString()+'원</div>'
       +'</div>'
       +(budget
-        ?'<div class="personal-cat-budget">예산 '+budget.toLocaleString()+'원 · '+pct+'% 사용</div>'
-         +'<div style="height:4px;background:var(--surface2);border-radius:2px;margin:6px 0">'
-         +'<div style="height:4px;background:'+barColor+';border-radius:2px;width:'+pct+'%;transition:width .3s"></div></div>'
+        ?'<div class="personal-cat-budget">예산 '+budget.toLocaleString()+'원 · '+pct+'% 사용'+(used>budget?' · <span style="color:var(--red);font-weight:800">초과 '+(used-budget).toLocaleString()+'원</span>':'')+'</div>'
+         +'<div style="height:5px;background:var(--surface2);border-radius:3px;margin:6px 0"><div style="height:5px;background:'+barColor+';border-radius:3px;width:'+barW+'%;transition:width .3s"></div></div>'
         :'<div class="personal-cat-budget">예산 미설정</div>')
+      +(prev?'<div style="font-size:10px;color:var(--muted);margin-top:2px">전월 '+prev.toLocaleString()+'원'+(used!==prev?' ('+(used>prev?'+':'')+Math.round((used-prev)/prev*100)+'%)':'')+'</div>':'')
       +'<div style="display:flex;gap:8px;margin-top:8px">'
-      +'<input class="field-input" type="tel" id="budget_'+c+'" placeholder="예산 (원)" value="'+(budget||'')+'" style="flex:1;font-size:13px">'
-      +'<button style="padding:6px 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;white-space:nowrap" onclick="saveCatBudget(\''+c+'\')">저장</button>'
-      +'</div>'
-      +'</div>';
+      +'<input class="field-input" type="tel" inputmode="numeric" id="budget_'+cat+'" placeholder="월 예산 (원)" value="'+(budget||'')+'" style="flex:1;font-size:13px">'
+      +'<button style="padding:6px 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;white-space:nowrap" onclick="saveCatBudget(\''+cat+'\')">저장</button>'
+      +'</div></div>';
   }).join('');
-  body.innerHTML='<div style="overflow-y:auto;padding:0 16px 80px">'+html+'</div>';
+
+  h+='</div>';
+  body.innerHTML=h;
 }
 
 function saveCatBudget(cat){
@@ -7347,7 +7451,11 @@ function saveCatBudget(cat){
   var val=parseInt((inp?inp.value:'')||'0',10);
   personalBudgets[cat]=val;
   db.collection('settings').doc('personalBudgets').set(personalBudgets,{merge:true})
-    .then(function(){showToast('✓ 예산 저장됐어요');})
+    .then(function(){
+      showToast('✓ 예산 저장됐어요');
+      var b=document.getElementById('personalBody');
+      if(b&&personalTab==='budget')renderPersonalBudget(b);
+    })
     .catch(function(){showToast('저장 실패');});
 }
 
