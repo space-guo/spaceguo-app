@@ -3225,6 +3225,13 @@ function saveItemModal(){
   saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
 }
 var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
+document.addEventListener('click',function(e){
+  if(openProcIdx<0)return;
+  var t=e.target;
+  if(t.closest&&(t.closest('.proc-accordion')||t.closest('.proc-grid-card')||t.closest('#colorPopup')))return;
+  openProcIdx=-1;
+  try{renderProcessList();}catch(err){}
+},true);
 
 function renderProcessList(){
   var el=document.getElementById('processList');
@@ -3276,7 +3283,12 @@ function renderProcessList(){
         }).join('')
         :'<div style="font-size:12px;color:var(--muted);padding:4px 0">품목이 없어요</div>';
       acc.innerHTML=
-        itemsHtml
+        '<div style="display:flex;align-items:center;gap:8px;margin:-2px 0 10px">'
+          +'<span style="width:8px;height:8px;border-radius:50%;background:'+pColor+';flex-shrink:0"></span>'
+          +'<span style="flex:1;font-size:13px;font-weight:800;min-width:0">'+p.name+' <span style="font-size:11px;font-weight:600;color:var(--muted)">품목</span></span>'
+          +'<button data-acc-close="1" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 4px">✕</button>'
+        +'</div>'
+        +itemsHtml
         +'<div class="proc-acc-add-row">'
           +'<input class="proc-acc-inp" id="accInp-'+pi+'" placeholder="품목명" type="text">'
           +'<input class="proc-acc-inp" id="accUnit-'+pi+'" placeholder="단위" type="text" style="width:60px;flex:none">'
@@ -3301,6 +3313,15 @@ function renderProcessList(){
       openProcIdx=(openProcIdx===pi)?-1:pi;
       renderProcessList();
     };
+  });
+
+  // 아코디언 닫기 버튼
+  grid.querySelectorAll('[data-acc-close]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      openProcIdx=-1;
+      renderProcessList();
+    });
   });
 
   // 색상 점 → 팝업
