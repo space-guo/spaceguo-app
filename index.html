@@ -4515,15 +4515,18 @@ function renderVendorMgmtList(){
   var el=document.getElementById('vendorMgmtList');
   if(!el)return;
   if(!vendors.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 4px;margin-bottom:8px">거래처가 없어요</div>';return;}
-  el.innerHTML=vendors.map(function(v){
-    var procBadges='';
-    if(v.processes&&v.processes.length){
-      procBadges='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'
+
+  function vendorCard(v, ctxProc){
+    var others=(v.processes||[]).filter(function(x){return x!==ctxProc;});
+    var badges='';
+    if(ctxProc&&others.length){
+      badges='<div style="font-size:10px;color:var(--muted);margin-top:5px">＋ '+others.join(' · ')+'</div>';
+    } else if(!ctxProc&&(v.processes||[]).length){
+      badges='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'
         +v.processes.map(function(pn){
           var col=getProcColor(pn,0);
           return '<span style="background:'+col+'22;color:'+col+';border:1px solid '+col+'44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">'+pn+'</span>';
-        }).join('')
-        +'</div>';
+        }).join('')+'</div>';
     }
     return '<div class="vendor-card" data-vid="'+v.id+'" onclick="openVendorModal(\''+v.id+'\')">'
       +'<div class="vendor-card-name">🏢 '+(v.company||'')+(v.name?' · '+v.name:'')+'</div>'
@@ -4532,9 +4535,46 @@ function renderVendorMgmtList(){
       +(v.email?'✉️ '+v.email+'<br>':'')
       +(v.biz?'사업자: '+v.biz:'')
       +'</div>'
-      +procBadges
+      +badges
       +'</div>';
-  }).join('');
+  }
+
+  var html='';
+  var usedIds={};
+  var shownGroup=null;
+  processes.forEach(function(p,pi){
+    var list=vendors.filter(function(v){return (v.processes||[]).indexOf(p.name)>=0;});
+    if(!list.length)return;
+    var g=procGroupOf(p);
+    if(g!==shownGroup){
+      shownGroup=g;
+      html+='<div style="display:flex;align-items:center;gap:7px;margin:14px 0 4px">'
+        +'<span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.04em">'+g+'</span>'
+        +'<span style="flex:1;height:1px;background:var(--border)"></span></div>';
+    }
+    html+='<div style="display:flex;align-items:center;gap:6px;margin:8px 0 5px">'
+      +'<span style="width:8px;height:8px;border-radius:50%;background:'+getProcColor(p.name,pi)+';flex-shrink:0"></span>'
+      +'<span style="font-size:12px;font-weight:800">'+p.name+'</span>'
+      +'<span style="font-size:11px;color:var(--muted);font-weight:700">'+list.length+'</span>'
+      +'</div>';
+    html+=list.map(function(v){usedIds[v.id]=1;return vendorCard(v,p.name);}).join('');
+  });
+
+  var rest=vendors.filter(function(v){return !usedIds[v.id];});
+  if(rest.length){
+    html+='<div style="display:flex;align-items:center;gap:7px;margin:16px 0 5px">'
+      +'<span style="font-size:11px;font-weight:800;color:var(--muted)">공정 미지정</span>'
+      +'<span style="font-size:11px;color:var(--muted);font-weight:700">'+rest.length+'</span>'
+      +'<span style="flex:1;height:1px;background:var(--border)"></span></div>';
+    html+=rest.map(function(v){return vendorCard(v,'');}).join('');
+  }
+
+  var multi=vendors.filter(function(v){return (v.processes||[]).length>1;}).length;
+  if(multi){
+    html+='<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">※ '+multi+'개 거래처가 여러 공정을 맡고 있어 중복 표시됩니다. 어디서 수정해도 하나로 반영됩니다.</div>';
+  }
+
+  el.innerHTML=html;
 }
 
 function renderVendorSelect(procName){
