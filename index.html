@@ -1939,13 +1939,14 @@ function loadSettings(){
       cards=(d.cards||[]).map(function(c){return typeof c==='string'?{name:c,issuer:'',type:'신용',num:''}:c;});
       accounts=d.accounts||[];
       processes=d.processes||[];
+      PROC_GROUPS=(Array.isArray(d.procGroups)&&d.procGroups.length)?d.procGroups.slice():PROC_GROUPS_DEFAULT.slice();
     } else {sites=[];cards=[];accounts=[];processes=[];}
     renderSiteSelect();renderSiteList();renderCardChips();renderCardList();
     renderAccountChips();renderAccountList();renderProcessSelect();renderProcessList();renderFilterBar();
   });
 }
 function saveSettings(){
-  return db.collection('settings').doc('main').set({sites:sites,cards:cards,accounts:accounts,processes:processes});
+  return db.collection('settings').doc('main').set({sites:sites,cards:cards,accounts:accounts,processes:processes,procGroups:PROC_GROUPS});
 }
 
 // ── REALTIME ──
@@ -3197,11 +3198,52 @@ function saveItemModal(){
 }
 var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
 var procAccTab='item'; // 아코디언 탭: item | dec
-var PROC_GROUPS=['준비/행정','철거','설비/배관','전기','골조/목공','마감재','가구/설치','마무리'];
+var PROC_GROUPS_DEFAULT=['준비/행정','철거','설비/배관','전기','골조/목공','마감재','가구/설치','마무리'];
+var PROC_GROUPS=PROC_GROUPS_DEFAULT.slice();
 var procGroupClosed={};
 function procGroupOf(p){var g=(p&&p.group)||'';return PROC_GROUPS.indexOf(g)>=0?g:(g||'미분류');}
 function procGroupRank(g){var i=PROC_GROUPS.indexOf(g);return i<0?98:i;}
 function toggleProcGroup(g){procGroupClosed[g]=!procGroupClosed[g];renderProcessList();}
+
+function addProcGroup(){
+  var name=prompt('새 그룹 이름');
+  if(name===null)return;
+  name=name.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  if(name==='미분류'){showToast('"미분류"는 쓸 수 없어요');return;}
+  if(PROC_GROUPS.indexOf(name)>=0){showToast('이미 있는 그룹이에요');return;}
+  PROC_GROUPS.push(name);
+  saveSettings().then(function(){renderProcessList();showToast('✓ "'+name+'" 그룹 추가됐어요');});
+}
+function renameProcGroup(g){
+  var name=prompt('그룹 이름 수정', g);
+  if(name===null)return;
+  name=name.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  if(name===g)return;
+  if(name==='미분류'){showToast('"미분류"는 쓸 수 없어요');return;}
+  if(PROC_GROUPS.indexOf(name)>=0){showToast('이미 있는 그룹이에요');return;}
+  var i=PROC_GROUPS.indexOf(g);
+  if(i>=0)PROC_GROUPS[i]=name;
+  var moved=0;
+  processes.forEach(function(p){if(p.group===g){p.group=name;moved++;}});
+  if(procGroupClosed[g]){procGroupClosed[name]=true;delete procGroupClosed[g];}
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();showToast('✓ "'+name+'"으로 변경 (공정 '+moved+'개)');});
+}
+function deleteProcGroup(g){
+  var n=processes.filter(function(p){return p.group===g;}).length;
+  if(!confirm('"'+g+'" 그룹을 삭제할까요?'+(n?'\n\n소속 공정 '+n+'개는 삭제되지 않고 미분류로 이동합니다.':'')))return;
+  PROC_GROUPS=PROC_GROUPS.filter(function(x){return x!==g;});
+  processes.forEach(function(p){if(p.group===g)p.group='';});
+  delete procGroupClosed[g];
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();showToast('✓ 그룹 삭제됨 (공정 '+n+'개 미분류)');});
+}
+function moveProcGroup(g,dir){
+  var i=PROC_GROUPS.indexOf(g), j=i+dir;
+  if(i<0||j<0||j>=PROC_GROUPS.length)return;
+  var t=PROC_GROUPS[i];PROC_GROUPS[i]=PROC_GROUPS[j];PROC_GROUPS[j]=t;
+  saveSettings().then(function(){renderProcessList();});
+}
 var PROC_GROUP_RULES=[
   ['준비/행정',['미팅','동의서','행위허가','보양','계약','실측']],
   ['철거',['철거','폐기물','파쇄']],
@@ -3262,6 +3304,17 @@ function renderProcessList(){
     });
   var groupCount={};
   ordered.forEach(function(o){groupCount[o.g]=(groupCount[o.g]||0)+1;});
+  PROC_GROUPS.forEach(function(g){
+    if(groupCount[g]!==undefined)return;
+    groupCount[g]=0;
+    ordered.push({p:null,i:-1,g:g,empty:true});
+  });
+  ordered.sort(function(a,b){
+    var d=procGroupRank(a.g)-procGroupRank(b.g);
+    if(d!==0)return d;
+    if(a.g!==b.g)return a.g<b.g?-1:1;
+    return a.i-b.i;
+  });
   var lastGroup=null;
 
   ordered.forEach(function(o){
@@ -3270,13 +3323,29 @@ function renderProcessList(){
       lastGroup=o.g;
       var closed=!!procGroupClosed[o.g];
       var hd=document.createElement('div');
-      hd.style.cssText='grid-column:1/-1;display:flex;align-items:center;gap:7px;padding:9px 4px 5px;cursor:pointer;margin-top:2px';
-      hd.onclick=(function(g){return function(){toggleProcGroup(g);};})(o.g);
-      hd.innerHTML='<span style="font-size:12px;color:var(--muted)">'+(closed?'▸':'▾')+'</span>'
-        +'<span style="font-size:12px;font-weight:800;color:'+(o.g==='미분류'?'var(--muted)':'var(--text)')+'">'+o.g+'</span>'
+      hd.style.cssText='grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:9px 4px 5px;margin-top:2px';
+      var isReal=(o.g!=='미분류');
+      var gi=PROC_GROUPS.indexOf(o.g);
+      hd.innerHTML='<span data-gtoggle="'+o.g+'" style="font-size:12px;color:var(--muted);cursor:pointer">'+(closed?'▸':'▾')+'</span>'
+        +'<span data-gtoggle="'+o.g+'" style="font-size:12px;font-weight:800;cursor:pointer;color:'+(isReal?'var(--text)':'var(--muted)')+'">'+o.g+'</span>'
         +'<span style="font-size:11px;color:var(--muted);font-weight:700">'+groupCount[o.g]+'</span>'
-        +'<span style="flex:1;height:1px;background:var(--border)"></span>';
+        +'<span data-gtoggle="'+o.g+'" style="flex:1;height:1px;background:var(--border);cursor:pointer"></span>'
+        +(isReal
+          ?(gi>0?'<button data-gup="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 3px">▲</button>':'')
+           +(gi>=0&&gi<PROC_GROUPS.length-1?'<button data-gdown="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 3px">▼</button>':'')
+           +'<button data-grename="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px">✏️</button>'
+           +'<button data-gdel="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px">✕</button>'
+          :'');
       grid.appendChild(hd);
+    }
+    if(o.empty){
+      if(!procGroupClosed[o.g]){
+        var eh=document.createElement('div');
+        eh.style.cssText='grid-column:1/-1;font-size:11px;color:var(--muted);padding:2px 6px 6px';
+        eh.textContent='이 그룹에 공정이 없어요';
+        grid.appendChild(eh);
+      }
+      return;
     }
     if(procGroupClosed[o.g])return;
     var pColor=p.color||SCH_COLORS_LIST[pi%SCH_COLORS_LIST.length];
@@ -3371,21 +3440,6 @@ function renderProcessList(){
     }
   });
 
-  grid.querySelectorAll('[data-gtoggle]').forEach(function(x){
-    x.addEventListener('click',function(e){e.stopPropagation();toggleProcGroup(this.dataset.gtoggle);});
-  });
-  grid.querySelectorAll('[data-grename]').forEach(function(x){
-    x.addEventListener('click',function(e){e.stopPropagation();renameProcGroup(this.dataset.grename);});
-  });
-  grid.querySelectorAll('[data-gdel]').forEach(function(x){
-    x.addEventListener('click',function(e){e.stopPropagation();deleteProcGroup(this.dataset.gdel);});
-  });
-  grid.querySelectorAll('[data-gup]').forEach(function(x){
-    x.addEventListener('click',function(e){e.stopPropagation();moveProcGroup(this.dataset.gup,-1);});
-  });
-  grid.querySelectorAll('[data-gdown]').forEach(function(x){
-    x.addEventListener('click',function(e){e.stopPropagation();moveProcGroup(this.dataset.gdown,1);});
-  });
   el.appendChild(grid);
 
   var gb=document.createElement('button');
