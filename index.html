@@ -3325,12 +3325,19 @@ function renderProcessList(){
       lastGroup=o.g;
       var closed=!!procGroupClosed[o.g];
       var hd=document.createElement('div');
-      hd.style.cssText='grid-column:1/-1;display:flex;align-items:center;gap:7px;padding:9px 4px 5px;cursor:pointer;margin-top:2px';
-      hd.onclick=(function(g){return function(){toggleProcGroup(g);};})(o.g);
-      hd.innerHTML='<span style="font-size:12px;color:var(--muted)">'+(closed?'▸':'▾')+'</span>'
-        +'<span style="font-size:12px;font-weight:800;color:'+(o.g==='미분류'?'var(--muted)':'var(--text)')+'">'+o.g+'</span>'
+      hd.style.cssText='grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:9px 4px 5px;margin-top:2px';
+      var isReal=(o.g!=='미분류');
+      var gi=PROC_GROUPS.indexOf(o.g);
+      hd.innerHTML='<span data-gtoggle="'+o.g+'" style="font-size:12px;color:var(--muted);cursor:pointer">'+(closed?'▸':'▾')+'</span>'
+        +'<span data-gtoggle="'+o.g+'" style="font-size:12px;font-weight:800;cursor:pointer;color:'+(isReal?'var(--text)':'var(--muted)')+'">'+o.g+'</span>'
         +'<span style="font-size:11px;color:var(--muted);font-weight:700">'+groupCount[o.g]+'</span>'
-        +'<span style="flex:1;height:1px;background:var(--border)"></span>';
+        +'<span data-gtoggle="'+o.g+'" style="flex:1;height:1px;background:var(--border);cursor:pointer"></span>'
+        +(isReal
+          ?(gi>0?'<button data-gup="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 3px">▲</button>':'')
+           +(gi>=0&&gi<PROC_GROUPS.length-1?'<button data-gdown="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 3px">▼</button>':'')
+           +'<button data-grename="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px">✏️</button>'
+           +'<button data-gdel="'+o.g+'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px">✕</button>'
+          :'');
       grid.appendChild(hd);
     }
     if(o.empty){
