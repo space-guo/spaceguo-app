@@ -338,6 +338,10 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .sch-bar.end{border-radius:0 6px 6px 0}
 .sch-bar.mid{border-radius:0}
 .sch-bar.single{border-radius:6px}
+.sch-bar.sch-dragging{outline:2px solid var(--text);outline-offset:1px;opacity:.92;filter:brightness(1.15)}
+.sch-bar.start::before,.sch-bar.single::before{content:'';position:absolute;left:0;top:0;bottom:0;width:26%;max-width:14px}
+.sch-bar.end::after,.sch-bar.single::after{content:'';position:absolute;right:0;top:0;bottom:0;width:26%;max-width:14px}
+.sch-bar{position:relative}
 .sch-add-btn{width:100%;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:14px;cursor:pointer;margin-bottom:10px}
 .sch-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .sch-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer}
@@ -1035,6 +1039,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="sch-cal-header" id="schCalHeader"></div>
     <div class="sch-cal-body" id="schCalBody"></div>
   </div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5">일정 막대를 <b style="color:var(--text)">길게 눌러</b> 옮기고, <b style="color:var(--text)">양 끝</b>을 잡으면 기간이 조절됩니다</div>
   <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-list" id="schList"></div>
   <div id="schDecisionSection" style="display:none"></div>
@@ -5466,7 +5471,7 @@ function renderSchCal(){
         var cls='sch-bar '+(isStart&&isEnd?'single':isStart?'start':isEnd?'end':'mid');
         var color=getSchBarColor(s,si);
         var label=isStart?(s.procName||'공정'):'';
-        bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'">'+label+'</div>';
+        bars+='<div class="'+cls+'" style="background:'+color+';color:#fff" data-schid="'+s.id+'" data-date="'+ds+'">'+label+'</div>';
       }
     });
     return '<div class="sch-cal-cell" data-date="'+ds+'">'+dayNumHtml+bars+'</div>';
@@ -5474,11 +5479,13 @@ function renderSchCal(){
 
   document.getElementById('schCalBody').innerHTML=html;
   document.getElementById('schCalBody').querySelectorAll('[data-schid]').forEach(function(el){
-    el.addEventListener('click',function(e){e.stopPropagation();openSchModalEdit(this.dataset.schid);});
+    el.addEventListener('click',function(e){e.stopPropagation();if(schDragBlockClick)return;openSchModalEdit(this.dataset.schid);});
   });
+  initSchBarDrag();
   // 날짜 셀 클릭 → 일별 입력 모달
   document.getElementById('schCalBody').querySelectorAll('.sch-cal-cell').forEach(function(cell){
     cell.addEventListener('click',function(){
+      if(schDragBlockClick)return;
       var day=this.querySelector('.sch-day-num');
       if(!day)return;
       var dayNum=parseInt(day.textContent);
@@ -5499,6 +5506,125 @@ function renderSchCal(){
     });
   }).catch(function(e){});
 }
+
+// ── 공정 막대 드래그 이동 / 기간 조절 ──
+function dnumStr(s){var p=String(s).split('-');return Date.UTC(+p[0],+p[1]-1,+p[2])/86400000;}
+var schDrag={active:false,mode:'move',id:'',grab:'',os:'',oe:'',ns:'',ne:'',timer:null,moved:false};
+var schDragBlockClick=false;
+
+function schDragDateAt(x,y){
+  var el=document.elementFromPoint(x,y);
+  if(!el)return '';
+  var cell=el.closest?el.closest('.sch-cal-cell[data-date]'):null;
+  return cell?cell.getAttribute('data-date'):'';
+}
+function schDragBanner(hide){
+  var el=document.getElementById('schDragBanner');
+  if(hide){if(el)el.parentNode.removeChild(el);return;}
+  if(!el){
+    el=document.createElement('div');
+    el.id='schDragBanner';
+    el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:9999;background:var(--text);color:var(--bg);font-size:12px;font-weight:800;padding:9px 16px;border-radius:100px;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.28);white-space:nowrap';
+    document.body.appendChild(el);
+  }
+  var days=dnumStr(schDrag.ne)-dnumStr(schDrag.ns)+1;
+  var mt=schDrag.mode==='move'?'이동':schDrag.mode==='start'?'시작일':'종료일';
+  el.textContent=mt+' · '+schDrag.ns.slice(5).replace('-','/')+' ~ '+schDrag.ne.slice(5).replace('-','/')+' ('+days+'일)';
+}
+function schDragPreview(target){
+  if(!target||!schDrag.active)return;
+  var s=schedules.find(function(x){return x.id===schDrag.id;});
+  if(!s)return;
+  var ns=schDrag.os, ne=schDrag.oe;
+  if(schDrag.mode==='move'){
+    var delta=dnumStr(target)-dnumStr(schDrag.grab);
+    ns=addDaysStr(schDrag.os,delta); ne=addDaysStr(schDrag.oe,delta);
+  } else if(schDrag.mode==='start'){
+    ns=(target>schDrag.oe)?schDrag.oe:target; ne=schDrag.oe;
+  } else {
+    ns=schDrag.os; ne=(target<schDrag.os)?schDrag.os:target;
+  }
+  if(ns===schDrag.ns&&ne===schDrag.ne)return;
+  schDrag.ns=ns; schDrag.ne=ne; schDrag.moved=true;
+  s.startDate=ns; s.endDate=ne;
+  vibrate(12);
+  renderSchCal();
+  schDragBanner();
+}
+function schDragBegin(bar,x,y){
+  if(schDrag.timer)clearTimeout(schDrag.timer);
+  var id=bar.getAttribute('data-schid');
+  var s=schedules.find(function(z){return z.id===id;});
+  if(!s||!s.startDate||!s.endDate)return;
+  var rect=bar.getBoundingClientRect();
+  var rel=(x-rect.left)/Math.max(rect.width,1);
+  var isStartSeg=bar.classList.contains('start')||bar.classList.contains('single');
+  var isEndSeg=bar.classList.contains('end')||bar.classList.contains('single');
+  var mode='move';
+  if(isStartSeg&&rel<0.28)mode='start';
+  else if(isEndSeg&&rel>0.72)mode='end';
+  var grabDate=bar.getAttribute('data-date')||s.startDate;
+  schDrag.timer=setTimeout(function(){
+    schDrag.timer=null;
+    schDrag.active=true;schDrag.mode=mode;schDrag.id=id;schDrag.grab=grabDate;
+    schDrag.os=s.startDate;schDrag.oe=s.endDate;
+    schDrag.ns=s.startDate;schDrag.ne=s.endDate;
+    schDrag.moved=false;
+    vibrate(55);
+    document.body.style.userSelect='none';
+    document.querySelectorAll('#schCalBody .sch-bar[data-schid="'+id+'"]').forEach(function(b){b.classList.add('sch-dragging');});
+    schDragBanner();
+  },350);
+}
+function schDragFinish(){
+  if(schDrag.timer){clearTimeout(schDrag.timer);schDrag.timer=null;}
+  if(!schDrag.active)return;
+  schDrag.active=false;
+  document.body.style.userSelect='';
+  schDragBanner(true);
+  document.querySelectorAll('.sch-dragging').forEach(function(b){b.classList.remove('sch-dragging');});
+  schDragBlockClick=true;
+  setTimeout(function(){schDragBlockClick=false;},350);
+  var s=schedules.find(function(z){return z.id===schDrag.id;});
+  if(!s)return;
+  if(!schDrag.moved||(s.startDate===schDrag.os&&s.endDate===schDrag.oe)){renderSchCal();return;}
+  var ns=s.startDate, ne=s.endDate, oldS=schDrag.os, oldE=schDrag.oe, did=schDrag.id;
+  setSyncStatus('saving');
+  db.collection('schedules').doc(did).update({startDate:ns,endDate:ne}).then(function(){
+    setSyncStatus('ok');vibrate([20,12,20]);
+    showToast('✓ '+ns.slice(5).replace('-','/')+' ~ '+ne.slice(5).replace('-','/')+'로 변경됐어요');
+    renderSchList();
+    try{renderSchDecisions();}catch(e){}
+  }).catch(function(err){
+    var sc=schedules.find(function(z){return z.id===did;});
+    if(sc){sc.startDate=oldS;sc.endDate=oldE;}
+    renderSchCal();setSyncStatus('err');showToast('저장 실패: '+err.message);
+  });
+}
+function initSchBarDrag(){
+  document.querySelectorAll('#schCalBody .sch-bar[data-schid]').forEach(function(bar){
+    bar.addEventListener('touchstart',function(e){
+      var t=e.touches[0];schDragBegin(this,t.clientX,t.clientY);
+    },{passive:true});
+    bar.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;schDragBegin(this,e.clientX,e.clientY);
+    });
+  });
+}
+document.addEventListener('touchmove',function(e){
+  if(schDrag.timer&&!schDrag.active){clearTimeout(schDrag.timer);schDrag.timer=null;return;}
+  if(!schDrag.active)return;
+  e.preventDefault();
+  var t=e.touches[0];
+  schDragPreview(schDragDateAt(t.clientX,t.clientY));
+},{passive:false});
+document.addEventListener('touchend',function(){schDragFinish();},{passive:true});
+document.addEventListener('touchcancel',function(){schDragFinish();},{passive:true});
+document.addEventListener('mousemove',function(e){
+  if(!schDrag.active)return;
+  schDragPreview(schDragDateAt(e.clientX,e.clientY));
+});
+document.addEventListener('mouseup',function(){schDragFinish();});
 
 function renderSchList(){
   var filtered=getFilteredSch();
