@@ -3278,6 +3278,8 @@ function setProcAccTab(t){procAccTab=t;renderProcessList();}
 document.addEventListener('click',function(e){
   if(openProcIdx<0)return;
   var t=e.target;
+  // 다시 그려지며 떨어져 나간 요소는 '바깥 클릭'이 아니다
+  if(t&&t.isConnected===false)return;
   // 공정 목록 안(카드·아코디언·그룹 헤더 버튼)의 클릭은 각자 처리하도록 둔다
   if(t.closest&&(t.closest('#processList')||t.closest('#colorPopup')))return;
   openProcIdx=-1;
