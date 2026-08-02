@@ -1021,6 +1021,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="my-cal-header" id="myCalHeader"></div>
     <div class="my-cal-body" id="myCalBody"></div>
   </div>
+  <div id="attCard" class="my-ev-section" style="margin-top:14px"></div>
   <div class="my-ev-section">
     <div class="my-ev-section-title" id="myEvListTitle">이번 달 전체</div>
     <div id="myEvList"></div>
@@ -1282,6 +1283,14 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="field-row">
       <div class="field-label">현장 색상 <span style="font-size:10px;color:var(--muted)">(공정표 전체보기에서 사용)</span></div>
       <div id="siteColorPicker" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">현장 위치 <span style="font-size:10px;color:var(--muted)">(출퇴근 시 자동 인식용)</span></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+        <div id="siteGeoLabel" style="flex:1;min-width:0;font-size:11px;color:var(--muted)">등록 안 됨</div>
+        <button type="button" onclick="siteGeoCapture()" style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:12px;font-weight:700;padding:9px 12px;cursor:pointer;flex-shrink:0">📍 현재 위치</button>
+        <button type="button" onclick="siteGeoClear()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px">✕</button>
+      </div>
     </div>
     <div class="modal-btn-row">
       <button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
@@ -4613,6 +4622,7 @@ function subscribeMyEvents(){
 }
 
 function myCalMove(dir){
+  try{renderAttCard();}catch(e){}
   myCalMonth+=dir;
   if(myCalMonth>11){myCalMonth=0;myCalYear++;}
   if(myCalMonth<0){myCalMonth=11;myCalYear--;}
@@ -4747,9 +4757,143 @@ function renderMyCal(){
   renderMyEvList();
 }
 
+// ── 현장 출퇴근 ──
+var attendance=[], unsubAtt=null;
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nowHM(){var d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function hmToMin(h){if(!h)return 0;var p=String(h).split(':');return (+p[0])*60+(+p[1]||0);}
+function minToHM(m){var h=Math.floor(m/60),mm=m%60;return h+'시간'+(mm?' '+mm+'분':'');}
+function attDur(a){
+  if(!a.inAt||!a.outAt)return 0;
+  var d=hmToMin(a.outAt)-hmToMin(a.inAt);
+  return d<0?d+1440:d;
+}
+function subscribeAttendance(){
+  if(unsubAtt)unsubAtt();
+  unsubAtt=db.collection('attendance').orderBy('date','desc').limit(400).onSnapshot(function(snap){
+    attendance=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById('view-cal').classList.contains('active'))renderAttCard();
+  },function(e){console.log('att err:',e);});
+}
+function attOfDate(ds){
+  return attendance.filter(function(a){return a.date===ds;})
+    .sort(function(a,b){return hmToMin(a.inAt)-hmToMin(b.inAt);});
+}
+function renderAttCard(){
+  var el=document.getElementById('attCard');
+  if(!el)return;
+  var ds=myCalSelectedDate||todayStr();
+  var isToday=(ds===todayStr());
+  var list=attOfDate(ds);
+  var open=list.filter(function(a){return a.inAt&&!a.outAt;});
+  var total=list.reduce(function(s,a){return s+attDur(a);},0);
+  var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
+
+  var h='<div class="my-ev-section-title" style="display:flex;justify-content:space-between;align-items:center">'
+    +'<span>🕒 현장 출퇴근 <span style="font-weight:600;color:var(--muted);font-size:10px">'+(isToday?'오늘':ds.slice(5).replace('-','/'))+'</span></span>'
+    +(total?'<span style="font-size:11px;font-weight:800;color:var(--accent)">총 '+minToHM(total)+'</span>':'')
+    +'</div>';
+
+  open.forEach(function(a){
+    h+='<div class="my-ev-card" style="border-color:var(--green)">'
+      +'<div class="my-ev-color-bar" style="background:var(--green)"></div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:13px;font-weight:800">'+a.site+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+a.inAt+' 출근 · <span style="color:var(--green);font-weight:700">근무 중</span></div>'
+      +'</div>'
+      +'<button onclick="attCheckOut(\''+a.id+'\')" style="background:var(--accent);border:none;border-radius:9px;color:#fff;font-family:inherit;font-size:12px;font-weight:800;padding:9px 14px;cursor:pointer;flex-shrink:0">퇴근</button>'
+      +'</div>';
+  });
+
+  list.filter(function(a){return a.outAt;}).forEach(function(a){
+    h+='<div class="my-ev-card">'
+      +'<div class="my-ev-color-bar" style="background:var(--muted)"></div>'
+      +'<div style="flex:1;min-width:0" onclick="attEdit(\''+a.id+'\')">'
+      +'<div style="font-size:13px;font-weight:700">'+a.site+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+a.inAt+' ~ '+a.outAt+' · <span style="font-weight:700;color:var(--text)">'+minToHM(attDur(a))+'</span></div>'
+      +'</div>'
+      +'<button onclick="event.stopPropagation();attEdit(\''+a.id+'\')" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;padding:6px 9px;cursor:pointer;flex-shrink:0">수정</button>'
+      +'<button onclick="event.stopPropagation();attDelete(\''+a.id+'\')" style="background:none;border:none;color:var(--muted);font-size:16px;padding:0 4px;cursor:pointer;flex-shrink:0">✕</button>'
+      +'</div>';
+  });
+
+  if(!list.length)h+='<div class="my-ev-empty" style="padding:14px">기록이 없습니다</div>';
+
+  h+='<div style="display:flex;gap:6px;margin-top:8px">'
+    +'<select class="field-select" id="attSiteSel" style="flex:1;min-width:0;padding:11px">'
+    +'<option value="">현장 선택</option>'
+    +siteNames.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('')
+    +'</select>'
+    +'<button onclick="attGeoPick()" title="현재 위치로 현장 찾기" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;padding:0 12px;cursor:pointer;flex-shrink:0">📍</button>'
+    +'<button onclick="attCheckIn()" style="background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:13px;font-weight:800;padding:11px 16px;cursor:pointer;flex-shrink:0">출근</button>'
+    +'</div>';
+  if(!isToday)h+='<div style="font-size:10px;color:var(--muted);margin-top:6px">※ '+ds.slice(5).replace('-','/')+' 날짜로 기록됩니다</div>';
+
+  el.innerHTML=h;
+}
+function attCheckIn(){
+  var sel=document.getElementById('attSiteSel');
+  var site=sel?sel.value:'';
+  if(!site){showToast('현장을 선택해주세요');return;}
+  var ds=myCalSelectedDate||todayStr();
+  var isToday=(ds===todayStr());
+  var t=isToday?nowHM():'09:00';
+  setSyncStatus('saving');
+  db.collection('attendance').add({date:ds,site:site,inAt:t,outAt:'',ts:firebase.firestore.FieldValue.serverTimestamp()})
+    .then(function(){setSyncStatus('ok');vibrate(30);showToast('✓ '+site+' '+t+' 출근');})
+    .catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+function attCheckOut(id){
+  var a=attendance.find(function(x){return x.id===id;});
+  if(!a)return;
+  var t=(a.date===todayStr())?nowHM():'18:00';
+  setSyncStatus('saving');
+  db.collection('attendance').doc(id).update({outAt:t}).then(function(){
+    setSyncStatus('ok');vibrate([25,15,25]);
+    var d=hmToMin(t)-hmToMin(a.inAt); if(d<0)d+=1440;
+    showToast('✓ '+t+' 퇴근 · '+minToHM(d));
+  }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+}
+function attEdit(id){
+  var a=attendance.find(function(x){return x.id===id;});
+  if(!a)return;
+  var ni=prompt(a.site+' 출근 시각 (HH:MM)', a.inAt||'');
+  if(ni===null)return;
+  ni=ni.trim();
+  if(ni&&!/^([01]?\d|2[0-3]):[0-5]\d$/.test(ni)){showToast('09:30 형식으로 입력해주세요');return;}
+  var no=prompt(a.site+' 퇴근 시각 (HH:MM, 비우면 근무 중)', a.outAt||'');
+  if(no===null)return;
+  no=no.trim();
+  if(no&&!/^([01]?\d|2[0-3]):[0-5]\d$/.test(no)){showToast('18:00 형식으로 입력해주세요');return;}
+  db.collection('attendance').doc(id).update({inAt:ni,outAt:no}).then(function(){showToast('✓ 수정됐어요');});
+}
+function attDelete(id){
+  if(!confirm('이 출퇴근 기록을 삭제할까요?'))return;
+  db.collection('attendance').doc(id).delete().then(function(){showToast('삭제됐어요');});
+}
+function attGeoPick(){
+  if(!navigator.geolocation){showToast('이 기기에서 위치를 쓸 수 없어요');return;}
+  showToast('위치 확인 중...',2500);
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var la=pos.coords.latitude, ln=pos.coords.longitude;
+    var best=null,bestD=Infinity;
+    sites.forEach(function(s){
+      if(typeof s!=='object'||!s.lat||!s.lng)return;
+      var dx=(s.lat-la)*111000, dy=(s.lng-ln)*88000;
+      var d=Math.sqrt(dx*dx+dy*dy);
+      if(d<bestD){bestD=d;best=s;}
+    });
+    if(!best){showToast('현장 좌표가 없어요. 설정▸현장에서 등록해주세요',3500);return;}
+    var sel=document.getElementById('attSiteSel');
+    if(sel)sel.value=best.name;
+    showToast('📍 '+best.name+' ('+(bestD<1000?Math.round(bestD)+'m':(bestD/1000).toFixed(1)+'km')+')');
+  },function(){showToast('위치를 가져오지 못했어요');},{enableHighAccuracy:true,timeout:8000});
+}
+
 function myCalDayClick(ds){
   myCalSelectedDate=myCalSelectedDate===ds?null:ds;
   renderMyCal();
+  renderAttCard();
 }
 
 function renderMyEvList(){
@@ -6435,6 +6579,8 @@ function switchTab(tab){
   if(tab==='list'){renderCal();renderFilterBar();renderList();}
   else if(tab==='cal'){
     if(!unsubMyEvents)subscribeMyEvents();
+    if(!unsubAtt)subscribeAttendance();
+    try{renderAttCard();}catch(e){}
     if(myCalShowSch&&!unsubSch)subscribeSchedules();
     renderMyCal();
   }
@@ -6805,6 +6951,9 @@ function openSiteEditModal(i){
   document.getElementById('siteCommonPwInp').value=s.commonPw||'';
   document.getElementById('siteUnitPwInp').value=s.unitPw||'';
   editingSiteColor=s.color||'';
+  editingSiteLat=(typeof s.lat==='number')?s.lat:null;
+  editingSiteLng=(typeof s.lng==='number')?s.lng:null;
+  siteGeoLabel();
   var cpEl=document.getElementById('siteColorPicker');
   if(cpEl){
     cpEl.innerHTML=SCH_COLORS.map(function(col){
@@ -6837,6 +6986,27 @@ function closeSiteEditModal(){
   var _i=modalStack.lastIndexOf('siteEditModal');if(_i>-1)modalStack.splice(_i,1);
 }
 
+var editingSiteLat=null, editingSiteLng=null;
+function siteGeoLabel(){
+  var el=document.getElementById('siteGeoLabel');
+  if(!el)return;
+  el.textContent=(editingSiteLat&&editingSiteLng)
+    ? '✓ 등록됨 ('+editingSiteLat.toFixed(5)+', '+editingSiteLng.toFixed(5)+')'
+    : '등록 안 됨';
+  el.style.color=(editingSiteLat&&editingSiteLng)?'var(--green)':'var(--muted)';
+}
+function siteGeoCapture(){
+  if(!navigator.geolocation){showToast('이 기기에서 위치를 쓸 수 없어요');return;}
+  showToast('위치 확인 중...',2500);
+  navigator.geolocation.getCurrentPosition(function(pos){
+    editingSiteLat=pos.coords.latitude;
+    editingSiteLng=pos.coords.longitude;
+    siteGeoLabel();
+    showToast('✓ 현재 위치가 등록됐어요 (저장 필요)');
+  },function(){showToast('위치를 가져오지 못했어요');},{enableHighAccuracy:true,timeout:8000});
+}
+function siteGeoClear(){editingSiteLat=null;editingSiteLng=null;siteGeoLabel();showToast('위치 삭제됨 (저장 필요)');}
+
 function saveSiteEdit(){
   var name=(document.getElementById('siteEditInp').value||'').trim();
   if(!name){showToast('현장명을 입력해주세요');return;}
@@ -6855,7 +7025,8 @@ function saveSiteEdit(){
     pyeong:(document.getElementById('sitePyeongInp').value||'').trim(),
     commonPw:(document.getElementById('siteCommonPwInp').value||'').trim(),
     unitPw:(document.getElementById('siteUnitPwInp').value||'').trim(),
-    color:editingSiteColor||''
+    color:editingSiteColor||'',
+    lat:editingSiteLat,lng:editingSiteLng
   };
   saveSettings().then(function(){
     closeSiteEditModal();
