@@ -400,9 +400,8 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 /* ── DRAG SORT ── */
 .drag-item{user-select:none;-webkit-user-select:none;touch-action:pan-y;transition:opacity .1s}
 .drag-item.dragging{opacity:.3}
-.drag-insert-line{height:2px;background:var(--accent);border-radius:2px;margin:2px 0;transition:none;position:relative}
-.drag-insert-line::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.drag-ghost{position:fixed;pointer-events:none;z-index:9999;opacity:.92;transform:scale(1.04) rotate(1deg);box-shadow:0 12px 32px rgba(0,0,0,.5);border-radius:12px;background:var(--surface);border:1px solid var(--accent);transition:none;max-width:440px;width:calc(100% - 32px)}
+.drag-insert-line{position:fixed;z-index:9997;pointer-events:none;background:var(--accent);border-radius:3px;opacity:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);transition:top .11s cubic-bezier(.2,.8,.3,1),left .11s cubic-bezier(.2,.8,.3,1),width .11s,height .11s}
+.drag-ghost{position:fixed;left:0;top:0;pointer-events:none;z-index:9999;opacity:.95;box-shadow:0 14px 34px rgba(0,0,0,.45);border-radius:12px;background:var(--surface);border:1px solid var(--accent);transition:none}
 
 /* ── CHECKLIST ── */
 .sch-checklist-wrap{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
@@ -3745,19 +3744,20 @@ function createGhost(el, touchX, touchY){
   var rect=el.getBoundingClientRect();
   var ghost=el.cloneNode(true);
   ghost.className='drag-ghost';
-  ghost.style.left=rect.left+'px';
-  ghost.style.top=rect.top+'px';
+  ghost.style.left='0px';
+  ghost.style.top='0px';
   ghost.style.width=rect.width+'px';
+  ghost.style.willChange='transform';
   document.body.appendChild(ghost);
   dragState.offsetX=touchX-rect.left;
   dragState.offsetY=touchY-rect.top;
+  ghost.style.transform='translate3d('+rect.left+'px,'+rect.top+'px,0) scale(1.05)';
   return ghost;
 }
 
 function moveGhost(touchX, touchY){
   if(!dragState.ghost)return;
-  dragState.ghost.style.left=(touchX-dragState.offsetX)+'px';
-  dragState.ghost.style.top=(touchY-dragState.offsetY)+'px';
+  dragState.ghost.style.transform='translate3d('+(touchX-dragState.offsetX)+'px,'+(touchY-dragState.offsetY)+'px,0) scale(1.05)';
 }
 
 function removeGhost(){
@@ -3765,32 +3765,72 @@ function removeGhost(){
 }
 
 function clearInsertLines(container){
-  container.querySelectorAll('.drag-insert-line').forEach(function(l){l.remove();});
+  if(dragLineEl&&dragLineEl.parentNode){dragLineEl.parentNode.removeChild(dragLineEl);}
+  dragLineEl=null;
+  document.querySelectorAll('.drag-insert-line').forEach(function(l){l.remove();});
 }
 
 // 삽입 위치 계산: Y좌표 기준으로 어느 아이템 사이인지
-function getInsertIdx(container, clientY, srcIdx){
-  var items=Array.from(container.querySelectorAll('.drag-item'));
-  var insertIdx=items.length; // 기본: 맨 아래
-  for(var i=0;i<items.length;i++){
-    var rect=items[i].getBoundingClientRect();
-    var mid=rect.top+rect.height/2;
-    if(clientY<mid){insertIdx=i;break;}
+function isGridList(items){
+  if(items.length<2)return false;
+  var t0=items[0].getBoundingClientRect().top;
+  for(var i=1;i<items.length;i++){
+    if(Math.abs(items[i].getBoundingClientRect().top-t0)<4)return true;
   }
-  return insertIdx;
+  return false;
+}
+function getInsertIdx(container, clientX, clientY, srcEl){
+  var all=Array.from(container.querySelectorAll('.drag-item'));
+  var items=all.filter(function(el){return el!==srcEl;});
+  if(!items.length)return 0;
+  var grid=isGridList(all);
+  if(!grid){
+    for(var i=0;i<all.length;i++){
+      if(all[i]===srcEl)continue;
+      var r=all[i].getBoundingClientRect();
+      if(clientY<r.top+r.height/2)return i;
+    }
+    return all.length;
+  }
+  var best=null,bestD=Infinity,after=false;
+  items.forEach(function(el){
+    var r=el.getBoundingClientRect();
+    var cx=r.left+r.width/2, cy=r.top+r.height/2;
+    var dx=clientX-cx, dy=clientY-cy;
+    var d=dx*dx+dy*dy*3.2;
+    if(d<bestD){bestD=d;best=el;after=(clientX>cx);}
+  });
+  var idx=all.indexOf(best);
+  return after?idx+1:idx;
 }
 
 // 삽입선 표시
+var dragLineEl=null;
 function showInsertLine(container, toIdx){
-  clearInsertLines(container);
-  var items=Array.from(container.querySelectorAll('.drag-item'));
-  var line=document.createElement('div');
-  line.className='drag-insert-line';
-  if(toIdx>=items.length){
-    container.appendChild(line);
-  } else {
-    container.insertBefore(line, items[toIdx]);
+  var all=Array.from(container.querySelectorAll('.drag-item'));
+  if(!all.length)return;
+  if(!dragLineEl){
+    dragLineEl=document.createElement('div');
+    dragLineEl.className='drag-insert-line';
+    document.body.appendChild(dragLineEl);
   }
+  var grid=isGridList(all);
+  var ref=all[toIdx];
+  var L,T,W,H;
+  if(grid){
+    if(ref){var r=ref.getBoundingClientRect();L=r.left-5;T=r.top;H=r.height;}
+    else{var lr=all[all.length-1].getBoundingClientRect();L=lr.right+2;T=lr.top;H=lr.height;}
+    W=3;
+  } else {
+    if(ref){var r2=ref.getBoundingClientRect();L=r2.left;T=r2.top-4;W=r2.width;}
+    else{var lr2=all[all.length-1].getBoundingClientRect();L=lr2.left;T=lr2.bottom+1;W=lr2.width;}
+    H=3;
+  }
+  dragLineEl.style.left=L+'px';
+  dragLineEl.style.top=T+'px';
+  dragLineEl.style.width=W+'px';
+  dragLineEl.style.height=H+'px';
+  dragLineEl.style.opacity='1';
 }
 
 // 그룹/필터가 적용된 목록에서도 실제 배열 인덱스를 기준으로 재정렬
@@ -3859,7 +3899,7 @@ function initDragList(containerEl, arr, listKey, onDone, idxAttr){
 
       // 고스트 잠깐 숨겨서 아래 엘리먼트 감지
       dragState.ghost.style.visibility='hidden';
-      var toIdx=getInsertIdx(dragState.container, touch.clientY, dragState.srcIdx);
+      var toIdx=getInsertIdx(dragState.container, touch.clientX, touch.clientY, dragState.el);
       dragState.ghost.style.visibility='';
 
       if(toIdx!==dragState.lastToIdx){
@@ -3930,7 +3970,7 @@ function initDragList(containerEl, arr, listKey, onDone, idxAttr){
     if(!dragState.active)return;
     moveGhost(e.clientX, e.clientY);
     dragState.ghost.style.visibility='hidden';
-    var toIdx=getInsertIdx(dragState.container, e.clientY, dragState.srcIdx);
+    var toIdx=getInsertIdx(dragState.container, e.clientX, e.clientY, dragState.el);
     dragState.ghost.style.visibility='';
     if(toIdx!==dragState.lastToIdx){
       vibrate(18);
