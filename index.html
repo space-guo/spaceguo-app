@@ -3197,6 +3197,41 @@ function saveItemModal(){
 }
 var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
 var procAccTab='item'; // 아코디언 탭: item | dec
+var PROC_GROUPS=['준비/행정','철거','설비/배관','전기','골조/목공','마감재','가구/설치','마무리'];
+var procGroupClosed={};
+function procGroupOf(p){var g=(p&&p.group)||'';return PROC_GROUPS.indexOf(g)>=0?g:(g||'미분류');}
+function procGroupRank(g){var i=PROC_GROUPS.indexOf(g);return i<0?98:i;}
+function toggleProcGroup(g){procGroupClosed[g]=!procGroupClosed[g];renderProcessList();}
+var PROC_GROUP_RULES=[
+  ['준비/행정',['미팅','동의서','행위허가','보양','계약','실측']],
+  ['철거',['철거','폐기물','파쇄']],
+  ['설비/배관',['설비','배관','분배기','도시가스','방통','방수','수전','급수','배수','위생']],
+  ['전기',['전기','조명','통신','인터폰','스위치','콘센트']],
+  ['골조/목공',['목공','경량','금속','단열','창호','중문','방화','샤시','샷시','유리']],
+  ['마감재',['타일','줄눈','도기','필름','도장','도배','마루','데코','대리석','실리콘','철물','천장','몰딩','걸레받이']],
+  ['가구/설치',['가구','에어컨','가전','간판','싱크','붙박이','시스템']],
+  ['마무리',['청소','촬영','AS','준공','하자','검수']]
+];
+function autoGroupProcesses(){
+  var n=0;
+  processes.forEach(function(p){
+    if(p.group&&PROC_GROUPS.indexOf(p.group)>=0)return;
+    var name=String(p.name||'');
+    for(var i=0;i<PROC_GROUP_RULES.length;i++){
+      var g=PROC_GROUP_RULES[i][0], keys=PROC_GROUP_RULES[i][1];
+      if(keys.some(function(k){return name.indexOf(k)>=0;})){p.group=g;n++;return;}
+    }
+  });
+  if(!n){showToast('새로 분류할 공정이 없어요');return;}
+  saveSettings().then(function(){
+    renderProcessList();renderProcessSelect();
+    showToast('✓ '+n+'개 자동 분류됐어요');
+  });
+}
+function setProcGroup(pi,g){
+  processes[pi].group=g||'';
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();showToast('✓ 그룹 변경됐어요');});
+}
 function setProcAccTab(t){procAccTab=t;renderProcessList();}
 document.addEventListener('click',function(e){
   if(openProcIdx<0)return;
@@ -3218,7 +3253,32 @@ function renderProcessList(){
   var grid=document.createElement('div');
   grid.className='proc-grid';
 
-  processes.forEach(function(p,pi){
+  var ordered=processes.map(function(p,i){return {p:p,i:i,g:procGroupOf(p)};})
+    .sort(function(a,b){
+      var d=procGroupRank(a.g)-procGroupRank(b.g);
+      if(d!==0)return d;
+      if(a.g!==b.g)return a.g<b.g?-1:1;
+      return a.i-b.i;
+    });
+  var groupCount={};
+  ordered.forEach(function(o){groupCount[o.g]=(groupCount[o.g]||0)+1;});
+  var lastGroup=null;
+
+  ordered.forEach(function(o){
+    var p=o.p, pi=o.i;
+    if(o.g!==lastGroup){
+      lastGroup=o.g;
+      var closed=!!procGroupClosed[o.g];
+      var hd=document.createElement('div');
+      hd.style.cssText='grid-column:1/-1;display:flex;align-items:center;gap:7px;padding:9px 4px 5px;cursor:pointer;margin-top:2px';
+      hd.onclick=(function(g){return function(){toggleProcGroup(g);};})(o.g);
+      hd.innerHTML='<span style="font-size:12px;color:var(--muted)">'+(closed?'▸':'▾')+'</span>'
+        +'<span style="font-size:12px;font-weight:800;color:'+(o.g==='미분류'?'var(--muted)':'var(--text)')+'">'+o.g+'</span>'
+        +'<span style="font-size:11px;color:var(--muted);font-weight:700">'+groupCount[o.g]+'</span>'
+        +'<span style="flex:1;height:1px;background:var(--border)"></span>';
+      grid.appendChild(hd);
+    }
+    if(procGroupClosed[o.g])return;
     var pColor=p.color||SCH_COLORS_LIST[pi%SCH_COLORS_LIST.length];
     var itemCount=(p.items||[]).length;
     var isOpen=openProcIdx===pi;
@@ -3227,6 +3287,7 @@ function renderProcessList(){
     var card=document.createElement('div');
     card.className='proc-grid-card drag-item'+(isOpen?' open':'');
     card.dataset.pi=pi;
+    card.dataset.group=procGroupOf(p);
     card.innerHTML=
       '<div class="proc-grid-top">'
         +'<div class="proc-grid-color" data-color-pi="'+pi+'" style="background:'+pColor+'"></div>'
@@ -3280,6 +3341,13 @@ function renderProcessList(){
           +'<span style="flex:1;font-size:13px;font-weight:800;min-width:0">'+p.name+'</span>'
           +'<button data-acc-close="1" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 4px">✕</button>'
         +'</div>'
+        +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">'
+          +'<span style="font-size:11px;color:var(--muted);font-weight:700;flex-shrink:0">그룹</span>'
+          +'<select class="field-select" style="flex:1;min-width:0;padding:9px 10px;font-size:12px" onchange="setProcGroup('+pi+',this.value)">'
+          +'<option value="">미분류</option>'
+          +PROC_GROUPS.map(function(g){return '<option value="'+g+'"'+(procGroupOf(p)===g?' selected':'')+'>'+g+'</option>';}).join('')
+          +'</select>'
+        +'</div>'
         +'<div style="display:flex;gap:6px;margin-bottom:10px">'
           +'<button onclick="setProcAccTab(\'item\')" style="flex:1;background:'+(isDecTab?'transparent':'var(--accent)')+';border:1px solid '+(isDecTab?'var(--border)':'var(--accent)')+';border-radius:9px;color:'+(isDecTab?'var(--muted)':'#fff')+';font-family:inherit;font-size:12px;font-weight:800;padding:8px 0;cursor:pointer">품목 '+((p.items||[]).length||'')+'</button>'
           +'<button onclick="setProcAccTab(\'dec\')" style="flex:1;background:'+(isDecTab?'var(--accent)':'transparent')+';border:1px solid '+(isDecTab?'var(--accent)':'var(--border)')+';border-radius:9px;color:'+(isDecTab?'#fff':'var(--muted)')+';font-family:inherit;font-size:12px;font-weight:800;padding:8px 0;cursor:pointer">고객 결정 '+(decs.length||'')+'</button>'
@@ -3304,6 +3372,14 @@ function renderProcessList(){
   });
 
   el.appendChild(grid);
+  if(processes.some(function(p){return procGroupOf(p)==='미분류';})){
+    var ab=document.createElement('button');
+    ab.className='add-item-btn';
+    ab.style.cssText='margin-top:8px';
+    ab.textContent='✨ 미분류 공정 자동 분류';
+    ab.onclick=autoGroupProcesses;
+    el.appendChild(ab);
+  }
 
   // ── 이벤트 바인딩 ──
 
@@ -3397,7 +3473,7 @@ function renderProcessList(){
   initDragList(grid, processes, 'processes', function(){
     openProcIdx=-1;
     saveSettings().then(function(){renderProcessList();renderProcessSelect();});
-  });
+  }, 'data-pi');
 }
 function moveProcess(pi,dir){
   var target=pi+dir;
