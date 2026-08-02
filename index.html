@@ -3238,10 +3238,12 @@ function setProcAccTab(t){procAccTab=t;renderProcessList();}
 document.addEventListener('click',function(e){
   if(openProcIdx<0)return;
   var t=e.target;
-  if(t.closest&&(t.closest('.proc-accordion')||t.closest('.proc-grid-card')||t.closest('#colorPopup')))return;
+  // 공정 목록 안(카드·아코디언·그룹 헤더 버튼)의 클릭은 각자 처리하도록 둔다
+  if(t.closest&&(t.closest('#processList')||t.closest('#colorPopup')))return;
   openProcIdx=-1;
-  try{renderProcessList();}catch(err){}
-},true);
+  // 원래 클릭 처리가 끝난 뒤 다시 그린다 (즉시 렌더 시 버튼이 사라져 동작 취소됨)
+  setTimeout(function(){try{renderProcessList();}catch(err){}},0);
+});
 
 function renderProcessList(){
   var el=document.getElementById('processList');
