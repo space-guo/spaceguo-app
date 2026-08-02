@@ -339,6 +339,10 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .sch-bar.mid{border-radius:0}
 .sch-bar.single{border-radius:6px}
 .sch-bar.sch-dragging{opacity:.28;filter:grayscale(.4)}
+.sch-bar.sch-editing{outline:2px solid var(--text);outline-offset:1px;box-shadow:0 0 0 3px color-mix(in srgb,var(--text) 18%,transparent)}
+.sch-edit-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9996;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.28);padding:11px 13px;width:calc(100% - 24px);max-width:452px}
+.sch-edit-mode{flex:1;border-radius:10px;font-family:inherit;font-size:12px;font-weight:800;padding:9px 0;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)}
+.sch-edit-mode.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .sch-cal-cell.sch-drop-range{background:color-mix(in srgb,var(--accent) 15%,transparent);box-shadow:inset 0 0 0 1px var(--accent)}
 .sch-drag-ghost{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:7px;box-shadow:0 8px 22px rgba(0,0,0,.38);will-change:transform}
 .sch-bar.start::before,.sch-bar.single::before{content:'';position:absolute;left:0;top:0;bottom:0;width:26%;max-width:14px}
@@ -1041,7 +1045,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="sch-cal-header" id="schCalHeader"></div>
     <div class="sch-cal-body" id="schCalBody"></div>
   </div>
-  <div style="font-size:10px;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5">일정 막대를 <b style="color:var(--text)">길게 눌러</b> 옮기고, <b style="color:var(--text)">양 끝</b>을 잡으면 기간이 조절됩니다</div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5">일정 막대를 <b style="color:var(--text)">길게 누른 뒤 그대로 떼면</b> 편집 모드가 켜집니다 · 끌어서 바로 옮길 수도 있어요</div>
   <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-list" id="schList"></div>
   <div id="schDecisionSection" style="display:none"></div>
@@ -5656,6 +5660,7 @@ function setSchSiteFilter(s){
 }
 
 function schCalMove(dir){
+  if(schEdit.active)exitSchEdit(false);
   schMonth+=dir;
   if(schMonth>11){schMonth=0;schYear++;}
   if(schMonth<0){schMonth=11;schYear--;}
@@ -5893,13 +5898,28 @@ function renderSchCal(){
 
   document.getElementById('schCalBody').innerHTML=html;
   document.getElementById('schCalBody').querySelectorAll('[data-schid]').forEach(function(el){
-    el.addEventListener('click',function(e){e.stopPropagation();if(schDragBlockClick)return;openSchModalEdit(this.dataset.schid);});
+    el.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(schDragBlockClick)return;
+      if(schEdit.active){
+        var nid=this.dataset.schid;
+        if(nid!==schEdit.id)enterSchEdit(nid);
+        return;
+      }
+      openSchModalEdit(this.dataset.schid);
+    });
   });
   initSchBarDrag();
+  if(schEdit.active)schPaintEditRange();
   // 날짜 셀 클릭 → 일별 입력 모달
   document.getElementById('schCalBody').querySelectorAll('.sch-cal-cell').forEach(function(cell){
     cell.addEventListener('click',function(){
       if(schDragBlockClick)return;
+      if(schEdit.active){
+        var ds2=this.getAttribute('data-date');
+        if(ds2)schEditApply(ds2);
+        return;
+      }
       var day=this.querySelector('.sch-day-num');
       if(!day)return;
       var dayNum=parseInt(day.textContent);
@@ -6037,7 +6057,12 @@ function schDragFinish(){
   setTimeout(function(){schDragBlockClick=false;},350);
   var s=schedules.find(function(z){return z.id===schDrag.id;});
   if(!s)return;
-  if(!schDrag.moved||(schDrag.ns===schDrag.os&&schDrag.ne===schDrag.oe)){renderSchCal();return;}
+  if(!schDrag.moved||(schDrag.ns===schDrag.os&&schDrag.ne===schDrag.oe)){
+    var pid=schDrag.id;
+    renderSchCal();
+    enterSchEdit(pid);   // 끌지 않고 뗐으면 편집 모드로 고정
+    return;
+  }
   s.startDate=schDrag.ns; s.endDate=schDrag.ne;
   renderSchCal();
   var ns=schDrag.ns, ne=schDrag.ne, oldS=schDrag.os, oldE=schDrag.oe, did=schDrag.id;
@@ -6053,6 +6078,78 @@ function schDragFinish(){
     renderSchCal();setSyncStatus('err');showToast('저장 실패: '+err.message);
   });
 }
+var schEdit={active:false,id:'',mode:'end',os:'',oe:'',ns:'',ne:''};
+function schPaintEditRange(){
+  document.querySelectorAll('#schCalBody .sch-cal-cell').forEach(function(cell){
+    var d=cell.getAttribute('data-date');
+    cell.classList.toggle('sch-drop-range', !!(d&&schEdit.ns&&d>=schEdit.ns&&d<=schEdit.ne));
+  });
+  document.querySelectorAll('#schCalBody .sch-bar[data-schid]').forEach(function(b){
+    b.classList.toggle('sch-editing', b.getAttribute('data-schid')===schEdit.id);
+  });
+}
+function enterSchEdit(id){
+  var s=schedules.find(function(x){return x.id===id;});
+  if(!s||!s.startDate||!s.endDate)return;
+  schEdit={active:true,id:id,mode:'end',os:s.startDate,oe:s.endDate,ns:s.startDate,ne:s.endDate};
+  vibrate(35);
+  schPaintEditRange();
+  renderSchEditBar();
+}
+function setSchEditMode(m){schEdit.mode=m;renderSchEditBar();}
+function schEditApply(date){
+  if(!schEdit.active||!date)return;
+  if(schEdit.mode==='start'){ schEdit.ns=(date>schEdit.ne)?schEdit.ne:date; }
+  else if(schEdit.mode==='end'){ schEdit.ne=(date<schEdit.ns)?schEdit.ns:date; }
+  else { var delta=dnumStr(date)-dnumStr(schEdit.ns); schEdit.ns=addDaysStr(schEdit.ns,delta); schEdit.ne=addDaysStr(schEdit.ne,delta); }
+  vibrate(12);
+  schPaintEditRange();
+  renderSchEditBar();
+}
+function renderSchEditBar(){
+  var el=document.getElementById('schEditBar');
+  if(!schEdit.active){ if(el)el.parentNode.removeChild(el); return; }
+  if(!el){ el=document.createElement('div'); el.id='schEditBar'; el.className='sch-edit-bar'; document.body.appendChild(el); }
+  var s=schedules.find(function(x){return x.id===schEdit.id;});
+  var days=dnumStr(schEdit.ne)-dnumStr(schEdit.ns)+1;
+  var changed=(schEdit.ns!==schEdit.os||schEdit.ne!==schEdit.oe);
+  el.innerHTML=
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">'
+      +'<span style="width:9px;height:9px;border-radius:50%;background:'+(s?getSchBarColor(s,0):'var(--accent)')+';flex-shrink:0"></span>'
+      +'<span style="flex:1;min-width:0;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((s&&s.procName)||'공정')+'</span>'
+      +'<span style="font-size:12px;font-weight:800;color:'+(changed?'var(--accent)':'var(--muted)')+'">'+schEdit.ns.slice(5).replace('-','/')+' ~ '+schEdit.ne.slice(5).replace('-','/')+' ('+days+'일)</span>'
+    +'</div>'
+    +'<div style="font-size:10px;color:var(--muted);margin-bottom:8px">바꿀 항목을 고른 뒤 달력에서 날짜를 누르세요</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:8px">'
+      +'<button class="sch-edit-mode'+(schEdit.mode==='start'?' on':'')+'" onclick="setSchEditMode(\'start\')">시작일</button>'
+      +'<button class="sch-edit-mode'+(schEdit.mode==='move'?' on':'')+'" onclick="setSchEditMode(\'move\')">전체 이동</button>'
+      +'<button class="sch-edit-mode'+(schEdit.mode==='end'?' on':'')+'" onclick="setSchEditMode(\'end\')">종료일</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px">'
+      +'<button onclick="exitSchEdit(false)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;font-weight:800;padding:11px 0;cursor:pointer">취소</button>'
+      +'<button onclick="exitSchEdit(true)" style="flex:1.4;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:13px;font-weight:800;padding:11px 0;cursor:pointer">'+(changed?'저장':'닫기')+'</button>'
+    +'</div>';
+}
+function exitSchEdit(save){
+  if(!schEdit.active)return;
+  var id=schEdit.id, ns=schEdit.ns, ne=schEdit.ne, changed=(ns!==schEdit.os||ne!==schEdit.oe);
+  schEdit.active=false;
+  renderSchEditBar();
+  document.querySelectorAll('#schCalBody .sch-drop-range').forEach(function(c){c.classList.remove('sch-drop-range');});
+  document.querySelectorAll('#schCalBody .sch-editing').forEach(function(b){b.classList.remove('sch-editing');});
+  if(!save||!changed)return;
+  var s=schedules.find(function(x){return x.id===id;});
+  if(s){s.startDate=ns;s.endDate=ne;}
+  renderSchCal();
+  setSyncStatus('saving');
+  db.collection('schedules').doc(id).update({startDate:ns,endDate:ne}).then(function(){
+    setSyncStatus('ok');vibrate([20,12,20]);
+    showToast('✓ '+ns.slice(5).replace('-','/')+' ~ '+ne.slice(5).replace('-','/')+'로 변경됐어요');
+    renderSchList();
+    try{renderSchDecisions();}catch(e){}
+  }).catch(function(err){setSyncStatus('err');showToast('저장 실패: '+err.message);});
+}
+
 function initSchBarDrag(){
   document.querySelectorAll('#schCalBody .sch-bar[data-schid]').forEach(function(bar){
     bar.addEventListener('touchstart',function(e){
