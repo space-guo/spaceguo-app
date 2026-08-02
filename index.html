@@ -1525,12 +1525,9 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   <button class="add-item-btn" onclick="openAccountModal()" style="margin-bottom:10px">＋ 계좌 추가</button>
   <div class="section-divider"></div>
   <div class="settings-title">📦 공정</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">공정을 탭하면 <b style="color:var(--text)">품목</b>과 <b style="color:var(--text)">고객 결정 항목</b>을 등록할 수 있어요</div>
   <div id="processList"></div>
   <button class="add-item-btn" onclick="openProcessModal()" style="margin-bottom:10px">＋ 공정 추가</button>
-  <div class="section-divider"></div>
-  <div class="settings-title">📋 고객 결정 항목 (공정별 기본값)</div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6">여기서 정한 항목이 모든 현장에 자동 적용되고, 공정표 캡처 이미지 하단에 표시됩니다.<br>D-는 공정 시작 며칠 전까지 정해야 하는지입니다.</div>
-  <div id="decTemplateList"></div>
   <div class="section-divider"></div>
   <div class="settings-title">내보내기</div>
   <button class="export-btn" onclick="exportCSV()">📋 CSV 다운로드</button>
@@ -1945,7 +1942,6 @@ function loadSettings(){
     } else {sites=[];cards=[];accounts=[];processes=[];}
     renderSiteSelect();renderSiteList();renderCardChips();renderCardList();
     renderAccountChips();renderAccountList();renderProcessSelect();renderProcessList();renderFilterBar();
-    try{renderDecTemplates();}catch(e){}
   });
 }
 function saveSettings(){
@@ -2968,7 +2964,7 @@ function closeCardModal(){if(modalStack.length>0)modalStack.pop();
 function openSettingsModal(){
   document.getElementById('settingsModal').style.display='flex';
   pushModalState('settingsModal');
-  renderSiteList();renderCardList();renderAccountList();renderProcessList();renderDecTemplates();
+  renderSiteList();renderCardList();renderAccountList();renderProcessList();
   loadVendors();
 }
 function closeSettingsModal(){if(modalStack.length>0)modalStack.pop();
@@ -3132,50 +3128,6 @@ function addProcDecision(){
 }
 function removeProcDecision(i){procDecisions.splice(i,1);renderProcDecisions();}
 
-function renderDecTemplates(){
-  var el=document.getElementById('decTemplateList');
-  if(!el)return;
-  var total=processes.reduce(function(a,p){return a+((p.decisions||[]).length);},0);
-  var html='';
-  if(!processes.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 2px">먼저 공정을 추가해주세요</div>';
-    return;
-  }
-  processes.forEach(function(p,pi){
-    var ds=p.decisions||[];
-    var open=decTplOpen===pi;
-    html+='<div style="border:1px solid var(--border);border-radius:11px;margin-bottom:7px;overflow:hidden">'
-      +'<div onclick="toggleDecTpl('+pi+')" style="display:flex;align-items:center;gap:8px;padding:11px 13px;cursor:pointer;background:'+(open?'var(--surface2)':'transparent')+'">'
-      +'<span style="width:9px;height:9px;border-radius:50%;background:'+getProcColor(p.name,pi)+';flex-shrink:0"></span>'
-      +'<span style="flex:1;font-size:13px;font-weight:700;min-width:0">'+p.name+'</span>'
-      +'<span style="font-size:11px;font-weight:800;color:'+(ds.length?'var(--accent)':'var(--muted)')+'">'+(ds.length?ds.length+'개':'없음')+'</span>'
-      +'<span style="font-size:14px;color:var(--muted)">'+(open?'▾':'▸')+'</span>'
-      +'</div>';
-    if(open){
-      html+='<div style="padding:0 13px 12px">';
-      if(!ds.length)html+='<div style="font-size:11px;color:var(--muted);padding:4px 0 8px">아직 항목이 없어요</div>';
-      ds.forEach(function(d,di){
-        html+='<div style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:5px">'
-          +(d.cat?'<span style="font-size:10px;font-weight:800;color:var(--accent);background:var(--surface);border-radius:5px;padding:2px 6px;flex-shrink:0">'+d.cat+'</span>':'')
-          +'<span style="flex:1;font-size:12px;min-width:0;word-break:break-all">'+d.label+'</span>'
-          +'<span style="font-size:10px;color:var(--muted);font-weight:800;flex-shrink:0">D-'+(d.lead||0)+'</span>'
-          +'<button type="button" onclick="delDecTpl('+pi+','+di+')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>'
-          +'</div>';
-      });
-      html+='<div style="display:flex;gap:5px;margin-top:7px">'
-        +'<input class="field-input" id="dtCat'+pi+'" placeholder="분류" style="width:64px;padding:10px 8px;font-size:12px">'
-        +'<input class="field-input" id="dtLabel'+pi+'" placeholder="결정 항목" style="flex:1;min-width:0;padding:10px;font-size:12px">'
-        +'<input class="field-input" id="dtLead'+pi+'" type="tel" inputmode="numeric" placeholder="D-" style="width:48px;padding:10px 4px;font-size:12px;text-align:center">'
-        +'<button class="add-site-btn" onclick="addDecTpl('+pi+')" style="padding:10px 13px;font-size:12px">추가</button>'
-        +'</div></div>';
-    }
-    html+='</div>';
-  });
-  html+='<div style="font-size:11px;color:var(--muted);text-align:right;margin-top:6px">전체 '+total+'개 항목</div>';
-  el.innerHTML=html;
-}
-var decTplOpen=-1;
-function toggleDecTpl(pi){decTplOpen=(decTplOpen===pi?-1:pi);renderDecTemplates();}
 function addDecTpl(pi){
   var cat=(document.getElementById('dtCat'+pi).value||'').trim();
   var label=(document.getElementById('dtLabel'+pi).value||'').trim();
@@ -3184,7 +3136,8 @@ function addDecTpl(pi){
   if(!processes[pi].decisions)processes[pi].decisions=[];
   processes[pi].decisions.push({cat:cat,label:label,lead:lead});
   saveSettings().then(function(){
-    renderDecTemplates();
+    procAccTab='dec'; openProcIdx=pi;
+    renderProcessList();
     if(document.getElementById('view-sch').classList.contains('active'))renderSchDecisions();
     showToast('✓ 추가됐어요');
   });
@@ -3192,7 +3145,8 @@ function addDecTpl(pi){
 function delDecTpl(pi,di){
   processes[pi].decisions.splice(di,1);
   saveSettings().then(function(){
-    renderDecTemplates();
+    procAccTab='dec'; openProcIdx=pi;
+    renderProcessList();
     if(document.getElementById('view-sch').classList.contains('active'))renderSchDecisions();
   });
 }
@@ -3215,7 +3169,7 @@ function saveProcessModal(){
   if(!name){showToast('공정명을 입력해주세요');return;}
   if(editingProcIdx>=0){processes[editingProcIdx].name=name;processes[editingProcIdx].decisions=procDecisions;}
   else{processes.push({name:name,items:[],decisions:procDecisions});}
-  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();try{renderDecTemplates();}catch(e){}showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
+  saveSettings().then(function(){closeProcessModal();renderProcessList();renderProcessSelect();showToast(editingProcIdx>=0?'공정 수정됐어요':'공정 추가됐어요');});
 }
 function deleteProcess(pi){
   if(!confirm('"'+processes[pi].name+'" 공정을 삭제할까요?'))return;
@@ -3242,6 +3196,8 @@ function saveItemModal(){
   saveSettings().then(function(){closeItemModal();renderProcessList();renderProcessSelect();showToast('품목 추가됐어요');});
 }
 var openProcIdx=-1; // 현재 펼쳐진 공정 인덱스
+var procAccTab='item'; // 아코디언 탭: item | dec
+function setProcAccTab(t){procAccTab=t;renderProcessList();}
 document.addEventListener('click',function(e){
   if(openProcIdx<0)return;
   var t=e.target;
@@ -3280,9 +3236,15 @@ function renderProcessList(){
         +'</div>'
       +'</div>'
       +'<div class="proc-grid-name">'+p.name+'</div>'
-      +(itemCount
-        ?'<div class="proc-grid-sub">품목 '+itemCount+'개</div>'
-        :'<div class="proc-grid-sub" style="color:var(--border)">−</div>')
+      +(function(){
+        var dc=(p.decisions||[]).length;
+        var parts=[];
+        if(itemCount)parts.push('품목 '+itemCount);
+        if(dc)parts.push('<span style="color:var(--accent)">결정 '+dc+'</span>');
+        return parts.length
+          ?'<div class="proc-grid-sub">'+parts.join(' · ')+'</div>'
+          :'<div class="proc-grid-sub" style="color:var(--border)">−</div>';
+      })()
       +'<div class="proc-grid-drag">☰</div>';
     grid.appendChild(card);
 
@@ -3299,18 +3261,44 @@ function renderProcessList(){
             +'</div>';
         }).join('')
         :'<div style="font-size:12px;color:var(--muted);padding:4px 0">품목이 없어요</div>';
+      var decs=p.decisions||[];
+      var decHtml=decs.length
+        ?decs.map(function(d,di){
+          return '<div style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--surface);border-radius:8px;margin-bottom:5px">'
+            +(d.cat?'<span style="font-size:10px;font-weight:800;color:var(--accent);background:var(--surface2);border-radius:5px;padding:2px 6px;flex-shrink:0">'+d.cat+'</span>':'')
+            +'<span style="flex:1;font-size:12px;min-width:0;word-break:break-all">'+d.label+'</span>'
+            +'<span style="font-size:10px;color:var(--muted);font-weight:800;flex-shrink:0">D-'+(d.lead||0)+'</span>'
+            +'<button type="button" onclick="delDecTpl('+pi+','+di+')" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>'
+            +'</div>';
+        }).join('')
+        :'<div style="font-size:12px;color:var(--muted);padding:4px 0">등록된 항목이 없어요</div>';
+
+      var isDecTab=(procAccTab==='dec');
       acc.innerHTML=
         '<div style="display:flex;align-items:center;gap:8px;margin:-2px 0 10px">'
           +'<span style="width:8px;height:8px;border-radius:50%;background:'+pColor+';flex-shrink:0"></span>'
-          +'<span style="flex:1;font-size:13px;font-weight:800;min-width:0">'+p.name+' <span style="font-size:11px;font-weight:600;color:var(--muted)">품목</span></span>'
+          +'<span style="flex:1;font-size:13px;font-weight:800;min-width:0">'+p.name+'</span>'
           +'<button data-acc-close="1" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 4px">✕</button>'
         +'</div>'
-        +itemsHtml
-        +'<div class="proc-acc-add-row">'
-          +'<input class="proc-acc-inp" id="accInp-'+pi+'" placeholder="품목명" type="text">'
-          +'<input class="proc-acc-inp" id="accUnit-'+pi+'" placeholder="단위" type="text" style="width:60px;flex:none">'
-          +'<button class="proc-acc-btn" data-acc-add="'+pi+'">추가</button>'
-        +'</div>';
+        +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+          +'<button onclick="setProcAccTab(\'item\')" style="flex:1;background:'+(isDecTab?'transparent':'var(--accent)')+';border:1px solid '+(isDecTab?'var(--border)':'var(--accent)')+';border-radius:9px;color:'+(isDecTab?'var(--muted)':'#fff')+';font-family:inherit;font-size:12px;font-weight:800;padding:8px 0;cursor:pointer">품목 '+((p.items||[]).length||'')+'</button>'
+          +'<button onclick="setProcAccTab(\'dec\')" style="flex:1;background:'+(isDecTab?'var(--accent)':'transparent')+';border:1px solid '+(isDecTab?'var(--accent)':'var(--border)')+';border-radius:9px;color:'+(isDecTab?'#fff':'var(--muted)')+';font-family:inherit;font-size:12px;font-weight:800;padding:8px 0;cursor:pointer">고객 결정 '+(decs.length||'')+'</button>'
+        +'</div>'
+        +(isDecTab
+          ?'<div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.5">고객이 이 공정 전에 정해야 할 것. 모든 현장에 자동 적용되고 공정표 캡처 하단에 표시됩니다. D-는 공정 시작 며칠 전까지인지</div>'
+           +decHtml
+           +'<div style="display:flex;gap:5px;margin-top:7px">'
+             +'<input class="proc-acc-inp" id="dtCat'+pi+'" placeholder="분류" style="width:60px;flex:none" type="text">'
+             +'<input class="proc-acc-inp" id="dtLabel'+pi+'" placeholder="결정 항목" type="text">'
+             +'<input class="proc-acc-inp" id="dtLead'+pi+'" placeholder="D-" type="tel" inputmode="numeric" style="width:46px;flex:none;text-align:center">'
+             +'<button class="proc-acc-btn" onclick="addDecTpl('+pi+')">추가</button>'
+           +'</div>'
+          :itemsHtml
+           +'<div class="proc-acc-add-row">'
+             +'<input class="proc-acc-inp" id="accInp-'+pi+'" placeholder="품목명" type="text">'
+             +'<input class="proc-acc-inp" id="accUnit-'+pi+'" placeholder="단위" type="text" style="width:60px;flex:none">'
+             +'<button class="proc-acc-btn" data-acc-add="'+pi+'">추가</button>'
+           +'</div>');
       grid.appendChild(acc);
     }
   });
