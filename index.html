@@ -3204,6 +3204,46 @@ var procGroupClosed={};
 function procGroupOf(p){var g=(p&&p.group)||'';return PROC_GROUPS.indexOf(g)>=0?g:(g||'미분류');}
 function procGroupRank(g){var i=PROC_GROUPS.indexOf(g);return i<0?98:i;}
 function toggleProcGroup(g){procGroupClosed[g]=!procGroupClosed[g];renderProcessList();}
+
+function addProcGroup(){
+  var name=prompt('새 그룹 이름');
+  if(name===null)return;
+  name=name.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  if(name==='미분류'){showToast('"미분류"는 쓸 수 없어요');return;}
+  if(PROC_GROUPS.indexOf(name)>=0){showToast('이미 있는 그룹이에요');return;}
+  PROC_GROUPS.push(name);
+  saveSettings().then(function(){renderProcessList();showToast('✓ "'+name+'" 그룹 추가됐어요');});
+}
+function renameProcGroup(g){
+  var name=prompt('그룹 이름 수정', g);
+  if(name===null)return;
+  name=name.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  if(name===g)return;
+  if(name==='미분류'){showToast('"미분류"는 쓸 수 없어요');return;}
+  if(PROC_GROUPS.indexOf(name)>=0){showToast('이미 있는 그룹이에요');return;}
+  var i=PROC_GROUPS.indexOf(g);
+  if(i>=0)PROC_GROUPS[i]=name;
+  var moved=0;
+  processes.forEach(function(p){if(p.group===g){p.group=name;moved++;}});
+  if(procGroupClosed[g]){procGroupClosed[name]=true;delete procGroupClosed[g];}
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();showToast('✓ "'+name+'"으로 변경 (공정 '+moved+'개)');});
+}
+function deleteProcGroup(g){
+  var n=processes.filter(function(p){return p.group===g;}).length;
+  if(!confirm('"'+g+'" 그룹을 삭제할까요?'+(n?'\n\n소속 공정 '+n+'개는 삭제되지 않고 미분류로 이동합니다.':'')))return;
+  PROC_GROUPS=PROC_GROUPS.filter(function(x){return x!==g;});
+  processes.forEach(function(p){if(p.group===g)p.group='';});
+  delete procGroupClosed[g];
+  saveSettings().then(function(){renderProcessList();renderProcessSelect();showToast('✓ 그룹 삭제됨 (공정 '+n+'개 미분류)');});
+}
+function moveProcGroup(g,dir){
+  var i=PROC_GROUPS.indexOf(g), j=i+dir;
+  if(i<0||j<0||j>=PROC_GROUPS.length)return;
+  var t=PROC_GROUPS[i];PROC_GROUPS[i]=PROC_GROUPS[j];PROC_GROUPS[j]=t;
+  saveSettings().then(function(){renderProcessList();});
+}
 var PROC_GROUP_RULES=[
   ['준비/행정',['미팅','동의서','행위허가','보양','계약','실측']],
   ['철거',['철거','폐기물','파쇄']],
