@@ -2019,7 +2019,14 @@ function renderPendingSection(){
       +'<span class="pending-card-amount">₩'+amount.toLocaleString('ko-KR')+'</span>'
       +'<span class="pending-card-date">'+dateStr+'</span>'
       +'</div>'
-      +(vendor?'<div class="pending-card-vendor">🏪 '+vendor+(cardnum?' · 카드 '+cardnum:'')+'</div>':'')
+      +(function(){
+        var isAcc=pendIsAccount(n);
+        var acc=isAcc?findAccountByNum(n.acctnum||n.account||cardnum):null;
+        var label=isAcc
+          ? '🏦 '+(vendor||'계좌 거래')+(acc?' · '+acc.name:(n.bank?' · '+n.bank:''))+(pendInOut(n)==='in'?' · 입금':' · 출금')
+          : (vendor?'🏪 '+vendor+(cardnum?' · 카드 '+cardnum:''):'');
+        return label?'<div class="pending-card-vendor">'+label+'</div>':'';
+      })()
       +'<div class="pending-card-hint">탭하면 자동 입력돼요 →</div>'
       +'<button class="pending-del-btn" data-pid="'+n.id+'">✕</button>'
       +'<div class="pending-apply-area" data-pid="'+n.id+'" data-amount="'+amount+'" data-vendor="'+encodeURIComponent(vendor)+'" data-date="'+encodeURIComponent(dateStr)+'" data-cardnum="'+encodeURIComponent(cardnum)+'"></div>'
@@ -2065,8 +2072,39 @@ function renderPendingSection(){
 // ── ACTIVE PENDING STATE ──
 var activePendingId='', activePendingDate='';
 
+// 알림이 계좌 거래인지 판별 / 등록된 계좌 찾기
+function pendIsAccount(v){
+  if(!v)return false;
+  if(v.type==='account'||v.acctnum||v.account)return true;
+  return false;
+}
+function pendInOut(v){
+  // 입금이면 'in', 출금이면 'out'
+  var s=String((v&&(v.inout||v.direction||v.kind))||'').toLowerCase();
+  if(s.indexOf('in')>=0||s.indexOf('입금')>=0)return 'in';
+  if(s.indexOf('out')>=0||s.indexOf('출금')>=0||s.indexOf('이체')>=0)return 'out';
+  return (v&&Number(v.amount)<0)?'out':'out';
+}
+function findAccountByNum(num){
+  if(!num)return null;
+  var n=String(num).replace(/[^0-9]/g,'');
+  if(!n)return null;
+  return (accounts||[]).find(function(a){
+    var an=String(a.num||'').replace(/[^0-9]/g,'');
+    if(!an)return false;
+    return an===n || an.slice(-4)===n.slice(-4) || an.indexOf(n)>=0 || n.indexOf(an)>=0;
+  })||null;
+}
+
 function applyPending(id, amount, vendor, dateStr, cardnum){
   activePendingId=id;
+  // 계좌 알림이면 계좌번호를 매칭에 쓰기 위해 보관
+  (function(){
+    try{
+      var doc=(pendingNotifs||[]).find(function(x){return x.id===id;});
+      window._pendAcctNum=doc?(doc.acctnum||doc.account||''):'';
+    }catch(e){window._pendAcctNum='';}
+  })();
   activePendingDate=dateStr||'';
 
   // 금액 자동 입력
@@ -2088,7 +2126,7 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
   setTimeout(function(){initDatePicker();},50);
 
   // 탭 이동 후 카드 매칭 (renderCardChips가 탭 전환 시 초기화되므로 이후 실행)
-  var matched=null;
+  var matched=null, matchedType='card';
   if(cardnum){
     matched=cards.find(function(c){return c.num&&c.num===String(cardnum);});
   }
@@ -2097,16 +2135,22 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
       return c.issuer&&vendor.indexOf(c.issuer.replace('카드',''))>=0;
     });
   }
+  // 카드에 없으면 계좌에서 찾기 (계좌이체 알림)
+  if(!matched){
+    var acc=findAccountByNum(cardnum||(window._pendAcctNum||''));
+    if(acc){matched=acc;matchedType='transfer';}
+  }
   if(matched){
     selectedPayMethod=matched.name;
-    selectedPayType='card';
+    selectedPayType=matchedType;
     renderCardChips();
+    if(typeof renderAccountChips==='function')renderAccountChips();
   }
 
   // pending → processing 상태로 변경
   db.collection('sms_pending').doc(id).update({status:'processing'});
 
-  showToast(matched?'✓ 카드 자동 선택됐어요!':'✓ 자동 입력됐어요!');
+  showToast(matched?('✓ '+matched.name+' 자동 선택됐어요!'):'✓ 자동 입력됐어요!');
   setTimeout(function(){window.scrollTo(0,0);},100);
 }
 
@@ -2152,7 +2196,16 @@ function renderNotifTab(){
     return '<div class="notif-card '+(isPending?'pending':'done')+'">'
       +'<div class="notif-status '+(isPending?'pending':'done')+'"></div>'
       +'<div class="notif-info">'
-      +'<div class="notif-vendor">'+(vendor||'가맹점 미확인')+(cardnum?' <span style="font-size:10px;color:var(--muted)">····'+cardnum+'</span>':'')+(isPending?'':'<span class="notif-done-badge">처리됨</span>')+'</div>'
+      +'<div class="notif-vendor">'+(function(){
+          var isAcc=pendIsAccount(n);
+          var acc=isAcc?findAccountByNum(n.acctnum||n.account||cardnum):null;
+          if(isAcc){
+            return '🏦 '+(vendor||'계좌 거래')
+              +'<span style="font-size:10px;color:var(--muted)"> · '+(acc?acc.name:(n.bank||'계좌'))
+              +' · '+(pendInOut(n)==='in'?'입금':'출금')+'</span>';
+          }
+          return (vendor||'가맹점 미확인')+(cardnum?' <span style="font-size:10px;color:var(--muted)">····'+cardnum+'</span>':'');
+        })()+(isPending?'':'<span class="notif-done-badge">처리됨</span>')+'</div>'
       +'<div class="notif-meta">'+dateStr+(n.appliedAt?' · 적용: '+n.appliedAt.slice(0,16):'')+'</div>'
       +'<div class="notif-actions">'
       +(isPending
