@@ -1985,7 +1985,19 @@ function subscribeIncomes(){
 // ── PENDING NOTIFICATIONS ──
 function subscribePending(){
   unsubPending=db.collection('sms_pending').orderBy('date','desc').onSnapshot(function(snap){
-    pendingNotifs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    pendingNotifs=snap.docs.map(function(d){var v=Object.assign({id:d.id},d.data());
+      if(v.raw&&(!v.amount||!v.acctnum)){
+        var pk=parseKBNotif(v.raw,v.title);
+        if(pk.amount){
+          v.type=v.type||'account';
+          v.amount=v.amount||pk.amount;
+          v.acctnum=v.acctnum||pk.acctnum||'';
+          v.inout=v.inout||pk.inout||'';
+          v.vendor=v.vendor||pk.vendor||'';
+          v.date=v.date||pk.date||'';
+        }
+      }
+      return v;;});
     renderPendingSection();
     updateNotifBadge();
   });
@@ -2071,6 +2083,24 @@ function renderPendingSection(){
 
 // ── ACTIVE PENDING STATE ──
 var activePendingId='', activePendingDate='';
+
+// KB 은행 알림 원문 파싱 (스타뱅킹 / 스타기업뱅킹 공통)
+function parseKBNotif(raw, title){
+  var t=String(raw||'')+' \n'+String(title||'');
+  var out={};
+  var m=t.match(/스마트폰\s*(입금|출금)/)||t.match(/(입금|출금)\s*[0-9,]+\s*원/)||t.match(/(입금|출금)/);
+  out.inout=m?m[1]:'';
+  var a=t.match(/스마트폰\s*(?:입금|출금)\s*([0-9,]+)/);
+  if(!a)a=t.match(/(?:입금|출금)\s*([0-9,]+)\s*원/);
+  out.amount=a?parseInt(a[1].replace(/,/g,''),10):0;
+  var ac=t.match(/([0-9]{6})\s*-\s*\*+\s*-\s*\*+([0-9]{3})/);
+  if(ac){out.acctnum=ac[1];out.acctTail=ac[2];}
+  var v=t.match(/\*{2,}[0-9]{3}\s*([^\n]*?)\s*스마트폰/);
+  out.vendor=v?v[1].trim():'';
+  var d=t.match(/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+  if(d){out.date=new Date().getFullYear()+'-'+d[1]+'-'+d[2];out.time=d[3]+':'+d[4];}
+  return out;
+}
 
 // 알림이 계좌 거래인지 판별 / 등록된 계좌 찾기
 function pendIsAccount(v){
