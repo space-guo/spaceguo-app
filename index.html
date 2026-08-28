@@ -1984,7 +1984,7 @@ function subscribeIncomes(){
 
 // ── PENDING NOTIFICATIONS ──
 function subscribePending(){
-  unsubPending=db.collection('sms_pending').orderBy('date','desc').onSnapshot(function(snap){
+  unsubPending=db.collection('sms_pending').onSnapshot(function(snap){
     pendingNotifs=snap.docs.map(function(d){var v=Object.assign({id:d.id},d.data());
       if(v.raw&&(!v.amount||!v.acctnum)){
         var pk=parseKBNotif(v.raw,v.title);
@@ -1997,7 +1997,12 @@ function subscribePending(){
           v.date=v.date||pk.date||'';
         }
       }
-      return v;;});
+      if(!v.date){
+        var d0=new Date();
+        v.date=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0');
+      }
+      return v;
+    }).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
     renderPendingSection();
     updateNotifBadge();
   });
@@ -2064,7 +2069,11 @@ function renderPendingSection(){
       var vendor=decodeURIComponent(area.dataset.vendor);
       var dateStr=decodeURIComponent(area.dataset.date);
       var cardnum=decodeURIComponent(area.dataset.cardnum);
-      applyPending(id,amount,vendor,dateStr,cardnum);
+      (function(){
+        var nd=(pendingNotifs||[]).find(function(x){return x.id===id;});
+        if(nd&&pendIsAccount(nd)&&pendInOut(nd)==='in')applyPendingIncome(id,amount,vendor,dateStr);
+        else applyPending(id,amount,vendor,dateStr,cardnum);
+      })();
     },{passive:true});
     // PC용 click
     card.addEventListener('click',function(e){
@@ -2076,7 +2085,11 @@ function renderPendingSection(){
       var vendor=decodeURIComponent(area.dataset.vendor);
       var dateStr=decodeURIComponent(area.dataset.date);
       var cardnum=decodeURIComponent(area.dataset.cardnum);
-      applyPending(id,amount,vendor,dateStr,cardnum);
+      (function(){
+        var nd=(pendingNotifs||[]).find(function(x){return x.id===id;});
+        if(nd&&pendIsAccount(nd)&&pendInOut(nd)==='in')applyPendingIncome(id,amount,vendor,dateStr);
+        else applyPending(id,amount,vendor,dateStr,cardnum);
+      })();
     });
   });
 }
@@ -2114,8 +2127,10 @@ function pendIsAccount(v){
 function pendInOut(v){
   // 입금이면 'in', 출금이면 'out'
   var s=String((v&&(v.inout||v.direction||v.kind))||'').toLowerCase();
-  if(s.indexOf('in')>=0||s.indexOf('입금')>=0)return 'in';
-  if(s.indexOf('out')>=0||s.indexOf('출금')>=0||s.indexOf('이체')>=0)return 'out';
+  if(s.indexOf('입금')>=0)return 'in';
+  if(s.indexOf('출금')>=0||s.indexOf('이체')>=0)return 'out';
+  if(s.indexOf('in')>=0)return 'in';
+  if(s.indexOf('out')>=0)return 'out';
   return (v&&Number(v.amount)<0)?'out':'out';
 }
 function findAccountByNum(num){
@@ -2129,6 +2144,31 @@ function findAccountByNum(num){
     if(n.length<=6)return an.indexOf(n)===0;                // 국민: 앞 6자리
     return an===n||an.indexOf(n)>=0||n.indexOf(an)>=0;
   })||null;
+}
+
+// 상대방 이름이 내 계좌 이름과 같으면 계좌 간 이체로 의심
+function looksLikeSelfTransfer(vendor){
+  if(!vendor)return false;
+  var v=String(vendor).replace(/\s/g,'');
+  return (accounts||[]).some(function(a){
+    var n=String(a.name||'').replace(/\s/g,'');
+    return n&&(v.indexOf(n)>=0||n.indexOf(v)>=0);
+  });
+}
+// 입금 알림 → 매출로 등록
+function applyPendingIncome(id, amount, vendor, dateStr){
+  var self=looksLikeSelfTransfer(vendor);
+  if(self&&!confirm('"'+vendor+'"은(는) 등록된 내 계좌 이름과 비슷합니다.\n\n계좌 간 이체일 수 있는데 매출로 등록할까요?'))return;
+  db.collection('sms_pending').doc(id).update({status:'processing'});
+  activePendingId=id;
+  openIncomeModal();
+  setTimeout(function(){
+    var a=document.getElementById('incAmount'); if(a){a.value=amount;}
+    var m=document.getElementById('incMemo'); if(m&&vendor){m.value=vendor;}
+    var dt=document.getElementById('incDate'); if(dt&&dateStr){dt.value=String(dateStr).slice(0,10);}
+    if(typeof updateIncVat==='function')try{updateIncVat();}catch(e){}
+    showToast('💰 매출로 자동 입력됐어요. 현장을 선택해주세요',3000);
+  },250);
 }
 
 function applyPending(id, amount, vendor, dateStr, cardnum){
@@ -2244,7 +2284,10 @@ function renderNotifTab(){
       +'<div class="notif-meta">'+dateStr+(n.appliedAt?' · 적용: '+n.appliedAt.slice(0,16):'')+'</div>'
       +'<div class="notif-actions">'
       +(isPending
-        ?'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">입력에 적용</button>'
+        ?(pendInOut(n)==='in'&&pendIsAccount(n)
+            ?'<button class="notif-apply-btn" style="background:var(--blue)" onclick="applyPendingIncome(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\')">💰 매출로</button>'
+            :'')
+         +'<button class="notif-apply-btn" onclick="applyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">'+(pendIsAccount(n)?'💸 지출로':'입력에 적용')+'</button>'
          +'<button class="notif-apply-btn" style="background:var(--green)" onclick="applyPersonalPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">👤 개인</button>'
         :'<button class="notif-apply-btn" style="background:var(--blue);color:#fff" onclick="reapplyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">↩ 다시 입력</button>'
       )
