@@ -3189,7 +3189,7 @@ function renderAccountChips(){
   if(!accounts.length){el.innerHTML='<span style="font-size:12px;color:var(--muted)">계좌 없음 · 설정에서 추가</span>';return;}
   el.innerHTML=accounts.map(function(a){
     var label=a.num?a.name+' ('+a.num.slice(-4)+')':a.name;
-    return '<button class="pay-chip'+(selectedPayMethod===a.name?' selected-cash':'')+'" onclick="selectPay(this,\''+a.name+'\',\'cash\')">🏦 '+label+'</button>';
+    return '<button class="pay-chip'+(selectedPayMethod===a.name?' selected-cash':'')+'" onclick="selectPay(this,\''+a.name+'\',\'transfer\')">🏦 '+label+'</button>';
   }).join('');
 }
 function renderAccountList(){
