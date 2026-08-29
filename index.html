@@ -952,7 +952,16 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <div class="pay-chips" id="accountChips"></div>
     </div>
   </div>
-  <div class="field-row">
+  
+    <div class="field-row" id="inoutRow" style="display:none">
+      <div class="field-label">거래 구분 <span style="font-size:10px;color:var(--muted);font-weight:400">(계좌이체만)</span></div>
+      <div class="vat-row-ui" style="margin-top:6px">
+        <button class="vat-btn selected" id="ioOut" onclick="selectInout('out')">💸 출금 (지출)</button>
+        <button class="vat-btn" id="ioIn" onclick="selectInout('in')">💰 입금 (매출)</button>
+      </div>
+      <div id="inoutHint" style="display:none;font-size:11px;color:var(--accent2);margin-top:7px;line-height:1.5"></div>
+    </div>
+    <div class="field-row">
     <div class="field-label">부가세</div>
     <div class="vat-row-ui">
       <button class="vat-btn" id="vatNone" onclick="selectVat('none')">미발행</button>
@@ -2220,6 +2229,11 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
     selectedPayType=matchedType;
     renderCardChips();
     if(typeof renderAccountChips==='function')renderAccountChips();
+    if(matchedType==='transfer'){
+      var nd=(pendingNotifs||[]).find(function(x){return x.id===id;});
+      selectedInout=(nd&&pendInOut(nd)==='in')?'in':'out';
+    }
+    try{refreshInoutRow();}catch(e){}
   }
 
   // pending → processing 상태로 변경
@@ -2382,10 +2396,32 @@ function selectCat(btn,cat){
 }
 
 // ── PAYMENT ──
+var selectedInout='out';   // 계좌이체 거래 구분: out(지출) | in(매출)
+function refreshInoutRow(){
+  var row=document.getElementById('inoutRow');
+  if(!row)return;
+  var show=(selectedPayType==='transfer');
+  row.style.display=show?'block':'none';
+  if(!show){selectedInout='out';}
+  var o=document.getElementById('ioOut'), n=document.getElementById('ioIn');
+  if(o)o.classList.toggle('selected',selectedInout==='out');
+  if(n)n.classList.toggle('selected',selectedInout==='in');
+  var hint=document.getElementById('inoutHint');
+  if(hint){
+    if(show&&selectedInout==='in'){
+      hint.style.display='block';
+      hint.innerHTML='💰 저장하면 <b>매출</b>로 기록됩니다.'
+        + (looksLikeSelfTransfer(document.getElementById('vendorInput')?document.getElementById('vendorInput').value:'')
+            ? '<br>⚠️ 상대방이 내 계좌 이름과 비슷해요. 계좌 간 이체라면 매출이 아닙니다.' : '');
+    } else hint.style.display='none';
+  }
+}
+function selectInout(v){selectedInout=v;refreshInoutRow();}
+
 function selectPay(btn,method,type){
   if(selectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');selectedPayMethod='';selectedPayType='';return;}
   document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
-  btn.classList.add(type==='card'?'selected-card':'selected-cash');selectedPayMethod=method;selectedPayType=type;
+  btn.classList.add(type==='card'?'selected-card':'selected-cash');selectedPayMethod=method;selectedPayType=type;try{refreshInoutRow();}catch(err){}
 }
 
 // ── ITEMS ──
@@ -2517,6 +2553,28 @@ function saveRecord(){
   }
 
   setSyncStatus('saving');
+  // 계좌이체 + 입금이면 매출(incomes)로 저장
+  if(selectedPayType==='transfer'&&selectedInout==='in'){
+    if(looksLikeSelfTransfer(vendor)&&!confirm('"'+vendor+'"은(는) 등록된 내 계좌 이름과 비슷합니다.\n\n계좌 간 이체일 수 있는데 매출로 저장할까요?'))return;
+    var _sup=amount, _vat=0;
+    if(selectedVat==='included'){_vat=Math.round(amount/11);_sup=amount-_vat;}
+    else if(selectedVat==='excluded'){_vat=Math.round(amount*0.1);}
+    setSyncStatus('saving');
+    db.collection('incomes').add({
+      site:site, amount:amount, vat:selectedVat, supply:_sup, vatAmt:_vat,
+      memo:(vendor||'')+(memo?' / '+memo:''), date:saveDate,
+      payMethod:selectedPayMethod, payType:'transfer',
+      ts:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      if(activePendingId){db.collection('sms_pending').doc(activePendingId).update({status:'done',appliedAt:new Date().toISOString(),appliedTo:'income'});activePendingId='';}
+      amountStr='';updateAmountDisplay();
+      var vi=document.getElementById('vendorInput'); if(vi)vi.value='';
+      var mi=document.getElementById('memoInput'); if(mi)mi.value='';
+      selectedInout='out'; refreshInoutRow();
+      setSyncStatus('ok'); showToast('💰 매출로 저장됐어요');
+    }).catch(function(e){setSyncStatus('err');showToast('저장 실패: '+e.message);});
+    return;
+  }
   db.collection('expenses').add({
     date:saveDate,amount:amount,site:site,
     category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
