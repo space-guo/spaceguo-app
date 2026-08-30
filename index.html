@@ -2006,12 +2006,13 @@ function subscribePending(){
           v.date=v.date||pk.date||'';
         }
       }
+      v._t=pendTime(v.date);
       if(!v.date){
         var d0=new Date();
         v.date=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0');
       }
       return v;
-    }).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+    }).sort(function(a,b){return (b._t||0)-(a._t||0);});
     renderPendingSection();
     updateNotifBadge();
   });
@@ -2128,6 +2129,14 @@ function parseKBNotif(raw, title){
 }
 
 // 알림이 계좌 거래인지 판별 / 등록된 계좌 찾기
+// 날짜 문자열 → 정렬용 숫자 (2026-08-28 19:30 / 2026-8월-30 / 2026-8-3 모두 지원)
+function pendTime(s){
+  s=String(s||'');
+  if(!s)return 0;
+  var m=s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})(?:\D+(\d{1,2})\D+(\d{1,2}))?/);
+  if(!m)return 0;
+  return Date.UTC(+m[1], (+m[2])-1, +m[3], +(m[4]||0), +(m[5]||0));
+}
 function pendIsAccount(v){
   if(!v)return false;
   if(v.type==='account'||v.acctnum||v.account)return true;
