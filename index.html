@@ -326,9 +326,9 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .sch-cal-header{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--border)}
 .sch-cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:8px 2px}
 .sch-cal-body{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
-.sch-cal-cell{min-width:0;overflow:hidden;min-height:40px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top}
+.sch-cal-cell{min-width:0;overflow:hidden;min-height:52px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;position:relative;vertical-align:top}
 .sch-cal-cell:nth-child(7n){border-right:none}
-.sch-day-num{font-size:10px;font-weight:700;color:var(--text);margin-bottom:2px;text-align:center}
+.sch-day-num{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px;text-align:center;min-height:16px;line-height:16px}
 .sch-day-num.today-mark{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 2px}
 .sch-day-num.sun{color:var(--red)}
 .sch-day-num.sat{color:var(--blue)}
@@ -1054,7 +1054,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="sch-cal-header" id="schCalHeader"></div>
     <div class="sch-cal-body" id="schCalBody"></div>
   </div>
-  <div style="font-size:10px;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5">일정 막대를 <b style="color:var(--text)">길게 누른 뒤 그대로 떼면</b> 편집 모드가 켜집니다 · 끌어서 바로 옮길 수도 있어요</div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5">막대를 <b style="color:var(--text)">탭</b>하면 그날 작업 기록 · <b style="color:var(--text)">길게 누르면</b> 기간 편집</div>
   <button class="sch-add-btn" onclick="openSchModal()">＋ 공정 일정 추가</button>
   <div class="sch-list" id="schList"></div>
   <div id="schDecisionSection" style="display:none"></div>
@@ -3940,7 +3940,7 @@ function applySmsResult(amount, vendor, bank){
 // ── DAILY LOG MODAL ──
 var dailyDate='', dailyOpenIdx=-1;
 
-function openDailyModal(dateStr){
+function openDailyModal(dateStr, focusSchId){
   dailyDate=dateStr;
   dailyOpenIdx=-1;
   // 해당 날짜에 걸친 공정 필터
@@ -3955,7 +3955,7 @@ function openDailyModal(dateStr){
   document.getElementById('dailyDateLabel').textContent=label;
   document.getElementById('dailyProcCount').textContent=dayProcs.length?dayProcs.length+'개 공정 진행 중':'진행 중인 공정 없음';
 
-  renderDailyProcList(dayProcs, dateStr);
+  renderDailyProcList(dayProcs, dateStr, focusSchId);
   document.getElementById('dailyModal').classList.add('show');
   pushModalState('dailyModal');
 }
@@ -3967,7 +3967,7 @@ function closeDailyModal(){
   var _i=modalStack.lastIndexOf('dailyModal');if(_i>-1)modalStack.splice(_i,1);
 }
 
-function renderDailyProcList(dayProcs, dateStr){
+function renderDailyProcList(dayProcs, dateStr, focusSchId){
   var el=document.getElementById('dailyProcList');
   if(!dayProcs.length){
     el.innerHTML='<div class="daily-empty">📅 이 날 진행 중인 공정이 없어요<br><span style="font-size:12px;margin-top:8px;display:block">공정표에서 일정을 추가해보세요</span></div>';
@@ -3989,6 +3989,18 @@ function renderDailyProcList(dayProcs, dateStr){
       +'<div class="daily-proc-body" id="dailyBody-'+i+'"></div>'
       +'</div>';
   }).join('');
+
+  // 지정된 공정 자동 펼치기 (막대에서 바로 들어온 경우)
+  if(focusSchId){
+    var fi=dayProcs.findIndex(function(s){return s.id===focusSchId;});
+    if(fi>=0){
+      setTimeout(function(){
+        toggleDailyBody(fi, focusSchId, dayProcs[fi], dateStr, dayProcs.length);
+        var card=document.getElementById('dailyCard-'+fi);
+        if(card&&card.scrollIntoView)card.scrollIntoView({block:'nearest'});
+      },120);
+    }
+  }
 
   // 헤더 클릭 → 펼치기
   el.querySelectorAll('.daily-proc-header').forEach(function(hdr){
@@ -4074,6 +4086,7 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
         +'<button class="chip'+(log.weather==='💨 바람'?' selected':'')+'" data-w="💨 바람">💨 바람</button>'
         +'</div>'
         +checksHtml
+        +'<button onclick="openSchModalEdit(\''+schId+'\')" style="width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:10px;cursor:pointer;margin-top:10px">✏️ 공정 일정·담당자 수정</button>'
         +'<button onclick="saveDailyLog(true)" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer;margin-top:10px">✓ 저장</button>'
         +'</div>';
 
@@ -6166,7 +6179,8 @@ function renderSchCal(){
         if(nid!==schEdit.id)enterSchEdit(nid);
         return;
       }
-      openSchModalEdit(this.dataset.schid);
+      // 막대를 짧게 누르면 그날 작업 기록으로 (작업자수·일지·날씨)
+      openDailyModal(this.getAttribute('data-date')||'', this.dataset.schid);
     });
   });
   initSchBarDrag();
