@@ -1430,9 +1430,21 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <!-- 타입 선택 -->
     <div class="ev-type-bar">
-      <button class="ev-type-btn active" id="evTypeBtnSch" onclick="setEvType('schedule')">📅 일정</button>
-      <button class="ev-type-btn" id="evTypeBtnTodo" onclick="setEvType('todo')">✅ 할일</button>
-    </div>
+        <button class="ev-type-btn active" id="evTypeBtnSch" onclick="setEvType('schedule')">📅 일정</button>
+        <button class="ev-type-btn" id="evTypeBtnMeet" onclick="setEvType('meeting')">🤝 미팅</button>
+        <button class="ev-type-btn" id="evTypeBtnTodo" onclick="setEvType('todo')">✅ 할일</button>
+      </div>
+      <div class="field-row" id="evScopeRow">
+        <div class="field-label">구분</div>
+        <div class="vat-row-ui" style="margin-top:6px">
+          <button class="vat-btn selected" id="evScopeWork" onclick="setEvScope('work')">🏗 업무</button>
+          <button class="vat-btn" id="evScopePersonal" onclick="setEvScope('personal')">🙋 개인</button>
+        </div>
+      </div>
+      <div class="field-row" id="evSiteRow">
+        <div class="field-label">현장 <span style="font-size:10px;color:var(--muted);font-weight:400">(선택하면 그 현장 색으로 표시)</span></div>
+        <div id="evSiteChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+      </div>
     <!-- 제목 -->
     <div class="field-row">
       <div class="field-label">제목</div>
@@ -5360,11 +5372,60 @@ function renderMyEvList(){
 // ── 이벤트 모달 ──────────────────────────────────────────────────
 function setEvType(t){
   evType=t;
-  document.getElementById('evTypeBtnSch').className='ev-type-btn'+(t==='schedule'?' active':'');
-  document.getElementById('evTypeBtnTodo').className='ev-type-btn'+(t==='todo'?' todo-active':'');
-  document.getElementById('evTimeRow').style.display=t==='schedule'?'':'none';
-  document.getElementById('evEndDateRow').style.display=t==='schedule'?'':'none';
+  var map={schedule:'evTypeBtnSch', meeting:'evTypeBtnMeet', todo:'evTypeBtnTodo'};
+  Object.keys(map).forEach(function(k){
+    var b=document.getElementById(map[k]);
+    if(b)b.classList.toggle('active', k===t);
+  });
+  var timeRow=document.getElementById('evTimeRow');
+  var endRow=document.getElementById('evEndDateRow');
+  if(timeRow)timeRow.style.display=(t==='todo')?'none':'block';
+  if(endRow)endRow.style.display=(t==='todo')?'none':'block';
+  // 업무/개인은 '일정'일 때만
+  var scope=document.getElementById('evScopeRow');
+  if(scope)scope.style.display=(t==='schedule')?'block':'none';
+  if(t!=='schedule')evScope='work';
+  refreshEvScope();
+  refreshEvSiteRow();
 }
+var evScope='work', evSite='';
+function setEvScope(v){
+  evScope=v;
+  refreshEvScope();
+  refreshEvSiteRow();
+}
+function refreshEvScope(){
+  var w=document.getElementById('evScopeWork'), p=document.getElementById('evScopePersonal');
+  if(w)w.classList.toggle('selected', evScope==='work');
+  if(p)p.classList.toggle('selected', evScope==='personal');
+}
+function setEvSite(name){
+  evSite=(evSite===name)?'':name;
+  if(evSite){
+    var col=getSiteColor(evSite);
+    if(col)evSelectedColor=col;
+    if(typeof renderEvColorRow==='function')try{renderEvColorRow();}catch(e){}
+  }
+  refreshEvSiteRow();
+}
+function refreshEvSiteRow(){
+  var row=document.getElementById('evSiteRow');
+  var box=document.getElementById('evSiteChips');
+  if(!row||!box)return;
+  // 개인 일정이면 현장 선택 숨김
+  var show=(evScope!=='personal');
+  row.style.display=show?'block':'none';
+  if(!show){evSite='';return;}
+  var names=(sites||[]).map(function(s){return typeof s==='object'?s.name:s;});
+  box.innerHTML=names.map(function(n){
+    var col=getSiteColor(n);
+    var on=(evSite===n);
+    return '<button type="button" class="chip'+(on?' selected':'')+'" onclick="setEvSite(\''+String(n).replace(/'/g,"\\'")+'\')" style="'
+      +(on?'background:'+col+';border-color:'+col+';color:#fff':'border-color:'+col+'44;color:'+col)+'">'
+      +'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(on?'#fff':col)+';margin-right:5px;vertical-align:1px"></span>'+n+'</button>';
+  }).join('') || '<div style="font-size:11px;color:var(--muted)">등록된 현장이 없어요</div>';
+}
+
 
 function buildEvColorRow(){
   var row=document.getElementById('evColorRow');
@@ -5393,7 +5454,7 @@ function openEventModal(date, id){
     document.getElementById('evTime').value=ev.time||'';
     document.getElementById('evEndDate').value=ev.endDate||'';
     document.getElementById('evNote').value=ev.note||'';
-    evType=ev.type||'schedule';
+    evType=ev.type||'schedule'; evScope=ev.scope||'work'; evSite=ev.site||'';
     evSelectedColor=ev.color||'#5b8cf7';
   } else {
     document.getElementById('evModalTitle').textContent='일정 추가';
@@ -5406,6 +5467,7 @@ function openEventModal(date, id){
     document.getElementById('evTitle').value='';
     document.getElementById('evNote').value='';
   }
+  evScope='work'; evSite='';
   setEvType(evType);
   buildEvColorRow();
   document.getElementById('evModal').classList.add('show');
@@ -5431,7 +5493,7 @@ function saveEventModal(){
   if(endDate && endDate<date){showToast('종료 날짜가 시작 날짜보다 빠릅니다');return;}
 
   var data={
-    title:title, date:date, type:evType,
+    title:title, date:date, type:evType, scope:evScope, site:evSite||'',
     color:evSelectedColor, note:note,
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
