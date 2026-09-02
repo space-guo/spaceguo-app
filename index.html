@@ -281,6 +281,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .notif-info{flex:1;min-width:0}
 .notif-vendor{font-size:13px;font-weight:700}
 .notif-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.notif-raw{font-size:10px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);border-radius:6px;padding:4px 6px;margin-top:4px;line-height:1.45;word-break:break-all}
 .notif-amount{font-size:15px;font-weight:800;color:var(--accent);text-align:right;flex-shrink:0}
 .notif-actions{display:flex;gap:6px;margin-top:8px}
 .notif-apply-btn{flex:1;background:var(--accent2);border:none;border-radius:8px;color:#000;font-family:inherit;font-size:12px;font-weight:800;padding:8px;cursor:pointer}
@@ -2317,6 +2318,7 @@ function renderNotifTab(){
           return (vendor||'가맹점 미확인')+(cardnum?' <span style="font-size:10px;color:var(--muted)">····'+cardnum+'</span>':'');
         })()+(isPending?'':'<span class="notif-done-badge">처리됨</span>')+'</div>'
       +'<div class="notif-meta">'+dateStr+(n.appliedAt?' · 적용: '+n.appliedAt.slice(0,16):'')+'</div>'
+      +((!vendor&&n.raw)?'<div class="notif-raw">📄 '+String(n.raw).replace(/</g,'&lt;').slice(0,140)+'</div>':'')
       +'<div class="notif-actions">'
       +(isPending
         ?(pendInOut(n)==='in'&&pendIsAccount(n)
@@ -2327,7 +2329,7 @@ function renderNotifTab(){
         :'<button class="notif-apply-btn" style="background:var(--blue);color:#fff" onclick="reapplyPending(\''+n.id+'\','+amount+',\''+safeVendor+'\',\''+safeDateStr+'\',\''+safeCardnum+'\')">↩ 다시 입력</button>'
       )
       +(n.status==='pending'
-        ?'<button class="notif-del-btn" onclick="skipPending(\''+n.id+'\')">✕ 미처리</button>'
+        ?((!vendor?'<button class="notif-del-btn" style="border-color:var(--accent2);color:var(--accent2)" onclick="setPendingVendor(\''+n.id+'\')">✏️ 가맹점</button>':'')+'<button class="notif-del-btn" onclick="skipPending(\''+n.id+'\')">✕ 미처리</button>')
         :'<button class="notif-del-btn" onclick="deletePending(\''+n.id+'\')">삭제</button>'
       )
       +'</div>'
@@ -2335,6 +2337,16 @@ function renderNotifTab(){
       +'<div class="notif-amount">₩'+amount.toLocaleString('ko-KR')+'</div>'
       +'</div>';
   }).join('');
+}
+
+function setPendingVendor(id){
+  var cur=null;
+  for(var i=0;i<pendingNotifs.length;i++){ if(pendingNotifs[i].id===id){cur=pendingNotifs[i];break;} }
+  var hint=(cur&&cur.raw)?'\n\n[알림 원문]\n'+String(cur.raw).slice(0,200):'';
+  var v=prompt('가맹점(구매처)을 입력하세요'+hint,(cur&&cur.vendor)||'');
+  if(v===null)return;
+  v=v.trim(); if(!v)return;
+  db.collection('sms_pending').doc(id).update({vendor:v}).then(function(){showToast('가맹점 저장됐어요');});
 }
 
 function skipPending(id){
