@@ -2051,7 +2051,7 @@ function renderPendingSection(){
   }
   listEl.innerHTML=pending.map(function(n){
     var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
-    var dateStr=n.date?n.date.slice(0,16):'';
+  var dateStr=fmtPendDate(n.date);
     var vendor=n.vendor||'';
     var cardnum=n.cardnum||'';
     return '<div class="pending-card" style="position:relative">'
@@ -2143,6 +2143,15 @@ function parseKBNotif(raw, title){
 
 // 알림이 계좌 거래인지 판별 / 등록된 계좌 찾기
 // 날짜 문자열 → 정렬용 숫자 (2026-08-28 19:30 / 2026-8월-30 / 2026-8-3 모두 지원)
+function fmtPendDate(s){
+  if(!s) return '';
+  var m=String(s).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})(?:\D+(\d{1,2})\D+(\d{1,2}))?/);
+  if(!m) return String(s).slice(0,16);
+  var out=m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
+  if(m[4]!==undefined&&m[5]!==undefined) out+=' '+('0'+m[4]).slice(-2)+':'+('0'+m[5]).slice(-2);
+  return out;
+}
+
 function pendTime(s){
   s=String(s||'');
   if(!s)return 0;
@@ -2297,7 +2306,7 @@ function renderNotifTab(){
   }
   el.innerHTML=filtered.map(function(n){
     var amount=parseInt((n.amount||'0').toString().replace(/,/g,''))||0;
-    var dateStr=n.date?n.date.slice(0,16):'';
+    var dateStr=fmtPendDate(n.date);
     var vendor=n.vendor||'';
     var cardnum=n.cardnum||'';
     var isPending=n.status==='pending';
