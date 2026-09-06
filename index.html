@@ -282,6 +282,21 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .notif-vendor{font-size:13px;font-weight:700}
 .notif-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .notif-raw{font-size:10px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);border-radius:6px;padding:4px 6px;margin-top:4px;line-height:1.45;word-break:break-all}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.photo-cell{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface2);cursor:pointer}
+.photo-cell img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-del{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;cursor:pointer;padding:0}
+.photo-empty{font-size:12px;color:var(--muted);padding:6px 0 10px}
+.photo-add-btn{width:100%;background:none;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:13px;padding:10px;margin-bottom:6px;cursor:pointer}
+.photo-status{font-size:11px;color:var(--accent2);min-height:14px;margin-bottom:4px}
+#photoViewer{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:99999;display:none;align-items:center;justify-content:center}
+#photoViewer.open{display:flex}
+#photoViewer img{max-width:94%;max-height:84vh;object-fit:contain}
+.pv-close{position:absolute;top:12px;right:14px;background:none;border:none;color:#fff;font-size:26px;cursor:pointer;line-height:1}
+.pv-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.14);border:none;color:#fff;font-size:26px;width:38px;height:58px;cursor:pointer;line-height:1}
+.pv-prev{left:0;border-radius:0 8px 8px 0}
+.pv-next{right:0;border-radius:8px 0 0 8px}
+.pv-count{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#fff;font-size:12px}
 .notif-amount{font-size:15px;font-weight:800;color:var(--accent);text-align:right;flex-shrink:0}
 .notif-actions{display:flex;gap:6px;margin-top:8px}
 .notif-apply-btn{flex:1;background:var(--accent2);border:none;border-radius:8px;color:#000;font-family:inherit;font-size:12px;font-weight:800;padding:8px;cursor:pointer}
@@ -1833,6 +1848,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 firebase.initializeApp({
@@ -1845,6 +1861,7 @@ firebase.initializeApp({
 });
 const auth = firebase.auth();
 const db   = firebase.firestore();
+    const stor = firebase.storage();
 
 // ── 상태 ──
 let records=[], incomes=[], sites=[], cards=[], accounts=[], processes=[];
@@ -2143,6 +2160,126 @@ function parseKBNotif(raw, title){
 
 // 알림이 계좌 거래인지 판별 / 등록된 계좌 찾기
 // 날짜 문자열 → 정렬용 숫자 (2026-08-28 19:30 / 2026-8월-30 / 2026-8-3 모두 지원)
+// ── 사진 업로드 공용 모듈 ──
+var PHOTO_MAX_SIDE = 1600, PHOTO_QUALITY = 0.82;
+
+function photoCompress(file){
+  return new Promise(function(resolve,reject){
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function(){
+      var w = img.naturalWidth||img.width, h = img.naturalHeight||img.height;
+      var scale = Math.min(1, PHOTO_MAX_SIDE/Math.max(w,h));
+      var cw = Math.max(1,Math.round(w*scale)), ch = Math.max(1,Math.round(h*scale));
+      var cv = document.createElement('canvas');
+      cv.width = cw; cv.height = ch;
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,cw,ch);
+      ctx.drawImage(img,0,0,cw,ch);
+      URL.revokeObjectURL(url);
+      cv.toBlob(function(b){ b ? resolve(b) : reject(new Error('압축 실패')); }, 'image/jpeg', PHOTO_QUALITY);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('이미지를 읽을 수 없어요')); };
+    img.src = url;
+  });
+}
+
+function photoUploadOne(file, dir){
+  return photoCompress(file).then(function(blob){
+    var name = Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.jpg';
+    var path = dir+'/'+name;
+    var r = firebase.storage().ref(path);
+    return r.put(blob,{contentType:'image/jpeg'}).then(function(){
+      return r.getDownloadURL().then(function(url){
+        return {path:path, url:url, ts:Date.now(), size:blob.size};
+      });
+    });
+  });
+}
+
+function photoUploadMany(fileList, dir, statusEl){
+  var files = Array.prototype.slice.call(fileList||[]).filter(function(f){ return /^image\//.test(f.type); });
+  var out = [], i = 0;
+  function step(){
+    if(i >= files.length) return Promise.resolve(out);
+    if(statusEl) statusEl.textContent = '업로드 중… ('+(i+1)+'/'+files.length+')';
+    return photoUploadOne(files[i], dir).then(function(m){ out.push(m); i++; return step(); });
+  }
+  return step();
+}
+
+function photoDelete(path){
+  try { return firebase.storage().ref(path).delete().catch(function(){}); }
+  catch(e){ return Promise.resolve(); }
+}
+
+function photoGridHTML(photos){
+  if(!photos || !photos.length) return '<div class="photo-empty">아직 사진이 없어요</div>';
+  return '<div class="photo-grid">'+photos.map(function(p,i){
+    return '<div class="photo-cell" data-pidx="'+i+'">'
+      +'<img src="'+p.url+'" loading="lazy" alt="">'
+      +'<button class="photo-del" data-pdel="'+i+'">✕</button>'
+      +'</div>';
+  }).join('')+'</div>';
+}
+
+function photoBindGrid(wrap, photos, onDelete){
+  if(!wrap) return;
+  wrap.querySelectorAll('.photo-del').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(onDelete) onDelete(parseInt(this.dataset.pdel));
+    });
+  });
+  wrap.querySelectorAll('.photo-cell').forEach(function(cell){
+    cell.addEventListener('click', function(){
+      openPhotoViewer(photos, parseInt(this.dataset.pidx));
+    });
+  });
+}
+
+var photoViewerState = {list:[], idx:0};
+function ensurePhotoViewer(){
+  var v = document.getElementById('photoViewer');
+  if(v) return v;
+  v = document.createElement('div');
+  v.id = 'photoViewer';
+  v.innerHTML = '<button class="pv-close" onclick="closePhotoViewer()">✕</button>'
+    +'<button class="pv-nav pv-prev" onclick="movePhotoViewer(-1)">‹</button>'
+    +'<img id="pvImg" alt="">'
+    +'<button class="pv-nav pv-next" onclick="movePhotoViewer(1)">›</button>'
+    +'<div class="pv-count" id="pvCount"></div>';
+  v.addEventListener('click', function(e){ if(e.target === v) closePhotoViewer(); });
+  document.body.appendChild(v);
+  return v;
+}
+function openPhotoViewer(list, idx){
+  if(!list || !list.length) return;
+  photoViewerState.list = list;
+  photoViewerState.idx = idx || 0;
+  var v = ensurePhotoViewer();
+  v.classList.add('open');
+  renderPhotoViewer();
+}
+function renderPhotoViewer(){
+  var s = photoViewerState;
+  var img = document.getElementById('pvImg');
+  var cnt = document.getElementById('pvCount');
+  if(img && s.list[s.idx]) img.src = s.list[s.idx].url;
+  if(cnt) cnt.textContent = (s.idx+1)+' / '+s.list.length;
+}
+function movePhotoViewer(d){
+  var s = photoViewerState;
+  if(!s.list.length) return;
+  s.idx = (s.idx + d + s.list.length) % s.list.length;
+  renderPhotoViewer();
+}
+function closePhotoViewer(){
+  var v = document.getElementById('photoViewer');
+  if(v) v.classList.remove('open');
+}
+
+
 function fmtPendDate(s){
   if(!s) return '';
   var m=String(s).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})(?:\D+(\d{1,2})\D+(\d{1,2}))?/);
@@ -4106,7 +4243,12 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
         +'<button class="chip'+(log.weather==='❄️ 눈'?' selected':'')+'" data-w="❄️ 눈">❄️ 눈</button>'
         +'<button class="chip'+(log.weather==='💨 바람'?' selected':'')+'" data-w="💨 바람">💨 바람</button>'
         +'</div>'
-        +checksHtml
+          +checksHtml
+          +'<div class="field-label" style="margin-top:10px;margin-bottom:6px">📷 현장 사진</div>'
+          +'<input type="file" id="dailyPhotoInput" accept="image/*" multiple style="display:none">'
+          +'<button class="photo-add-btn" onclick="document.getElementById(\'dailyPhotoInput\').click()">＋ 사진 추가</button>'
+          +'<div class="photo-status" id="dailyPhotoStatus"></div>'
+          +'<div id="dailyPhotoGrid"></div>'
         +'<button onclick="openSchModalEdit(\''+schId+'\')" style="width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:10px;cursor:pointer;margin-top:10px">✏️ 공정 일정·담당자 수정</button>'
         +'<button onclick="saveDailyLog(true)" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer;margin-top:10px">✓ 저장</button>'
         +'</div>';
@@ -4144,6 +4286,47 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
       // logId를 body에 저장
       bodyEl.dataset.logid=logId;
       bodyEl.dataset.schid=schId;
+
+        // ── 사진 업로드 바인딩 ──
+        bodyEl.__photos = Array.isArray(log.photos) ? log.photos.slice() : [];
+        var pWrap = bodyEl.querySelector('#dailyPhotoGrid');
+        var pStat = bodyEl.querySelector('#dailyPhotoStatus');
+        var pIn   = bodyEl.querySelector('#dailyPhotoInput');
+        function dailyRenderPhotos(){
+          if(!pWrap) return;
+          pWrap.innerHTML = photoGridHTML(bodyEl.__photos);
+          photoBindGrid(pWrap, bodyEl.__photos, function(idx){
+            var p = bodyEl.__photos[idx];
+            if(!p) return;
+            if(!confirm('이 사진을 삭제할까요?')) return;
+            bodyEl.__photos.splice(idx,1);
+            db.collection('dailylogs').doc(logId).set({photos:bodyEl.__photos},{merge:true});
+            photoDelete(p.path);
+            dailyRenderPhotos();
+          });
+        }
+        dailyRenderPhotos();
+        if(pIn){
+          pIn.addEventListener('change', function(){
+            var files = this.files; this.value = '';
+            if(!files || !files.length) return;
+            if(pStat) pStat.textContent = '준비 중...';
+            photoUploadMany(files, 'daily/'+logId, pStat).then(function(metas){
+              if(!metas.length){ if(pStat) pStat.textContent=''; return; }
+              bodyEl.__photos = bodyEl.__photos.concat(metas);
+              return db.collection('dailylogs').doc(logId).set({
+                photos: bodyEl.__photos, site: proc.site||'', date: dateStr, schId: schId,
+                procName: proc.procName||''
+              },{merge:true}).then(function(){
+                if(pStat) pStat.textContent='';
+                dailyRenderPhotos();
+                showToast('사진 '+metas.length+'장 올렸어요');
+              });
+            }).catch(function(e){
+              if(pStat) pStat.textContent = '업로드 실패: '+(e&&e.message?e.message:e);
+            });
+          });
+        }
     });
   });
 }
