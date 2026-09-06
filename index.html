@@ -4125,6 +4125,13 @@ function closeDailyModal(){
   var _i=modalStack.lastIndexOf('dailyModal');if(_i>-1)modalStack.splice(_i,1);
 }
 
+// 일별 기록 → 공정 수정: 기존 창을 닫고 넘어간다
+function dailyToSchEdit(id){
+  try{ closeDailyModal(); }catch(e){}
+  setTimeout(function(){ openSchModalEdit(id); }, 80);
+}
+
+
 function renderDailyProcList(dayProcs, dateStr, focusSchId){
   var el=document.getElementById('dailyProcList');
   if(!dayProcs.length){
@@ -4249,7 +4256,7 @@ function loadDailyBody(bodyEl, schId, proc, dateStr){
           +'<button class="photo-add-btn" onclick="document.getElementById(\'dailyPhotoInput\').click()">＋ 사진 추가</button>'
           +'<div class="photo-status" id="dailyPhotoStatus"></div>'
           +'<div id="dailyPhotoGrid"></div>'
-        +'<button onclick="openSchModalEdit(\''+schId+'\')" style="width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:10px;cursor:pointer;margin-top:10px">✏️ 공정 일정·담당자 수정</button>'
+        +'<button onclick="dailyToSchEdit(\''+schId+'\')" style="width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;padding:10px;cursor:pointer;margin-top:10px">✏️ 공정 일정·담당자 수정</button>'
         +'<button onclick="saveDailyLog(true)" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer;margin-top:10px">✓ 저장</button>'
         +'</div>';
 
