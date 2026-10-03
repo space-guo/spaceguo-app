@@ -336,7 +336,9 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .edit-modal-overlay.show{display:flex}
 .edit-modal-inner{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
 .edit-modal-title{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.edit-modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px}
+.edit-modal-close{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:15px;line-height:1;cursor:pointer;width:32px;height:32px;min-width:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0}
+.edit-modal-close:hover{background:var(--border)}
+.edit-modal-title{position:sticky;top:0;background:var(--surface);padding:6px 0;z-index:3}
 .edit-amount-display{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;font-size:28px;font-weight:900;color:var(--accent);cursor:pointer}
 .edit-numpad{display:none;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px}
 .edit-numpad.show{display:grid}
@@ -1001,6 +1003,21 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <div class="vat-info" id="vatInfo"></div>
   </div>
+      <div class="field-row">
+        <div class="field-label">세금계산서</div>
+        <div class="vat-row-ui">
+          <button class="vat-btn selected" id="taxNo" onclick="setTaxInv(false)">미발행</button>
+          <button class="vat-btn" id="taxYes" onclick="setTaxInv(true)">발행</button>
+        </div>
+        <input class="field-input" id="taxInvDate" type="date" style="display:none;margin-top:8px">
+      </div>
+      <div class="field-row">
+        <div class="field-label">지급 상태</div>
+        <div class="vat-row-ui">
+          <button class="vat-btn selected" id="paidYes" onclick="setUnpaid(false)">지급완료</button>
+          <button class="vat-btn" id="paidNo" onclick="setUnpaid(true)">미지급</button>
+        </div>
+      </div>
   <div class="field-row">
     <div class="field-label">구매처 (선택)</div>
     <input class="field-input" id="vendorInput" type="text" placeholder="예: 홈플러스, 철물왕...">
@@ -1048,6 +1065,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <select class="rec-fsel" id="fVendor" onchange="renderList()"></select>
     <select class="rec-fsel" id="fItem" onchange="renderList()"></select>
     <select class="rec-fsel" id="fMemo" onchange="renderList()"></select>
+    <select class="rec-fsel" id="fUnpaid" onchange="renderList()"></select>
   </div>
   <div class="rec-group-row">
     <span class="rec-group-label">묶어보기</span>
@@ -1788,7 +1806,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   <div class="edit-modal-inner">
     <div class="edit-modal-title">
       <span>✏️ 내역 수정</span>
-      <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
+        <button class="edit-modal-close" onclick="closeEditModal()" aria-label="닫기" title="닫기">✕</button>
     </div>
     <div class="field-label">금액</div>
     <div class="edit-amount-display" id="editAmountDisplay" onclick="toggleEditNumpad()">₩0</div>
@@ -1864,13 +1882,32 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         <button class="vat-btn" id="editVatExcluded" onclick="selectEditVat('excluded')">별도</button>
       </div>
     </div>
+        <div class="field-row">
+          <div class="field-label">세금계산서</div>
+          <div class="vat-row-ui">
+            <button class="vat-btn selected" id="editTaxNo" onclick="setEditTaxInv(false)">미발행</button>
+            <button class="vat-btn" id="editTaxYes" onclick="setEditTaxInv(true)">발행</button>
+          </div>
+          <input class="field-input" id="editTaxInvDate" type="date" style="display:none;margin-top:8px">
+        </div>
+        <div class="field-row">
+          <div class="field-label">지급 상태</div>
+          <div class="vat-row-ui">
+            <button class="vat-btn selected" id="editPaidYes" onclick="setEditUnpaid(false)">지급완료</button>
+            <button class="vat-btn" id="editPaidNo" onclick="setEditUnpaid(true)">미지급</button>
+          </div>
+        </div>
     <div class="field-row">
       <div class="field-label">구매처</div>
       <input class="field-input" id="editVendor" type="text" placeholder="구매처">
     </div>
     <div class="field-row">
       <div class="field-label">품목 (쉼표로 구분)</div>
-      <input class="field-input" id="editItems" type="text" placeholder="예: 타일, 시멘트, 줄눈">
+          <div id="editItemPickRow">
+            <select class="field-select" id="editProcessSelect" onchange="renderEditItemCheckboxes()" style="margin-bottom:8px"><option value="">공정 선택</option></select>
+            <div id="editItemCheckboxArea" style="margin-bottom:8px"></div>
+          </div>
+          <input class="field-input" id="editItems" type="text" placeholder="예: 타일, 시멘트, 줄눈" lang="ko">
     </div>
     <div class="field-row">
       <div class="field-label">메모</div>
@@ -2799,7 +2836,8 @@ function saveRecord(){
   db.collection('expenses').add({
     date:saveDate,amount:amount,site:site,
     category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
-    vat:selectedVat,vendor:vendor,items:items,memo:memo,
+      vat:selectedVat,vendor:vendor,items:items,memo:memo,
+      unpaid:unpaidOn, taxInvoice:taxInvOn, taxInvoiceDate: taxInvOn ? ((document.getElementById('taxInvDate')||{}).value||'') : '',
     ts:firebase.firestore.FieldValue.serverTimestamp()
   }).then(function(){
     // pending 완료 처리
@@ -2815,7 +2853,10 @@ function saveRecord(){
     document.getElementById('vendorInput').value='';
     selectedItems=[];
     document.getElementById('processSelect').value='';
-    document.getElementById('itemCheckboxArea').innerHTML='';
+        document.getElementById('itemCheckboxArea').innerHTML='';
+        var _tid=document.getElementById('taxInvDate'); if(_tid) _tid.value='';
+        setUnpaid(false);
+        setTaxInv(false);
     document.getElementById('vatInfo').classList.remove('show');
     document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
     selectedPayMethod='';selectedPayType='';
@@ -3064,6 +3105,7 @@ var REC_FILTER_FIELDS = [
   {id:'fVat',      label:'부가세',   field:'vat'},
   {id:'fVendor',   label:'구매처',   field:'vendor'},
   {id:'fItem',     label:'품목',     field:'item'},
+  {id:'fUnpaid',   label:'지급',     field:'unpaid'},
   {id:'fMemo',     label:'메모',     field:'memo'}
 ];
 
@@ -3079,6 +3121,7 @@ function recVals(r, field){
   if(field==='vat')      return [r.vat==='included'?'VAT 포함':r.vat==='excluded'?'VAT 별도':'(미지정)'];
   if(field==='vendor')   return [r.vendor||'(없음)'];
   if(field==='memo')     return [r.memo?String(r.memo).trim():'(없음)'];
+  if(field==='unpaid')   return [r.unpaid?'미지급':'지급완료'];
   if(field==='item'){
     if(Array.isArray(r.items)&&r.items.length) return r.items.map(function(x){return String(x).trim();}).filter(Boolean);
     return ['(없음)'];
@@ -3236,7 +3279,7 @@ function renderList(){
           +(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')
           +'</div>'
           +'<div class="record-right">'
-          +'<div class="record-amount">₩'+(r.amount||0).toLocaleString('ko-KR')+'</div>'
+          +'<div class="record-amount"'+(r.unpaid?' style="color:var(--red)"':'')+'>₩'+(r.amount||0).toLocaleString('ko-KR')+(r.unpaid?'<div style="font-size:10px;font-weight:800;color:var(--red)">미지급</div>':'')+'</div>'
           +'<div class="record-date">'+time+'</div>'
           +'</div>'
           +'<button class="record-delete" data-rid="'+r.id+'" onclick="event.stopPropagation();deleteRecord(this.dataset.rid)">✕</button>'
@@ -4893,6 +4936,15 @@ function openEditModal(id){
   editSelectedPayType=r.payType||'';
   renderEditPayChips();
   document.getElementById('editMemo').value=r.memo||'';
+  editTaxInvOn = !!r.taxInvoice;
+  editUnpaid = !!r.unpaid; setEditUnpaid(editUnpaid);
+  var _etd=document.getElementById('editTaxInvDate');
+  if(_etd) _etd.value = r.taxInvoiceDate || '';
+  setEditTaxInv(editTaxInvOn);
+  fillEditProcessSelect();
+  var _eps=document.getElementById('editProcessSelect'); if(_eps) _eps.value='';
+  var _eia=document.getElementById('editItemCheckboxArea'); if(_eia) _eia.innerHTML='';
+  var _epr=document.getElementById('editItemPickRow'); if(_epr) _epr.style.display = isPersonal ? 'none' : '';
   document.getElementById('editRecordModal').classList.add('show');
   pushModalState('editRecordModal');
 }
@@ -4944,6 +4996,93 @@ function selectEditVat(type){
   ['editVatNone','editVatIncluded','editVatExcluded'].forEach(function(id){document.getElementById(id).classList.remove('selected');});
   document.getElementById({none:'editVatNone',included:'editVatIncluded',excluded:'editVatExcluded'}[type]).classList.add('selected');
 }
+// ── 세금계산서 / 수정창 품목 선택 ──
+var taxInvOn=false, editTaxInvOn=false;
+var unpaidOn=false, editUnpaid=false;
+function setUnpaid(on){
+  unpaidOn=!!on;
+  var y=document.getElementById('paidNo'), n=document.getElementById('paidYes');
+  if(y) y.classList.toggle('selected', unpaidOn);
+  if(n) n.classList.toggle('selected', !unpaidOn);
+}
+function setEditUnpaid(on){
+  editUnpaid=!!on;
+  var y=document.getElementById('editPaidNo'), n=document.getElementById('editPaidYes');
+  if(y) y.classList.toggle('selected', editUnpaid);
+  if(n) n.classList.toggle('selected', !editUnpaid);
+}
+
+function _todayStr(){ var t=new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+
+function setTaxInv(on){
+  taxInvOn=!!on;
+  var y=document.getElementById('taxYes'), n=document.getElementById('taxNo'), d=document.getElementById('taxInvDate');
+  if(y) y.classList.toggle('selected', taxInvOn);
+  if(n) n.classList.toggle('selected', !taxInvOn);
+  if(d){ d.style.display = taxInvOn?'block':'none'; if(taxInvOn && !d.value) d.value=_todayStr(); }
+}
+function setEditTaxInv(on){
+  editTaxInvOn=!!on;
+  var y=document.getElementById('editTaxYes'), n=document.getElementById('editTaxNo'), d=document.getElementById('editTaxInvDate');
+  if(y) y.classList.toggle('selected', editTaxInvOn);
+  if(n) n.classList.toggle('selected', !editTaxInvOn);
+  if(d){ d.style.display = editTaxInvOn?'block':'none'; if(editTaxInvOn && !d.value) d.value=_todayStr(); }
+}
+
+function editItemsArr(){
+  var v=(document.getElementById('editItems')||{}).value||'';
+  return v.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+}
+function fillEditProcessSelect(){
+  var sel=document.getElementById('editProcessSelect');
+  if(!sel) return;
+  sel.innerHTML='<option value="">공정 선택</option>';
+  (processes||[]).forEach(function(p,i){
+    var o=document.createElement('option'); o.value=String(i); o.textContent=p.name; sel.appendChild(o);
+  });
+}
+function renderEditItemCheckboxes(){
+  var sel=document.getElementById('editProcessSelect');
+  var area=document.getElementById('editItemCheckboxArea');
+  if(!sel||!area) return;
+  if(sel.value===''){ area.innerHTML=''; return; }
+  var proc=processes[parseInt(sel.value)];
+  if(!proc||!proc.items||!proc.items.length){
+    area.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">품목이 없어요 · 설정에서 추가하세요</div>';
+    return;
+  }
+  var cur=editItemsArr();
+  area.innerHTML='<div class="item-check-grid">'+proc.items.map(function(item){
+    var label=item.name+(item.unit?' ('+item.unit+')':'');
+    var on=cur.indexOf(label)>=0;
+    return '<button class="item-check-btn'+(on?' checked':'')+'" data-label="'+label.replace(/"/g,'&quot;')+'">'
+      +'<span>'+item.name+'</span>'+(item.unit?'<span class="unit">'+item.unit+'</span>':'')+'</button>';
+  }).join('')+'</div>';
+  area.querySelectorAll('.item-check-btn').forEach(function(b){
+    b.addEventListener('click', function(){ toggleEditItem(this, this.dataset.label); });
+  });
+}
+function toggleEditItem(btn,label){
+  var arr=editItemsArr();
+  var i=arr.indexOf(label);
+  if(i>=0){ arr.splice(i,1); btn.classList.remove('checked'); }
+  else { arr.push(label); btn.classList.add('checked'); }
+  var el=document.getElementById('editItems');
+  if(el) el.value=arr.join(', ');
+}
+
+// 수정창: 바깥 클릭 / ESC 로 닫기
+document.addEventListener('keydown', function(e){
+  if(e.key!=='Escape') return;
+  var m=document.getElementById('editRecordModal');
+  if(m && m.classList.contains('show')) closeEditModal();
+});
+(function(){
+  var ov=document.getElementById('editRecordModal');
+  if(ov) ov.addEventListener('click', function(e){ if(e.target===ov) closeEditModal(); });
+})();
+
+
 function renderEditPayChips(){
   var el=document.getElementById('editPayChips');
   var html='';
@@ -4958,7 +5097,8 @@ function renderEditPayChips(){
   });
   accounts.forEach(function(a){
     var sel=editSelectedPayMethod===a.name;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+a.name+'" data-type="cash">🏦 '+a.name+'</button>';
+    var _al = a.num ? (a.name+" ("+a.num+")") : a.name;
+    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+a.name+'" data-type="transfer">🏦 '+_al+'</button>';
   });
   el.innerHTML=html;
   el.querySelectorAll('.pay-chip').forEach(function(btn){
@@ -4988,7 +5128,8 @@ function saveEditRecord(){
   db.collection('expenses').doc(editingRecordId).update({
     amount:amount,site:site,category:editSelectedCat,
     payMethod:editSelectedPayMethod,payType:editSelectedPayType,
-    vat:editSelectedVat,vendor:vendor,items:items,memo:memo,date:saveDate
+      vat:editSelectedVat,vendor:vendor,items:items,memo:memo,date:saveDate,
+      unpaid:editUnpaid, taxInvoice:editTaxInvOn, taxInvoiceDate: editTaxInvOn ? ((document.getElementById("editTaxInvDate")||{}).value||"") : ""
   }).then(function(){closeEditModal();setSyncStatus('ok');showToast('✓ 수정됐어요');
   }).catch(function(e){setSyncStatus('err');showToast('수정 실패: '+e.message);});
 }
