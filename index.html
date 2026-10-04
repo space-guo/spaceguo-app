@@ -1066,6 +1066,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <select class="rec-fsel" id="fVendor" onchange="renderList()"></select>
     <select class="rec-fsel" id="fItem" onchange="renderList()"></select>
     <select class="rec-fsel" id="fMemo" onchange="renderList()"></select>
+    <select class="rec-fsel" id="fProc" onchange="renderList()"></select>
     <select class="rec-fsel" id="fUnpaid" onchange="renderList()"></select>
   </div>
   <div class="rec-group-row">
@@ -1076,6 +1077,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <option value="pay">결제수단별</option>
       <option value="vat">부가세별</option>
       <option value="vendor">구매처별</option>
+      <option value="proc">공정별</option>
       <option value="item">품목별</option>
       <option value="memo">메모별</option>
     </select>
@@ -2838,7 +2840,7 @@ function saveRecord(){
   db.collection('expenses').add({
     date:saveDate,amount:amount,site:site,
     category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
-      vat:selectedVat,vendor:vendor,items:items,memo:memo,
+      vat:selectedVat,proc:((processes[parseInt((document.getElementById('processSelect')||{}).value)]||{}).name||''),vendor:vendor,items:items,memo:memo,
       unpaid:unpaidOn, taxInvoice:taxInvOn, taxInvoiceDate: taxInvOn ? ((document.getElementById('taxInvDate')||{}).value||'') : '',
     ts:firebase.firestore.FieldValue.serverTimestamp()
   }).then(function(){
@@ -3107,6 +3109,7 @@ var REC_FILTER_FIELDS = [
   {id:'fVat',      label:'부가세',   field:'vat'},
   {id:'fVendor',   label:'구매처',   field:'vendor'},
   {id:'fItem',     label:'품목',     field:'item'},
+  {id:'fProc',     label:'공정',     field:'proc'},
   {id:'fUnpaid',   label:'지급',     field:'unpaid'},
   {id:'fMemo',     label:'메모',     field:'memo'}
 ];
@@ -3124,6 +3127,7 @@ function recVals(r, field){
   if(field==='vendor')   return [r.vendor||'(없음)'];
   if(field==='memo')     return [r.memo?String(r.memo).trim():'(없음)'];
   if(field==='unpaid')   return [r.unpaid?'미지급':'지급완료'];
+  if(field==='proc')     return [recProcOf(r)];
   if(field==='item'){
     if(Array.isArray(r.items)&&r.items.length) return r.items.map(function(x){return String(x).trim();}).filter(Boolean);
     return ['(없음)'];
@@ -3148,7 +3152,7 @@ function exportRecordsXlsx(){
   var rows=applyRecFilters(workRecs.concat(personalTagged)).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
   if(!rows.length){ showToast('내보낼 내역이 없어요'); return; }
 
-  var aoa=[['날짜','시각','구분','현장','카테고리','구매처','품목','메모','금액','공급가액','부가세액','부가세 구분','결제수단','결제종류','세금계산서','계산서 발행일','지급상태']];
+  var aoa=[['날짜','시각','구분','현장','카테고리','구매처','품목','메모','금액','공급가액','부가세액','부가세 구분','공정','결제수단','결제종류','세금계산서','계산서 발행일','지급상태']];
   rows.forEach(function(r){
     var d=new Date(r.date);
     var ds=isNaN(d)?String(r.date||''):(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
@@ -3162,7 +3166,7 @@ function exportRecordsXlsx(){
       r.category||'', r.vendor||'',
       Array.isArray(r.items)?r.items.join(', '):'',
       r.memo||'', amt, sup, vat,
-      r.vat==='included'?'포함':r.vat==='excluded'?'별도':'미발행',
+      r.vat==='included'?'포함':r.vat==='excluded'?'별도':'미발행', recProcOf(r),
       (r.isPersonal?r.method:r.payMethod)||'',
       r.payType==='card'?'카드':r.payType==='transfer'?'계좌이체':r.payType==='cash'?'현금':'',
       r.taxInvoice?'발행':'미발행', r.taxInvoiceDate||'',
@@ -3171,8 +3175,8 @@ function exportRecordsXlsx(){
   });
 
   var ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:11},{wch:7},{wch:6},{wch:22},{wch:10},{wch:18},{wch:26},{wch:24},{wch:12},{wch:12},{wch:11},{wch:10},{wch:14},{wch:10},{wch:9},{wch:13},{wch:9}];
-  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:16}})};
+  ws['!cols']=[{wch:11},{wch:7},{wch:6},{wch:22},{wch:10},{wch:18},{wch:26},{wch:24},{wch:12},{wch:12},{wch:11},{wch:10},{wch:12},{wch:14},{wch:10},{wch:9},{wch:13},{wch:9}];
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:17}})};
   ws['!freeze']={xSplit:'0',ySplit:'1',topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
   for(var R=2;R<=aoa.length;R++){
     ['I','J','K'].forEach(function(C){
@@ -3189,6 +3193,32 @@ function exportRecordsXlsx(){
   showToast('엑셀 '+rows.length+'건 저장했어요');
 }
 
+
+var _procItemMap=null, _procItemSig='';
+function procItemMap(){
+  var sig=(processes||[]).map(function(p){return p.name+':'+((p.items||[]).length);}).join('|');
+  if(_procItemMap && _procItemSig===sig) return _procItemMap;
+  var m={};
+  (processes||[]).forEach(function(p){
+    (p.items||[]).forEach(function(it){
+      var n=String(it.name||'').trim();
+      if(n && !m[n]) m[n]=p.name;
+    });
+  });
+  _procItemMap=m; _procItemSig=sig;
+  return m;
+}
+// 기록에 저장된 공정이 없으면 품목으로 역추적한다
+function recProcOf(r){
+  if(r.proc) return r.proc;
+  if(!Array.isArray(r.items)||!r.items.length) return '(미지정)';
+  var m=procItemMap();
+  for(var i=0;i<r.items.length;i++){
+    var raw=String(r.items[i]).replace(/\s*\([^)]*\)\s*$/,'').trim();
+    if(m[raw]) return m[raw];
+  }
+  return '(미지정)';
+}
 
 function applyRecFilters(list){
   var q=(document.getElementById('recSearch')||{}).value||'';
@@ -4995,6 +5025,7 @@ function openEditModal(id){
   setEditTaxInv(editTaxInvOn);
   fillEditProcessSelect();
   var _eps=document.getElementById('editProcessSelect'); if(_eps) _eps.value='';
+  if(_eps && r.proc){ (processes||[]).forEach(function(p,pi){ if(p.name===r.proc) _eps.value=String(pi); }); if(_eps.value!=='') renderEditItemCheckboxes(); }
   var _eia=document.getElementById('editItemCheckboxArea'); if(_eia) _eia.innerHTML='';
   var _epr=document.getElementById('editItemPickRow'); if(_epr) _epr.style.display = isPersonal ? 'none' : '';
   document.getElementById('editRecordModal').classList.add('show');
@@ -5180,7 +5211,7 @@ function saveEditRecord(){
   db.collection('expenses').doc(editingRecordId).update({
     amount:amount,site:site,category:editSelectedCat,
     payMethod:editSelectedPayMethod,payType:editSelectedPayType,
-      vat:editSelectedVat,vendor:vendor,items:items,memo:memo,date:saveDate,
+      vat:editSelectedVat,proc:((processes[parseInt((document.getElementById('editProcessSelect')||{}).value)]||{}).name||''),vendor:vendor,items:items,memo:memo,date:saveDate,
       unpaid:editUnpaid, taxInvoice:editTaxInvOn, taxInvoiceDate: editTaxInvOn ? ((document.getElementById("editTaxInvDate")||{}).value||"") : ""
   }).then(function(){closeEditModal();setSyncStatus('ok');showToast('✓ 수정됐어요');
   }).catch(function(e){setSyncStatus('err');showToast('수정 실패: '+e.message);});
