@@ -1056,6 +1056,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 <div class="rec-search-row">
   <input class="rec-search" id="recSearch" type="search" placeholder="🔍 구매처 · 품목 · 메모 검색" oninput="renderList()">
   <button class="rec-filter-toggle" id="recFilterToggle" onclick="toggleRecFilters()">필터</button>
+        <button class="rec-filter-toggle" onclick="exportRecordsXlsx()" title="보이는 내역을 엑셀로 저장">⬇ 엑셀</button>
 </div>
 <div class="rec-filter-panel" id="recFilterPanel">
   <div class="rec-filter-grid">
@@ -1923,6 +1924,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 
 <!-- Firebase compat (전역 방식) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -3137,6 +3139,56 @@ function recSearchText(r){
   if(Array.isArray(r.items)) parts=parts.concat(r.items);
   return parts.filter(Boolean).join(' ').toLowerCase();
 }
+
+function exportRecordsXlsx(){
+  if(typeof XLSX==='undefined'){ showToast('엑셀 모듈을 불러오는 중이에요. 잠시 후 다시 눌러주세요'); return; }
+  var sn=function(r){ return typeof r.site==='object'?r.site.name:r.site; };
+  var workRecs=currentFilter==='전체'?records:records.filter(function(r){return sn(r)===currentFilter;});
+  var personalTagged=currentFilter==='전체'?personalRecords.map(function(r){return Object.assign({},r,{isPersonal:true});}):[];
+  var rows=applyRecFilters(workRecs.concat(personalTagged)).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+  if(!rows.length){ showToast('내보낼 내역이 없어요'); return; }
+
+  var aoa=[['날짜','시각','구분','현장','카테고리','구매처','품목','메모','금액','공급가액','부가세액','부가세 구분','결제수단','결제종류','세금계산서','계산서 발행일','지급상태']];
+  rows.forEach(function(r){
+    var d=new Date(r.date);
+    var ds=isNaN(d)?String(r.date||''):(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+    var ts=isNaN(d)?'':(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
+    var amt=r.amount||0, sup='', vat='';
+    if(r.vat==='included'){ vat=Math.round(amt/11); sup=amt-vat; }
+    else if(r.vat==='excluded'){ vat=Math.round(amt*0.1); sup=amt; }
+    aoa.push([
+      ds, ts, r.isPersonal?'개인':'업무',
+      r.isPersonal?'':(sn(r)||''),
+      r.category||'', r.vendor||'',
+      Array.isArray(r.items)?r.items.join(', '):'',
+      r.memo||'', amt, sup, vat,
+      r.vat==='included'?'포함':r.vat==='excluded'?'별도':'미발행',
+      (r.isPersonal?r.method:r.payMethod)||'',
+      r.payType==='card'?'카드':r.payType==='transfer'?'계좌이체':r.payType==='cash'?'현금':'',
+      r.taxInvoice?'발행':'미발행', r.taxInvoiceDate||'',
+      r.unpaid?'미지급':'지급완료'
+    ]);
+  });
+
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:11},{wch:7},{wch:6},{wch:22},{wch:10},{wch:18},{wch:26},{wch:24},{wch:12},{wch:12},{wch:11},{wch:10},{wch:14},{wch:10},{wch:9},{wch:13},{wch:9}];
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:16}})};
+  ws['!freeze']={xSplit:'0',ySplit:'1',topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
+  for(var R=2;R<=aoa.length;R++){
+    ['I','J','K'].forEach(function(C){
+      var cell=ws[C+R];
+      if(cell && typeof cell.v==='number') cell.z='#,##0';
+    });
+  }
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '내역');
+  var t=new Date();
+  var stamp=t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0');
+  var siteTag=(currentFilter==='전체'?'전체':currentFilter).replace(/[\\\/:*?"<>|\[\]]/g,'').replace(/\s+/g,'');
+  XLSX.writeFile(wb, '내역_'+siteTag+'_'+stamp+'.xlsx');
+  showToast('엑셀 '+rows.length+'건 저장했어요');
+}
+
 
 function applyRecFilters(list){
   var q=(document.getElementById('recSearch')||{}).value||'';
