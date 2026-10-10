@@ -939,22 +939,31 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <button class="input-mode-btn personal" id="modeBtnPersonal" onclick="setInputMode('personal')">👤 개인</button>
   </div>
   <!-- 업무 모드 섹션 -->
-  <div id="inputSectionWork">
-    <div class="field-row">
-      <div class="field-label">현장명</div>
-      <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
-    </div>
-    <div class="field-row">
-      <div class="field-label">카테고리</div>
-      <div class="chips">
-        <button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
-        <button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
-        <button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
-        <button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
-        <button class="chip" onclick="selectCat(this,'식대')">식대</button>
-        <button class="chip" onclick="selectCat(this,'기타')">기타</button>
+      <div id="inputSectionWork">
+        <div class="field-row">
+          <div class="field-label">구분</div>
+          <div class="vat-row-ui">
+            <button class="vat-btn selected" id="kindSite" onclick="setInputKind('site')">🏗 현장</button>
+            <button class="vat-btn" id="kindCompany" onclick="setInputKind('company')">🏢 회사</button>
+          </div>
+        </div>
+        <div class="field-row" id="inpSiteRow">
+          <div class="field-label">현장명</div>
+          <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
+        </div>
+        <div class="field-row">
+          <div class="field-label">카테고리</div>
+          <div class="chips" id="inpSiteCats">
+            <button class="chip selected" onclick="selectCat(this,'자재비')">자재비</button>
+            <button class="chip" onclick="selectCat(this,'인건비')">인건비</button>
+            <button class="chip" onclick="selectCat(this,'공구/장비')">공구/장비</button>
+            <button class="chip" onclick="selectCat(this,'교통/주차')">교통/주차</button>
+            <button class="chip" onclick="selectCat(this,'식대')">식대</button>
+            <button class="chip" onclick="selectCat(this,'기타')">기타</button>
+          </div>
+          <div class="chips" id="inpCompanyCats" style="display:none"></div>
+        </div>
       </div>
-    </div>
   </div>
   <!-- 개인 모드 섹션 -->
   <div id="inputSectionPersonal" style="display:none">
@@ -1851,20 +1860,30 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <button class="input-mode-btn personal" id="editModeBtnPersonal" onclick="setEditMode('personal')">👤 개인</button>
     </div>
     <!-- 업무 섹션 -->
-    <div id="editSectionWork">
-      <div class="field-row">
-        <div class="field-label">현장명</div>
-        <select class="field-select" id="editSite"></select>
-      </div>
-      <div class="field-row">
-        <div class="field-label">카테고리</div>
-        <div class="chips" id="editCatChips">
-          <button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
-          <button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
-          <button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
-          <button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
-          <button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
-          <button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
+        <div id="editSectionWork">
+          <div class="field-row">
+            <div class="field-label">구분</div>
+            <div class="vat-row-ui">
+              <button class="vat-btn selected" id="editKindSite" onclick="setEditKind('site')">🏗 현장</button>
+              <button class="vat-btn" id="editKindCompany" onclick="setEditKind('company')">🏢 회사</button>
+            </div>
+          </div>
+          <div class="field-row" id="editSiteRow">
+            <div class="field-label">현장명</div>
+            <select class="field-select" id="editSite"></select>
+          </div>
+          <div class="field-row">
+            <div class="field-label">카테고리</div>
+            <div class="chips" id="editCatChips">
+              <button class="chip" onclick="selectEditCat(this,'자재비')">자재비</button>
+              <button class="chip" onclick="selectEditCat(this,'인건비')">인건비</button>
+              <button class="chip" onclick="selectEditCat(this,'공구/장비')">공구/장비</button>
+              <button class="chip" onclick="selectEditCat(this,'교통/주차')">교통/주차</button>
+              <button class="chip" onclick="selectEditCat(this,'식대')">식대</button>
+              <button class="chip" onclick="selectEditCat(this,'기타')">기타</button>
+            </div>
+            <div class="chips" id="editCompanyCats" style="display:none"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2667,6 +2686,52 @@ function updateVatInfo(){
 }
 
 // ── CATEGORY ──
+// ── 회사(운영비) 구분 ──
+var COMPANY_CATS=['임대료','차량/유류','통신/구독','보험','세무/회계','사무용품','마케팅/광고','접대/회식','교육','지급수수료','세금/공과','기타'];
+var inputKind='site', editKind='site';
+
+function _renderCompanyCats(boxId, cur, handler){
+  var box=document.getElementById(boxId);
+  if(!box) return;
+  box.innerHTML=COMPANY_CATS.map(function(c){
+    return '<button class="chip'+(c===cur?' selected':'')+'" onclick="'+handler+'(this,\''+c+'\')">'+c+'</button>';
+  }).join('');
+}
+function setInputKind(k){
+  inputKind=(k==='company')?'company':'site';
+  var a=document.getElementById('kindSite'), b=document.getElementById('kindCompany');
+  if(a) a.classList.toggle('selected', inputKind==='site');
+  if(b) b.classList.toggle('selected', inputKind==='company');
+  var row=document.getElementById('inpSiteRow'); if(row) row.style.display=(inputKind==='company')?'none':'';
+  var sc=document.getElementById('inpSiteCats'), cc=document.getElementById('inpCompanyCats');
+  if(sc) sc.style.display=(inputKind==='company')?'none':'';
+  if(cc) cc.style.display=(inputKind==='company')?'':'none';
+  if(inputKind==='company'){
+    if(COMPANY_CATS.indexOf(selectedCategory)<0) selectedCategory='기타';
+    _renderCompanyCats('inpCompanyCats', selectedCategory, 'selectCat');
+  } else {
+    if(COMPANY_CATS.indexOf(selectedCategory)>=0 || !selectedCategory) selectedCategory='자재비';
+    document.querySelectorAll('#inpSiteCats .chip').forEach(function(c){ c.classList.toggle('selected', c.textContent===selectedCategory); });
+  }
+}
+function setEditKind(k){
+  editKind=(k==='company')?'company':'site';
+  var a=document.getElementById('editKindSite'), b=document.getElementById('editKindCompany');
+  if(a) a.classList.toggle('selected', editKind==='site');
+  if(b) b.classList.toggle('selected', editKind==='company');
+  var row=document.getElementById('editSiteRow'); if(row) row.style.display=(editKind==='company')?'none':'';
+  var sc=document.getElementById('editCatChips'), cc=document.getElementById('editCompanyCats');
+  if(sc) sc.style.display=(editKind==='company')?'none':'';
+  if(cc) cc.style.display=(editKind==='company')?'':'none';
+  if(editKind==='company'){
+    if(COMPANY_CATS.indexOf(editSelectedCat)<0) editSelectedCat='기타';
+    _renderCompanyCats('editCompanyCats', editSelectedCat, 'selectEditCat');
+  } else {
+    if(COMPANY_CATS.indexOf(editSelectedCat)>=0 || !editSelectedCat) editSelectedCat='자재비';
+    document.querySelectorAll('#editCatChips .chip').forEach(function(c){ c.classList.toggle('selected', c.textContent===editSelectedCat); });
+  }
+}
+
 function selectCat(btn,cat){
   document.querySelectorAll('#inputSectionWork .chip').forEach(function(c){c.classList.remove('selected');});
   btn.classList.add('selected');selectedCategory=cat;
@@ -2810,7 +2875,8 @@ function saveRecord(){
   var amount=parseInt(amountStr||'0');
   if(!amount){showToast('금액을 입력해주세요');return;}
   var site=String(document.getElementById('siteSelect').value||'');
-  if(!site){showToast('현장을 선택해주세요');return;}
+  if(inputKind!=='company' && !site){showToast('현장을 선택해주세요');return;}
+  if(inputKind==='company') site='';
   var memo=document.getElementById('memoInput').value.trim();
   var vendor=document.getElementById('vendorInput').value.trim();
   var items=selectedItems.slice();
@@ -2855,7 +2921,7 @@ function saveRecord(){
   db.collection('expenses').add({
     date:saveDate,amount:amount,site:site,
     category:selectedCategory,payMethod:selectedPayMethod,payType:selectedPayType,
-      vat:selectedVat,proc:((processes[parseInt((document.getElementById('processSelect')||{}).value)]||{}).name||''),vendor:vendor,items:items,memo:memo,
+      kind:inputKind, vat:selectedVat,proc:((processes[parseInt((document.getElementById('processSelect')||{}).value)]||{}).name||''),vendor:vendor,items:items,memo:memo,
       unpaid:unpaidOn, taxInvoice:taxInvOn, taxInvoiceDate: taxInvOn ? ((document.getElementById('taxInvDate')||{}).value||'') : '',
     ts:firebase.firestore.FieldValue.serverTimestamp()
   }).then(function(){
@@ -2872,6 +2938,7 @@ function saveRecord(){
     document.getElementById('vendorInput').value='';
     selectedItems=[];
     document.getElementById('processSelect').value='';
+        setInputKind('site');
         document.getElementById('itemCheckboxArea').innerHTML='';
         var _tid=document.getElementById('taxInvDate'); if(_tid) _tid.value='';
         setUnpaid(false);
@@ -3132,7 +3199,8 @@ document.addEventListener('wheel', function(e){
 function renderFilterBar(){
   var bar=document.getElementById('filterBar');
   if(!bar) return;
-  var html='<button class="filter-chip '+(currentFilter==='전체'?'active':'')+'" onclick="setFilter(\'전체\',this)">전체</button>';
+  var html='<button class="filter-chip '+(currentFilter==='전체'?'active':'')+'" onclick="setFilter(\'전체\',this)">전체</button>'
+    +'<button class="filter-chip '+(currentFilter==='__company__'?'active':'')+'" onclick="setFilter(\'__company__\',this)">🏢 회사</button>';
   var cnt={all:0,meeting:0,before:0,ongoing:0,done:0};
   sites.forEach(function(s){
     var name=typeof s==='object'?s.name:s;
@@ -3202,7 +3270,7 @@ function recSearchText(r){
 function exportRecordsXlsx(){
   if(typeof XLSX==='undefined'){ showToast('엑셀 모듈을 불러오는 중이에요. 잠시 후 다시 눌러주세요'); return; }
   var sn=function(r){ return typeof r.site==='object'?r.site.name:r.site; };
-  var workRecs=currentFilter==='전체'?records:records.filter(function(r){return sn(r)===currentFilter;});
+  var workRecs=currentFilter==='전체'?records:(currentFilter==='__company__'?records.filter(function(r){return r.kind==='company';}):records.filter(function(r){return sn(r)===currentFilter && r.kind!=='company';}));
   var personalTagged=currentFilter==='전체'?personalRecords.map(function(r){return Object.assign({},r,{isPersonal:true});}):[];
   var rows=applyRecFilters(workRecs.concat(personalTagged)).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
   if(!rows.length){ showToast('내보낼 내역이 없어요'); return; }
@@ -3217,7 +3285,7 @@ function exportRecordsXlsx(){
     else if(r.vat==='excluded'){ vat=Math.round(amt*0.1); sup=amt; }
     aoa.push([
       ds, ts, r.isPersonal?'개인':'업무',
-      r.isPersonal?'':(sn(r)||''),
+      r.isPersonal?'':(r.kind==='company'?'회사(운영비)':(sn(r)||'')),
       r.category||'', r.vendor||'',
       Array.isArray(r.items)?r.items.join(', '):'',
       r.memo||'', amt, sup, vat,
@@ -3339,7 +3407,7 @@ function resetRecFilters(){
 
 
 function renderList(){
-  var workRecs=currentFilter==='전체'?records:records.filter(function(r){return r.site===currentFilter;});
+  var workRecs=currentFilter==='전체'?records:(currentFilter==='__company__'?records.filter(function(r){return r.kind==='company';}):records.filter(function(r){return r.site===currentFilter && r.kind!=='company';}));
   var personalTagged=currentFilter==='전체'
     ?personalRecords.map(function(r){return Object.assign({},r,{isPersonal:true});})
     :[];
@@ -3410,7 +3478,7 @@ function renderList(){
         return '<div class="record-item" data-rid="'+r.id+'" onclick="openEditModal(this.dataset.rid)" style="cursor:pointer">'
           +'<div class="record-icon" style="background:'+ci.bg+'">'+ci.icon+'</div>'
           +'<div class="record-info">'
-          +'<div class="record-site">'+siteStr(r.site)+'</div>'
+          +'<div class="record-site"'+(r.kind==='company'?' style="color:var(--accent2)"':'')+'>'+(r.kind==='company'?'🏢 회사 운영비':siteStr(r.site))+'</div>'
           +'<div class="record-cat">'+r.category+(r.vendor?' · '+r.vendor:'')+vatB+payB+'</div>'
           +(r.items&&r.items.length?'<div class="record-memo">📦 '+r.items.join(', ')+'</div>':'')
           +(r.memo?'<div class="record-memo">💬 '+r.memo+'</div>':'')
@@ -5060,6 +5128,7 @@ function openEditModal(id){
   } else {
     // 업무 모드
     setEditMode('work');
+      editKind=(r.kind==='company')?'company':'site';
     var sel=document.getElementById('editSite');
     sel.innerHTML='';
     sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===r.site)o.selected=true;sel.appendChild(o);});
@@ -5255,7 +5324,8 @@ function saveEditRecord(){
   var amount=parseInt(editAmountStr||'0');
   if(!amount){showToast('금액을 입력해주세요');return;}
   var site=document.getElementById('editSite').value;
-  if(!site){showToast('현장을 선택해주세요');return;}
+  if(editKind!=='company' && !site){showToast('현장을 선택해주세요');return;}
+  if(editKind==='company') site='';
   var dtVal=document.getElementById('editDate').value;
   var saveDate=dtVal?dtVal+':00.000+09:00':new Date().toISOString();
   var vendor=document.getElementById('editVendor').value.trim();
@@ -5266,7 +5336,7 @@ function saveEditRecord(){
   db.collection('expenses').doc(editingRecordId).update({
     amount:amount,site:site,category:editSelectedCat,
     payMethod:editSelectedPayMethod,payType:editSelectedPayType,
-      vat:editSelectedVat,proc:((processes[parseInt((document.getElementById('editProcessSelect')||{}).value)]||{}).name||''),vendor:vendor,items:items,memo:memo,date:saveDate,
+      kind:editKind, vat:editSelectedVat,proc:((processes[parseInt((document.getElementById('editProcessSelect')||{}).value)]||{}).name||''),vendor:vendor,items:items,memo:memo,date:saveDate,
       unpaid:editUnpaid, taxInvoice:editTaxInvOn, taxInvoiceDate: editTaxInvOn ? ((document.getElementById("editTaxInvDate")||{}).value||"") : ""
   }).then(function(){closeEditModal();setSyncStatus('ok');showToast('✓ 수정됐어요');
   }).catch(function(e){setSyncStatus('err');showToast('수정 실패: '+e.message);});
