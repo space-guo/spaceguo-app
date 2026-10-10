@@ -1141,6 +1141,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <button class="sch-nav-btn" onclick="schCalMove(1)">›</button>
     <button class="sch-nav-btn" onclick="exportSchImage()" title="공정표 이미지 저장" style="font-size:16px;margin-left:4px">📷</button>
   </div>
+      <div class="site-status-bar" id="schStatusBar"></div>
   <div class="sch-site-filter" id="schSiteFilter"></div>
   <div class="sch-cal-wrap">
     <div class="sch-cal-header" id="schCalHeader"></div>
@@ -4449,7 +4450,7 @@ function openDailyModal(dateStr, focusSchId){
   // 해당 날짜에 걸친 공정 필터
   var dayProcs=schedules.filter(function(s){
     return s.startDate<=dateStr&&s.endDate>=dateStr&&
-      (schSiteFilter==='전체'||s.site===schSiteFilter);
+           schSiteVisible(typeof s.site==='object'?s.site.name:s.site);
   });
   // 날짜 표시
   var d=new Date(dateStr);
@@ -6586,10 +6587,46 @@ function renderSchTab(){
   try{loadSiteDecisions(schSiteFilter,renderSchDecisions);}catch(e){}
 }
 
+var schStatusTab='ongoing';
+function schStatusOf(name){
+  var s=(sites||[]).find(function(x){ return (typeof x==='object'?x.name:x)===name; });
+  return (s && typeof s==='object' && s.status) ? s.status : 'ongoing';
+}
+// 전체 보기일 때도 현재 상태 탭에 속한 현장만 보여준다
+function schSiteVisible(siteName){
+  if(schSiteFilter!=='전체') return siteName===schSiteFilter;
+  if(schStatusTab==='all') return true;
+  return schStatusOf(siteName)===schStatusTab;
+}
+function setSchStatusTab(st){
+  schStatusTab=st;
+  if(schSiteFilter!=='전체' && schStatusOf(schSiteFilter)!==st && st!=='all') schSiteFilter='전체';
+  renderSchSiteFilter(); renderSchCal(); renderSchList();
+  try{ loadSiteDecisions(schSiteFilter, renderSchDecisions); }catch(e){}
+}
 function renderSchSiteFilter(){
+  var bar=document.getElementById('schStatusBar');
   var el=document.getElementById('schSiteFilter');
-  var siteNames=sites.map(function(s){return typeof s==='object'?s.name:s;});
-  var all=['전체'].concat(siteNames);
+  if(!el) return;
+  var list=(sites||[]).map(function(s){
+    return {name:(typeof s==='object'?s.name:s), st:(typeof s==='object'?(s.status||'ongoing'):'ongoing')};
+  });
+  var cnt={all:list.length,meeting:0,before:0,ongoing:0,done:0};
+  list.forEach(function(o){ if(cnt[o.st]!==undefined) cnt[o.st]++; });
+  if(bar){
+    var tabs=[['ongoing','공사중'],['before','공사전'],['meeting','미팅'],['done','마감'],['all','전체']];
+    bar.innerHTML=tabs.map(function(t){
+      return '<button type="button" class="st-tab'+(schStatusTab===t[0]?' active':'')+'" onclick="setSchStatusTab(\''+t[0]+'\')">'
+        +t[1]+'<span class="c">'+(cnt[t[0]]||0)+'</span></button>';
+    }).join('');
+  }
+  var shown=list.filter(function(o){
+    if(schStatusTab==='all') return true;
+    if(o.name===schSiteFilter) return true;
+    return o.st===schStatusTab;
+  }).map(function(o){ return o.name; });
+
+  var all=['전체'].concat(shown);
   el.innerHTML=all.map(function(s){
     if(s==='전체'){
       return '<button class="filter-chip'+(schSiteFilter===s?' active':'')+'" data-site="'+s+'">'+s+'</button>';
@@ -6628,7 +6665,7 @@ function siteOrderIdx(name){
 function getFilteredSch(){
   return schedules.filter(function(s){
     var siteName=typeof s.site==='object'?s.site.name:s.site;
-    return schSiteFilter==='전체'||siteName===schSiteFilter;
+    return schSiteVisible(siteName);
   }).sort(function(a,b){
     var an=typeof a.site==='object'?a.site.name:a.site;
     var bn=typeof b.site==='object'?b.site.name:b.site;
