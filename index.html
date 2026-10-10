@@ -818,7 +818,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 <div id="mainApp" style="display:none">
 <div class="header">
   <div class="header-top">
-    <div class="brand">
+      <div class="brand" onclick="goHome()" title="첫 화면으로" style="cursor:pointer">
       <svg class="brand-logo" viewBox="0 0 4010 979" fill="currentColor" aria-label="공간구오"><path d="M1418 978C1310 974 1208 935 1124 865L1112 855L1294 672L1477 489L1294 307L1112 124L1116 121C1125 113 1147 96 1160 87C1264 15 1391 -13 1518 7C1601 21 1680 56 1748 111C1765 125 1799 159 1813 176C1875 251 1912 337 1924 436C1926 457 1926 522 1924 544C1914 622 1889 694 1846 758C1779 861 1675 935 1556 964C1522 972 1492 977 1462 978C1453 978 1444 978 1442 978C1439 978 1428 978 1418 978Z M516 720L516 462L258 462C8 462 0 462 0 460C0 454 3 424 6 408C41 200 208 36 417 6C444 2 453 2 488 2C522 1 533 2 560 6C681 24 793 88 869 184C932 262 968 353 976 453C977 470 977 509 976 526C972 577 961 625 942 673C935 690 919 723 909 739C835 863 711 948 571 972C554 975 526 978 519 978L516 978L516 720Z M2516 720L2516 462L2258 462L1999 462L1999 458C2000 455 2000 448 2001 442C2008 365 2035 288 2079 222C2133 138 2213 73 2305 36C2335 24 2369 14 2400 9C2448 -0 2504 -1 2552 5C2692 24 2816 101 2894 218C2908 240 2916 252 2927 275C2969 360 2985 455 2973 550C2955 697 2872 827 2744 907C2727 917 2687 937 2668 945C2623 962 2572 974 2525 978L2516 978L2516 720Z M3470 974C3357 962 3256 914 3176 834C3084 742 3033 620 3033 489C3033 379 3069 274 3137 188C3210 93 3320 28 3437 8C3469 3 3482 2 3520 2C3556 1 3567 2 3596 7C3731 27 3852 105 3928 220C3983 303 4011 399 4009 500C4008 540 4004 571 3994 608C3967 716 3902 814 3813 881C3751 927 3678 957 3604 970C3587 973 3560 976 3552 976L3549 976L3549 718L3549 461L3521 461L3493 461L3493 718L3493 976L3488 976C3485 976 3477 975 3470 974Z"/></svg>
       <span class="sync-dot" id="syncDot" title="동기화 상태"></span><span class="sync-label" id="syncLabel"></span>
     </div>
@@ -7788,6 +7788,25 @@ function deleteOrder(){
 }
 
 // ─────────────────────────────────────────────────────────
+// 로고 클릭 → 첫 화면(내역)으로, 필터도 초기화
+function goHome(){
+  try{
+    currentFilter='전체';
+    if(typeof listSiteStatus!=='undefined') listSiteStatus='all';
+    var s=document.getElementById('recSearch'); if(s) s.value='';
+    if(typeof REC_FILTER_FIELDS!=='undefined'){
+      REC_FILTER_FIELDS.forEach(function(f){ var el=document.getElementById(f.id); if(el) el.value=''; });
+    }
+    var g=document.getElementById('fGroup'); if(g) g.value='';
+    var p=document.getElementById('recFilterPanel'); if(p) p.classList.remove('open');
+    document.querySelectorAll('#listStatusBar .st-tab').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-st')==='all');
+    });
+  }catch(e){}
+  switchTab('list');
+}
+
+
 function switchTab(tab){
   var TAB_ORDER=['list','cal','sch','order','dash'];
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
