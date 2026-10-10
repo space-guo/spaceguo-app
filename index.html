@@ -935,18 +935,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   </div>
   <!-- 업무 / 개인 모드 탭 -->
   <div class="input-mode-bar">
-    <button class="input-mode-btn active" id="modeBtnWork" onclick="setInputMode('work')">🏗 업무</button>
-    <button class="input-mode-btn personal" id="modeBtnPersonal" onclick="setInputMode('personal')">👤 개인</button>
+        <button class="input-mode-btn active" id="modeBtnSite" onclick="setInputMode('site')">🏗 현장</button>
+        <button class="input-mode-btn" id="modeBtnCompany" onclick="setInputMode('company')">🏢 회사</button>
+        <button class="input-mode-btn personal" id="modeBtnPersonal" onclick="setInputMode('personal')">👤 개인</button>
   </div>
   <!-- 업무 모드 섹션 -->
       <div id="inputSectionWork">
-        <div class="field-row">
-          <div class="field-label">구분</div>
-          <div class="vat-row-ui">
-            <button class="vat-btn selected" id="kindSite" onclick="setInputKind('site')">🏗 현장</button>
-            <button class="vat-btn" id="kindCompany" onclick="setInputKind('company')">🏢 회사</button>
-          </div>
-        </div>
         <div class="field-row" id="inpSiteRow">
           <div class="field-label">현장명</div>
           <select class="field-select" id="siteSelect"><option value="">현장 선택</option></select>
@@ -1855,18 +1849,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <!-- 업무/개인 모드 탭 -->
     <div class="input-mode-bar" style="margin:10px 0 0">
-      <button class="input-mode-btn active" id="editModeBtnWork" onclick="setEditMode('work')">🏗 업무</button>
-      <button class="input-mode-btn personal" id="editModeBtnPersonal" onclick="setEditMode('personal')">👤 개인</button>
+            <button class="input-mode-btn active" id="editModeBtnSite" onclick="setEditMode('site')">🏗 현장</button>
+            <button class="input-mode-btn" id="editModeBtnCompany" onclick="setEditMode('company')">🏢 회사</button>
+            <button class="input-mode-btn personal" id="editModeBtnPersonal" onclick="setEditMode('personal')">👤 개인</button>
     </div>
     <!-- 업무 섹션 -->
         <div id="editSectionWork">
-          <div class="field-row">
-            <div class="field-label">구분</div>
-            <div class="vat-row-ui">
-              <button class="vat-btn selected" id="editKindSite" onclick="setEditKind('site')">🏗 현장</button>
-              <button class="vat-btn" id="editKindCompany" onclick="setEditKind('company')">🏢 회사</button>
-            </div>
-          </div>
           <div class="field-row" id="editSiteRow">
             <div class="field-label">현장명</div>
             <select class="field-select" id="editSite"></select>
@@ -5071,20 +5059,28 @@ var editPersonalCat='기타';
 var editingPersonalId='';
 
 function setEditMode(mode){
-  editCurrentMode=mode;
-  var isWork=mode==='work';
-  document.getElementById('editModeBtnWork').classList.toggle('active',isWork);
-  document.getElementById('editModeBtnPersonal').classList.toggle('active',!isWork);
-  document.getElementById('editSectionWork').style.display=isWork?'':'none';
-  document.getElementById('editSectionPersonal').style.display=isWork?'none':'';
+  if(mode==='work') mode=(editKind==='company')?'company':'site';
+  editCurrentMode=(mode==='personal')?'personal':'work';
+  var isPersonal=(mode==='personal');
+  var b1=document.getElementById('editModeBtnSite'), b2=document.getElementById('editModeBtnCompany'), b3=document.getElementById('editModeBtnPersonal');
+  if(b1) b1.classList.toggle('active', mode==='site');
+  if(b2) b2.classList.toggle('active', mode==='company');
+  if(b3) b3.classList.toggle('active', isPersonal);
+  document.getElementById('editSectionWork').style.display=isPersonal?'none':'';
+  document.getElementById('editSectionPersonal').style.display=isPersonal?'':'none';
+  if(!isPersonal) setEditKind(mode==='company'?'company':'site');
 }
 function setInputMode(mode){
-  currentInputMode=mode==='personal'?'personal':'';
-  var isPersonal=mode==='personal';
-  document.getElementById('modeBtnWork').classList.toggle('active',!isPersonal);
-  document.getElementById('modeBtnPersonal').classList.toggle('active',isPersonal);
+  if(mode==='work') mode='site';
+  currentInputMode=(mode==='personal')?'personal':'';
+  var isPersonal=(mode==='personal');
+  var b1=document.getElementById('modeBtnSite'), b2=document.getElementById('modeBtnCompany'), b3=document.getElementById('modeBtnPersonal');
+  if(b1) b1.classList.toggle('active', mode==='site');
+  if(b2) b2.classList.toggle('active', mode==='company');
+  if(b3) b3.classList.toggle('active', isPersonal);
   document.getElementById('inputSectionWork').style.display=isPersonal?'none':'';
   document.getElementById('inputSectionPersonal').style.display=isPersonal?'':'none';
+  if(!isPersonal) setInputKind(mode==='company'?'company':'site');
 }
 
 function selectEditPersonalCat(btn){
@@ -5124,8 +5120,8 @@ function openEditModal(id){
     document.getElementById('editPersonalMemo').value=r.memo||'';
   } else {
     // 업무 모드
-    setEditMode('work');
-      editKind=(r.kind==='company')?'company':'site';
+    editKind=(r.kind==='company')?'company':'site';
+    setEditMode(editKind);
     var sel=document.getElementById('editSite');
     sel.innerHTML='';
     sites.forEach(function(s){var sn=typeof s==='object'?s.name:String(s);var o=document.createElement('option');o.value=sn;o.textContent=sn;if(sn===r.site)o.selected=true;sel.appendChild(o);});
