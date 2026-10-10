@@ -1535,6 +1535,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       </div>
       <div class="field-row" id="evSiteRow">
         <div class="field-label">현장 <span style="font-size:10px;color:var(--muted);font-weight:400">(선택하면 그 현장 색으로 표시)</span></div>
+        <div class="site-status-bar" id="evStatusBar" style="margin-top:6px;margin-bottom:0"></div>
         <div id="evSiteChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
       </div>
     <!-- 제목 -->
@@ -6077,22 +6078,45 @@ function setEvSite(name){
   }
   refreshEvSiteRow();
 }
+var evSiteStatus='ongoing';
+function setEvSiteStatus(st){ evSiteStatus=st; refreshEvSiteRow(); }
 function refreshEvSiteRow(){
   var row=document.getElementById('evSiteRow');
   var box=document.getElementById('evSiteChips');
+  var bar=document.getElementById('evStatusBar');
   if(!row||!box)return;
-  // 개인 일정이면 현장 선택 숨김
   var show=(evScope!=='personal');
   row.style.display=show?'block':'none';
   if(!show){evSite='';return;}
-  var names=(sites||[]).map(function(s){return typeof s==='object'?s.name:s;});
-  box.innerHTML=names.map(function(n){
+
+  var list=(sites||[]).map(function(s){
+    return {name:(typeof s==='object'?s.name:s), st:(typeof s==='object'?(s.status||'ongoing'):'ongoing')};
+  });
+  var cnt={all:list.length,meeting:0,before:0,ongoing:0,done:0};
+  list.forEach(function(o){ if(cnt[o.st]!==undefined) cnt[o.st]++; });
+
+  if(bar){
+    var tabs=[['ongoing','공사중'],['before','공사전'],['meeting','미팅'],['done','마감'],['all','전체']];
+    bar.innerHTML=tabs.map(function(t){
+      return '<button type="button" class="st-tab'+(evSiteStatus===t[0]?' active':'')+'" onclick="setEvSiteStatus(\''+t[0]+'\')">'
+        +t[1]+'<span class="c">'+(cnt[t[0]]||0)+'</span></button>';
+    }).join('');
+  }
+
+  var shown=list.filter(function(o){
+    if(evSiteStatus==='all') return true;
+    if(o.name===evSite) return true;   // 선택한 현장은 항상 보이게
+    return o.st===evSiteStatus;
+  });
+
+  box.innerHTML=shown.map(function(o){
+    var n=o.name;
     var col=getSiteColor(n);
     var on=(evSite===n);
     return '<button type="button" class="chip'+(on?' selected':'')+'" onclick="setEvSite(\''+String(n).replace(/'/g,"\\'")+'\')" style="'
       +(on?'background:'+col+';border-color:'+col+';color:#fff':'border-color:'+col+'44;color:'+col)+'">'
       +'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(on?'#fff':col)+';margin-right:5px;vertical-align:1px"></span>'+n+'</button>';
-  }).join('') || '<div style="font-size:11px;color:var(--muted)">등록된 현장이 없어요</div>';
+  }).join('') || '<div style="font-size:11px;color:var(--muted);padding:4px 0">이 상태의 현장이 없어요</div>';
 }
 
 
