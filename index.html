@@ -6144,10 +6144,9 @@ function setEvType(t){
   var endRow=document.getElementById('evEndDateRow');
   if(timeRow)timeRow.style.display=(t==='todo')?'none':'block';
   if(endRow)endRow.style.display=(t==='todo')?'none':'block';
-  // 업무/개인은 '일정'일 때만
+  // 구분(현장/회사/개인)은 일정·미팅·할일 모두에 적용
   var scope=document.getElementById('evScopeRow');
-  if(scope)scope.style.display=(t==='schedule')?'block':'none';
-  if(t!=='schedule')evScope='site';
+  if(scope)scope.style.display='block';
   refreshEvScope();
   refreshEvSiteRow();
 }
