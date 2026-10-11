@@ -1032,11 +1032,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <input class="field-input" id="vendorInput" type="text" placeholder="예: 홈플러스, 철물왕...">
   </div>
   <div class="field-row">
-    <div class="field-label">구매 목록 (선택)</div>
+        <div class="field-label">품목 (선택)</div>
     <select class="field-select" id="processSelect" onchange="renderItemCheckboxes()" style="margin-bottom:8px">
       <option value="">공정 선택</option>
     </select>
-    <div id="itemCheckboxArea"></div>
+        <div id="itemCheckboxArea" style="margin-bottom:8px"></div>
+        <input class="field-input" id="itemsText" type="text" placeholder="직접 입력도 돼요 · 쉼표로 구분" lang="ko">
   </div>
   <div class="field-row">
     <div class="field-label">메모 (선택)</div>
@@ -1932,12 +1933,12 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <input class="field-input" id="editVendor" type="text" placeholder="구매처">
     </div>
     <div class="field-row">
-      <div class="field-label">품목 (쉼표로 구분)</div>
+          <div class="field-label">품목</div>
           <div id="editItemPickRow">
             <select class="field-select" id="editProcessSelect" onchange="renderEditItemCheckboxes()" style="margin-bottom:8px"><option value="">공정 선택</option></select>
             <div id="editItemCheckboxArea" style="margin-bottom:8px"></div>
           </div>
-          <input class="field-input" id="editItems" type="text" placeholder="예: 타일, 시멘트, 줄눈" lang="ko">
+          <input class="field-input" id="editItems" type="text" placeholder="직접 입력도 돼요 · 쉼표로 구분" lang="ko">
     </div>
     <div class="field-row">
       <div class="field-label">메모</div>
@@ -2872,7 +2873,7 @@ function saveRecord(){
   if(inputKind==='company') site='';
   var memo=document.getElementById('memoInput').value.trim();
   var vendor=document.getElementById('vendorInput').value.trim();
-  var items=selectedItems.slice();
+  var items=inpItemsArr();
 
   // 날짜 결정: 카드알림 > 수동선택 > 오늘
   var saveDate;
@@ -2933,6 +2934,7 @@ function saveRecord(){
     document.getElementById('processSelect').value='';
         setInputKind('site');
         document.getElementById('itemCheckboxArea').innerHTML='';
+        var _it=document.getElementById('itemsText'); if(_it) _it.value='';
         var _tid=document.getElementById('taxInvDate'); if(_tid) _tid.value='';
         setUnpaid(false);
         setTaxInv(false);
@@ -3863,30 +3865,42 @@ function renderProcessSelect(){
     sel.appendChild(o);
   });
 }
+function inpItemsArr(){
+  var v=(document.getElementById('itemsText')||{}).value||'';
+  return v.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+}
+function syncInpItems(){
+  var el=document.getElementById('itemsText');
+  if(el) el.value=selectedItems.join(', ');
+}
 function renderItemCheckboxes(){
   var sel=document.getElementById('processSelect');
   var area=document.getElementById('itemCheckboxArea');
-  selectedItems=[];
+  if(!sel||!area) return;
+  selectedItems=inpItemsArr();
   if(!sel.value&&sel.value!=='0'){area.innerHTML='';return;}
   var proc=processes[parseInt(sel.value)];
   if(!proc||!proc.items||!proc.items.length){
     area.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 0">품목이 없어요 · 설정에서 추가하세요</div>';return;
   }
-  area.innerHTML='<div class="item-check-grid">'+proc.items.map(function(item,i){
-    return '<button class="item-check-btn" onclick="toggleItem(this,\''+item.name+(item.unit?' ('+item.unit+')':'')+'\')">'
+  area.innerHTML='<div class="item-check-grid">'+proc.items.map(function(item){
+    var label=item.name+(item.unit?' ('+item.unit+')':'');
+    var on=selectedItems.indexOf(label)>=0;
+    return '<button class="item-check-btn'+(on?' checked':'')+'" data-label="'+label.replace(/"/g,'&quot;')+'">'
       +'<span>'+item.name+'</span>'
       +(item.unit?'<span class="unit">'+item.unit+'</span>':'')
       +'</button>';
   }).join('')+'</div>';
+  area.querySelectorAll('.item-check-btn').forEach(function(b){
+    b.addEventListener('click',function(){ toggleItem(this,this.dataset.label); });
+  });
 }
 function toggleItem(btn,label){
-  if(btn.classList.contains('checked')){
-    btn.classList.remove('checked');
-    selectedItems=selectedItems.filter(function(i){return i!==label;});
-  } else {
-    btn.classList.add('checked');
-    selectedItems.push(label);
-  }
+  selectedItems=inpItemsArr();
+  var i=selectedItems.indexOf(label);
+  if(i>=0){ selectedItems.splice(i,1); btn.classList.remove('checked'); }
+  else { selectedItems.push(label); btn.classList.add('checked'); }
+  syncInpItems();
 }
 var procDecisions=[];
 function renderProcDecisions(){
@@ -8909,7 +8923,7 @@ function savePersonalDirect(){
   }
   var vendor=(document.getElementById('vendorInput')||{}).value||'';
   var memo=(document.getElementById('memoInput')||{}).value||'';
-  var items=selectedItems.slice();
+  var items=inpItemsArr();
   setSyncStatus('saving');
   db.collection('personal_expenses').add({
     date:saveDate,amount:amount,category:piDirectSelectedCat,
@@ -8927,6 +8941,7 @@ function savePersonalDirect(){
     selectedItems=[];
     var psel=document.getElementById('processSelect');if(psel)psel.value='';
     var iarea=document.getElementById('itemCheckboxArea');if(iarea)iarea.innerHTML='';
+  var _it2=document.getElementById('itemsText'); if(_it2) _it2.value='';
     var vinfo=document.getElementById('vatInfo');if(vinfo)vinfo.classList.remove('show');
     document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
     selectedPayMethod='';selectedPayType='';
