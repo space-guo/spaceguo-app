@@ -3096,13 +3096,17 @@ function renderSiteList(){
   if(siteStatusFilter==='all'){
     statusOrder.forEach(function(st){
       var group=groups[st];
-      if(!group||!group.length)return;
+      var isEmpty=(!group||!group.length);
       parts.push('<div style="display:flex;align-items:center;gap:6px;padding:8px 4px 4px;margin-top:4px">'
         +'<span style="width:8px;height:8px;border-radius:50%;background:'+statusColors[st]+';flex-shrink:0"></span>'
         +'<span style="font-size:11px;font-weight:800;color:'+statusColors[st]+'">'+statusMap[st]+'</span>'
         +'<span style="font-size:11px;color:var(--muted)">('+group.length+')</span>'
         +'</div>');
-      group.forEach(function(item){pushSiteCard(parts,item.s,item.i);});
+        if(isEmpty){
+          parts.push('<div class="drag-item site-card" data-group="'+st+'" style="opacity:.55;border:1px dashed var(--border);justify-content:center;color:var(--muted);font-size:12px;padding:12px">여기로 끌어다 놓기</div>');
+        } else {
+          group.forEach(function(item){pushSiteCard(parts,item.s,item.i);});
+        }
     });
   } else {
     filtered.forEach(function(item){pushSiteCard(parts,item.s,item.i);});
@@ -3117,11 +3121,13 @@ function renderSiteList(){
     var card=e.target.closest('[data-site-action="edit"]');
     if(card)openSiteEditModal(parseInt(card.dataset.siteIdx));
   };
+    el.setAttribute('data-crossgroup','status');
     initDragList(el, sites, 'sites', function(){
     saveSettings().then(function(){
       renderSiteSelect();renderSiteList();renderFilterBar();renderSchSiteFilter();
       if(document.getElementById('view-sch').classList.contains('active')){renderSchCal();renderSchList();}
-      showToast('✓ 순서 변경됐어요');
+        var _mv=window.__dragStatusMoved; window.__dragStatusMoved=null;
+        showToast(_mv ? ('✓ '+_mv+'으로 옮겼어요') : '✓ 순서 변경됐어요');
     });
   }, 'data-site-idx');
 }
@@ -4876,6 +4882,20 @@ function applyDragReorder(container, arr, srcEl, domToIdx, idxAttr){
   var srcReal=parseInt(srcEl.getAttribute(idxAttr));
   if(isNaN(srcReal))return false;
   var grp=srcEl.getAttribute('data-group')||'';
+  // 다른 상태 그룹으로 끌어다 놓으면 상태 자체를 바꾼다
+  if(container.getAttribute('data-crossgroup')==='status'){
+    var refEl=null;
+    for(var q=domToIdx; q<all.length; q++){ if(all[q]!==srcEl){ refEl=all[q]; break; } }
+    if(!refEl){ for(var q2=all.length-1; q2>=0; q2--){ if(all[q2]!==srcEl){ refEl=all[q2]; break; } } }
+    var targetGrp=refEl?(refEl.getAttribute('data-group')||''):'';
+    if(targetGrp && targetGrp!==grp){
+      var obj=arr[srcReal];
+      if(typeof obj!=='object'){ obj={name:String(obj),status:targetGrp}; arr[srcReal]=obj; }
+      else { obj.status=targetGrp; }
+      window.__dragStatusMoved=({meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'})[targetGrp]||targetGrp;
+      return true;
+    }
+  }
   var groupEls=all.filter(function(el){return (el.getAttribute('data-group')||'')===grp;});
   if(groupEls.length<2)return false;
   var srcPos=groupEls.indexOf(srcEl);
