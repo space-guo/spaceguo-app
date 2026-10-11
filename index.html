@@ -1533,7 +1533,6 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <!-- 타입 선택 -->
     <div class="ev-type-bar">
-        <button class="ev-type-btn active" id="evTypeBtnSch" onclick="setEvType('schedule')">📅 일정</button>
         <button class="ev-type-btn" id="evTypeBtnMeet" onclick="setEvType('meeting')">🤝 미팅</button>
         <button class="ev-type-btn" id="evTypeBtnTodo" onclick="setEvType('todo')">✅ 할일</button>
       </div>
@@ -5791,7 +5790,7 @@ var myCalYear=new Date().getFullYear(), myCalMonth=new Date().getMonth();
 var myCalShowSch=false;
 var myCalSelectedDate=null; // 선택된 날짜 (YYYY-MM-DD)
 var editingEventId='';
-var evType='schedule';
+var evType='meeting';
 var evSelectedColor='#5b8cf7';
 var EV_COLORS=['#5b8cf7','#ff6b35','#4caf82','#ffad33','#e05252','#9c6bf7','#2196f3','#ff9800','#e91e63','#00bcd4','#43a047','#f06292','#fdd835','#795548','#546e7a'];
 
@@ -6113,9 +6112,9 @@ function renderMyEvList(){
     var isDone=ev.done&&ev.type==='todo';
     var badge=ev.type==='todo'?
       '<span class="my-ev-type-badge todo">'+(ev.done?'✓완료':'할일')+'</span>':
-      '<span class="my-ev-type-badge schedule">일정</span>';
+      '<span class="my-ev-type-badge schedule">미팅</span>';
     var meta='';
-    if(ev.type==='schedule'){
+      if(ev.type!=='todo'){
       meta=ev.date+(ev.endDate&&ev.endDate!==ev.date?' ~ '+ev.endDate:'')+(ev.time?' · '+ev.time:'');
     } else {
       meta=ev.date;
@@ -6135,7 +6134,8 @@ function renderMyEvList(){
 // ── 이벤트 모달 ──────────────────────────────────────────────────
 function setEvType(t){
   evType=t;
-  var map={schedule:'evTypeBtnSch', meeting:'evTypeBtnMeet', todo:'evTypeBtnTodo'};
+  var map={meeting:'evTypeBtnMeet', todo:'evTypeBtnTodo'};
+  if(t==='schedule'){ t='meeting'; evType='meeting'; }
   Object.keys(map).forEach(function(k){
     var b=document.getElementById(map[k]);
     if(b)b.classList.toggle('active', k===t);
@@ -6228,7 +6228,7 @@ function selectEvColor(c){
 
 function openEventModal(date, id){
   editingEventId=id||'';
-  evType='schedule';
+    evType='meeting';
   evSelectedColor='#5b8cf7';
 
   if(id){
@@ -6241,7 +6241,7 @@ function openEventModal(date, id){
     document.getElementById('evTime').value=ev.time||'';
     document.getElementById('evEndDate').value=ev.endDate||'';
     document.getElementById('evNote').value=ev.note||'';
-    evType=ev.type||'schedule'; evScope=(ev.scope==='work'?'site':(ev.scope||'site')); evSite=ev.site||'';
+    evType=((ev.type==='todo')?'todo':'meeting'); evScope=(ev.scope==='work'?'site':(ev.scope||'site')); evSite=ev.site||'';
     evSelectedColor=ev.color||'#5b8cf7';
   } else {
     document.getElementById('evModalTitle').textContent='일정 추가';
@@ -6284,7 +6284,7 @@ function saveEventModal(){
     color:evSelectedColor, note:note,
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
-  if(evType==='schedule'){
+    if(evType!=='todo'){
     if(time)data.time=time;
     if(endDate)data.endDate=endDate;
   }
