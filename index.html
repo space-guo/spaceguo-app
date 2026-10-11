@@ -1003,7 +1003,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       </div>
       <div id="inoutHint" style="display:none;font-size:11px;color:var(--accent2);margin-top:7px;line-height:1.5"></div>
     </div>
-    <div class="field-row">
+    <div class="field-row" id="inpVatRow">
     <div class="field-label">부가세</div>
     <div class="vat-row-ui">
       <button class="vat-btn" id="vatNone" onclick="selectVat('none')">미발행</button>
@@ -1012,7 +1012,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     </div>
     <div class="vat-info" id="vatInfo"></div>
   </div>
-      <div class="field-row">
+      <div class="field-row" id="inpTaxRow">
         <div class="field-label">세금계산서</div>
         <div class="vat-row-ui">
           <button class="vat-btn selected" id="taxNo" onclick="setTaxInv(false)">미발행</button>
@@ -1020,7 +1020,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         </div>
         <input class="field-input" id="taxInvDate" type="date" style="display:none;margin-top:8px">
       </div>
-      <div class="field-row">
+      <div class="field-row" id="inpPaidRow">
         <div class="field-label">지급 상태</div>
         <div class="vat-row-ui">
           <button class="vat-btn selected" id="paidYes" onclick="setUnpaid(false)">지급완료</button>
@@ -1904,7 +1904,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <div class="field-label">결제수단</div>
       <div class="pay-chips" id="editPayChips"></div>
     </div>
-    <div class="field-row">
+    <div class="field-row" id="editVatRow">
       <div class="field-label">부가세</div>
       <div class="vat-row-ui">
         <button class="vat-btn" id="editVatNone" onclick="selectEditVat('none')">미발행</button>
@@ -1912,7 +1912,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         <button class="vat-btn" id="editVatExcluded" onclick="selectEditVat('excluded')">별도</button>
       </div>
     </div>
-        <div class="field-row">
+        <div class="field-row" id="editTaxRow">
           <div class="field-label">세금계산서</div>
           <div class="vat-row-ui">
             <button class="vat-btn selected" id="editTaxNo" onclick="setEditTaxInv(false)">미발행</button>
@@ -1920,7 +1920,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
           </div>
           <input class="field-input" id="editTaxInvDate" type="date" style="display:none;margin-top:8px">
         </div>
-        <div class="field-row">
+        <div class="field-row" id="editPaidRow">
           <div class="field-label">지급 상태</div>
           <div class="vat-row-ui">
             <button class="vat-btn selected" id="editPaidYes" onclick="setEditUnpaid(false)">지급완료</button>
@@ -2754,9 +2754,9 @@ function refreshInoutRow(){
 function selectInout(v){selectedInout=v;refreshInoutRow();}
 
 function selectPay(btn,method,type){
-  if(selectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');selectedPayMethod='';selectedPayType='';return;}
+  if(selectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');selectedPayMethod='';selectedPayType='';try{refreshPayDependentRows();}catch(e){}return;}
   document.querySelectorAll('.pay-chip').forEach(function(c){c.classList.remove('selected-card','selected-cash');});
-  btn.classList.add(type==='card'?'selected-card':'selected-cash');selectedPayMethod=method;selectedPayType=type;try{refreshInoutRow();}catch(err){}
+  btn.classList.add(type==='card'?'selected-card':'selected-cash');selectedPayMethod=method;selectedPayType=type;try{refreshInoutRow();}catch(err){}try{refreshPayDependentRows();}catch(e){}
 }
 
 // ── ITEMS ──
@@ -5314,32 +5314,64 @@ document.addEventListener('keydown', function(e){
 function renderEditPayChips(){
   var el=document.getElementById('editPayChips');
   var html='';
-  cards.forEach(function(c){
-    var label=c.num?c.name+' ('+c.num+')':c.name;
-    var sel=editSelectedPayMethod===c.name;
-    html+='<button class="pay-chip'+(sel?' selected-card':'')+'" data-method="'+c.name+'" data-type="card">'+label+'</button>';
-  });
+  function grp(t){ return '<div style="font-size:11px;color:var(--muted);font-weight:700;width:100%;margin:8px 0 2px">'+t+'</div>'; }
+  if((cards||[]).length){
+    html+=grp('💳 카드');
+    cards.forEach(function(c){
+      var label=c.num?(c.name+' ('+c.num+')'):c.name;
+      var sel=editSelectedPayMethod===c.name;
+      html+='<button class="pay-chip'+(sel?' selected-card':'')+'" data-method="'+c.name+'" data-type="card">'+label+'</button>';
+    });
+  }
+  html+=grp('💵 현금');
   ['현금 직접','카카오페이','토스'].forEach(function(m){
     var sel=editSelectedPayMethod===m;
     html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+m+'" data-type="cash">'+m+'</button>';
   });
-  accounts.forEach(function(a){
-    var sel=editSelectedPayMethod===a.name;
-    var _al = a.num ? (a.name+" ("+a.num+")") : a.name;
-    html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+a.name+'" data-type="transfer">🏦 '+_al+'</button>';
-  });
+  if((accounts||[]).length){
+    html+=grp('🏦 계좌');
+    accounts.forEach(function(a){
+      var sel=editSelectedPayMethod===a.name;
+      var _al=a.num?(a.name+' ('+a.num+')'):a.name;
+      html+='<button class="pay-chip'+(sel?' selected-cash':'')+'" data-method="'+a.name+'" data-type="transfer">'+_al+'</button>';
+    });
+  }
   el.innerHTML=html;
   el.querySelectorAll('.pay-chip').forEach(function(btn){
     btn.addEventListener('click',function(){
       selectEditPay(this,this.dataset.method,this.dataset.type);
     });
   });
+  refreshPayDependentRows();
+}
+
+// 카드 결제는 부가세·세금계산서·지급상태를 고를 필요가 없어 감춘다
+function refreshPayDependentRows(){
+  var isCard=(typeof selectedPayType!=='undefined' && selectedPayType==='card');
+  ['inpVatRow','inpTaxRow','inpPaidRow'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.style.display=isCard?'none':'';
+  });
+  if(isCard){
+    try{ selectVat('included'); }catch(e){}
+    try{ setTaxInv(false); }catch(e){}
+    try{ setUnpaid(false); }catch(e){}
+  }
+  var isCardE=(typeof editSelectedPayType!=='undefined' && editSelectedPayType==='card');
+  ['editVatRow','editTaxRow','editPaidRow'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.style.display=isCardE?'none':'';
+  });
+  if(isCardE){
+    try{ selectEditVat('included'); }catch(e){}
+    try{ setEditTaxInv(false); }catch(e){}
+    try{ setEditUnpaid(false); }catch(e){}
+  }
 }
 function selectEditPay(btn,method,type){
-  if(editSelectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');editSelectedPayMethod='';editSelectedPayType='';return;}
+  if(editSelectedPayMethod===method){btn.classList.remove('selected-card','selected-cash');editSelectedPayMethod='';editSelectedPayType='';refreshPayDependentRows();return;}
   document.querySelectorAll('#editPayChips .pay-chip').forEach(function(b){b.classList.remove('selected-card','selected-cash');});
   btn.classList.add(type==='card'?'selected-card':'selected-cash');
   editSelectedPayMethod=method;editSelectedPayType=type;
+  refreshPayDependentRows();
 }
 function saveEditRecord(){
   var amount=parseInt(editAmountStr||'0');
