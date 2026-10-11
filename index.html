@@ -590,6 +590,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .proc-acc-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:12px;font-weight:700;padding:7px 12px;cursor:pointer}
 
 /* ── SITE SHARE ── */
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:2px}
 .site-share-btn{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;font-weight:700;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
 .site-share-btn.kakao{background:#FEE500;border-color:#FEE500;color:#191919}
 .site-share-btn.copy{background:var(--surface2);border-color:var(--border);color:var(--text)}
@@ -1404,12 +1405,16 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <button class="modal-cancel" onclick="closeSiteEditModal()">취소</button>
       <button class="modal-save" onclick="saveSiteEdit()">저장</button>
     </div>
-    <button class="site-share-btn kakao" onclick="shareSiteKakao()">
-      💬 공유 (카카오톡 / 메시지)
-    </button>
-    <button class="site-share-btn copy" onclick="copySiteInfo()">
-      📋 클립보드 복사
-    </button>
+        <div style="font-size:11px;color:var(--muted);margin:10px 0 6px;font-weight:700">고객정보 포함</div>
+        <div class="share-grid">
+          <button class="site-share-btn kakao" onclick="shareSiteKakao(true)">💬 공유</button>
+          <button class="site-share-btn copy" onclick="copySiteInfo(true)">📋 복사</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin:10px 0 6px;font-weight:700">고객정보 제외 <span style="font-weight:500">(고객명·전화번호 빼고)</span></div>
+        <div class="share-grid">
+          <button class="site-share-btn kakao" onclick="shareSiteKakao(false)">💬 공유</button>
+          <button class="site-share-btn copy" onclick="copySiteInfo(false)">📋 복사</button>
+        </div>
   </div>
 </div>
 
@@ -8448,7 +8453,8 @@ function syncSqm(pyeongVal){
 }
 
 // ── SITE SHARE ──
-function buildSiteText(){
+function buildSiteText(withCustomer){
+  if(withCustomer===undefined) withCustomer=true;
   var statusMap={meeting:'미팅',before:'공사전',ongoing:'공사중',done:'마감'};
   var name=(document.getElementById('siteEditInp')||{}).value||'';
   var customer=(document.getElementById('siteCustomerInp')||{}).value||'';
@@ -8469,8 +8475,8 @@ function buildSiteText(){
   var lines=['📍 현장 정보','━━━━━━━━━━━━━━'];
   lines.push('🏠 현장명: '+name);
   lines.push('📌 상태: '+(statusMap[status]||status));
-  if(customer) lines.push('👤 고객명: '+customer);
-  if(phone)    lines.push('📞 전화번호: '+phone);
+  if(withCustomer && customer) lines.push('👤 고객명: '+customer);
+  if(withCustomer && phone)   lines.push('📞 전화번호: '+phone);
   if(address)  lines.push('🗺 주소: '+address);
   if(apt)      lines.push('🏢 아파트: '+apt);
   if(dongho)   lines.push('🚪 동/호수: '+dongho);
@@ -8483,8 +8489,8 @@ function buildSiteText(){
   }
   return lines.join('\n');
 }
-function copySiteInfo(){
-  var text=buildSiteText();
+function copySiteInfo(withCustomer){
+  var text=buildSiteText(withCustomer);
   if(!text)return;
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(function(){showToast('✓ 클립보드에 복사됐어요');}).catch(function(){fallbackCopy(text);});
@@ -8498,8 +8504,8 @@ function fallbackCopy(text){
   catch(e){showToast('복사 실패');}
   document.body.removeChild(ta);
 }
-function shareSiteKakao(){
-  var text=buildSiteText();if(!text)return;
+function shareSiteKakao(withCustomer){
+  var text=buildSiteText(withCustomer);if(!text)return;
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(function(){});}
   if(navigator.share){
     navigator.share({text:text}).catch(function(e){if(e.name!=='AbortError')showToast('공유 실패');});
