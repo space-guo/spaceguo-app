@@ -1540,8 +1540,9 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
       <div class="field-row" id="evScopeRow">
         <div class="field-label">구분</div>
         <div class="vat-row-ui" style="margin-top:6px">
-          <button class="vat-btn selected" id="evScopeWork" onclick="setEvScope('work')">🏗 업무</button>
-          <button class="vat-btn" id="evScopePersonal" onclick="setEvScope('personal')">🙋 개인</button>
+            <button class="vat-btn selected" id="evScopeSite" onclick="setEvScope('site')">🏗 현장</button>
+            <button class="vat-btn" id="evScopeCompany" onclick="setEvScope('company')">🏢 회사</button>
+            <button class="vat-btn" id="evScopePersonal" onclick="setEvScope('personal')">🙋 개인</button>
         </div>
       </div>
       <div class="field-row" id="evSiteRow">
@@ -6146,19 +6147,21 @@ function setEvType(t){
   // 업무/개인은 '일정'일 때만
   var scope=document.getElementById('evScopeRow');
   if(scope)scope.style.display=(t==='schedule')?'block':'none';
-  if(t!=='schedule')evScope='work';
+  if(t!=='schedule')evScope='site';
   refreshEvScope();
   refreshEvSiteRow();
 }
-var evScope='work', evSite='';
+var evScope='site', evSite='';
 function setEvScope(v){
   evScope=v;
   refreshEvScope();
   refreshEvSiteRow();
 }
 function refreshEvScope(){
-  var w=document.getElementById('evScopeWork'), p=document.getElementById('evScopePersonal');
-  if(w)w.classList.toggle('selected', evScope==='work');
+  if(evScope==='work') evScope='site';
+  var s=document.getElementById('evScopeSite'), c=document.getElementById('evScopeCompany'), p=document.getElementById('evScopePersonal');
+  if(s)s.classList.toggle('selected', evScope==='site');
+  if(c)c.classList.toggle('selected', evScope==='company');
   if(p)p.classList.toggle('selected', evScope==='personal');
 }
 function setEvSite(name){
@@ -6177,7 +6180,7 @@ function refreshEvSiteRow(){
   var box=document.getElementById('evSiteChips');
   var bar=document.getElementById('evStatusBar');
   if(!row||!box)return;
-  var show=(evScope!=='personal');
+  var show=(evScope==='site');
   row.style.display=show?'block':'none';
   if(!show){evSite='';return;}
 
@@ -6239,7 +6242,7 @@ function openEventModal(date, id){
     document.getElementById('evTime').value=ev.time||'';
     document.getElementById('evEndDate').value=ev.endDate||'';
     document.getElementById('evNote').value=ev.note||'';
-    evType=ev.type||'schedule'; evScope=ev.scope||'work'; evSite=ev.site||'';
+    evType=ev.type||'schedule'; evScope=(ev.scope==='work'?'site':(ev.scope||'site')); evSite=ev.site||'';
     evSelectedColor=ev.color||'#5b8cf7';
   } else {
     document.getElementById('evModalTitle').textContent='일정 추가';
@@ -6252,7 +6255,7 @@ function openEventModal(date, id){
     document.getElementById('evTitle').value='';
     document.getElementById('evNote').value='';
   }
-  evScope='work'; evSite='';
+  evScope='site'; evSite='';
   setEvType(evType);
   buildEvColorRow();
   document.getElementById('evModal').classList.add('show');
