@@ -1730,6 +1730,29 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
 </div>
 <!-- SCHEDULE MODAL -->
     <!-- NOISE NOTICE MODAL -->
+    <!-- SCHEDULE EXPORT MODAL -->
+    <div class="modal-overlay" id="schExportModal" style="z-index:320" onclick="if(event.target===this)closeSchExportModal()">
+      <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
+        <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--surface);z-index:3;padding:2px 0 8px;margin-bottom:10px">
+          <span>📷 공정표 이미지 저장</span>
+          <button class="edit-modal-close" onclick="closeSchExportModal()" title="닫기">✕</button>
+        </div>
+        <div class="field-row">
+          <div class="field-label">제목</div>
+          <input class="field-input" id="sxTitleInp" type="text" lang="ko">
+        </div>
+        <div class="field-row">
+          <div class="field-label">포함할 내용</div>
+          <div id="sxOptRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">하단 비고 <span style="font-weight:500;color:var(--muted)">(선택)</span></div>
+          <textarea class="field-input" id="sxMemoInp" rows="3" style="resize:vertical;line-height:1.7;font-size:13px" placeholder="예: 일정은 현장 상황에 따라 변경될 수 있습니다." lang="ko"></textarea>
+        </div>
+        <button class="site-share-btn copy" onclick="runSchExport()" style="margin-top:4px;background:var(--accent);border-color:var(--accent);color:#fff">🖼 이미지 저장</button>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="noiseModal" style="z-index:320" onclick="if(event.target===this)closeNoiseModal()">
       <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
         <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--surface);z-index:3;padding:2px 0 8px;margin-bottom:10px">
@@ -7007,7 +7030,33 @@ function buildGanttHTML(){
   html+='</table>';
   return html;
 }
+var SX_OPTS=[
+  ['info','현장 정보'],['cal','달력'],['gantt','주차별 공정'],
+  ['noise','소음 발생일'],['dec','고객 결정 항목'],['logo','로고']
+];
+var sxOn={info:true,cal:true,gantt:true,noise:true,dec:true,logo:true};
+function renderSxOpts(){
+  var el=document.getElementById('sxOptRow'); if(!el) return;
+  el.innerHTML=SX_OPTS.map(function(o){
+    return '<button type="button" class="chip'+(sxOn[o[0]]?' selected':'')+'" onclick="toggleSx(\''+o[0]+'\')">'+o[1]+'</button>';
+  }).join('');
+}
+function toggleSx(k){ sxOn[k]=!sxOn[k]; renderSxOpts(); }
+function closeSchExportModal(){
+  var m=document.getElementById('schExportModal');
+  m.style.display='none'; m.classList.remove('show');
+  var i=modalStack.lastIndexOf('schExportModal'); if(i>-1) modalStack.splice(i,1);
+}
 function exportSchImage(){
+  var t=document.getElementById('sxTitleInp');
+  if(t && !t.value) t.value=schYear+'년 '+(schMonth+1)+'월 공정표';
+  renderSxOpts();
+  var m=document.getElementById('schExportModal');
+  m.style.display='flex'; m.classList.add('show');
+  modalStack.push('schExportModal');
+}
+function runSchExport(){
+  closeSchExportModal();
   if(schSiteFilter!=='전체'){
     showToast('이미지 생성 중...',2000);
     loadSiteDecisions(schSiteFilter,function(){runExportSchImage(true);});
@@ -7019,13 +7068,13 @@ function runExportSchImage(skipToast){
   if(!skipToast)showToast('이미지 생성 중...', 2000);
   var wrap=document.createElement('div');
   wrap.style.cssText="position:fixed;left:-9999px;top:0;width:840px;background:#f9f8f6;padding:32px;font-family:'SUIT','Noto Sans KR',sans-serif;z-index:-1";
-  var title=schYear+'년 '+(schMonth+1)+'월 공정표';
+  var title=((document.getElementById('sxTitleInp')||{}).value||'').trim() || (schYear+'년 '+(schMonth+1)+'월 공정표');
   var siteObj=schSiteFilter!=='전체'?getSiteObj(schSiteFilter):null;
   var head='<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #023a25;padding-bottom:12px;margin-bottom:14px">'
     +'<div style="font-size:22px;font-weight:800;color:#023a25">'+title+(schSiteFilter!=='전체'?' <span style="font-weight:700">— '+schSiteFilter+'</span>':'')+'</div>'
-    +'<div style="font-size:11px;font-weight:700;color:#023a25;letter-spacing:2px">SPACE GUO</div></div>';
+    +(sxOn.logo?'<div style="font-size:11px;font-weight:700;color:#023a25;letter-spacing:2px">SPACE GUO</div>':'')+'</div>';
   var info='';
-  if(siteObj&&typeof siteObj==='object'){
+  if(sxOn.info && siteObj&&typeof siteObj==='object'){
     var parts=[];
     var addr=[siteObj.address,siteObj.apt].filter(Boolean).join(' ');
     if(siteObj.dongho){var dh=String(siteObj.dongho).split('/');addr+=(addr?' ':'')+(dh[0]?dh[0]+'동':'')+(dh[1]?' '+dh[1]+'호':'');}
@@ -7034,11 +7083,12 @@ function runExportSchImage(skipToast){
     if(siteObj.sqm||siteObj.pyeong)parts.push('📐 면적 '+(siteObj.sqm?siteObj.sqm+'㎡':'')+(siteObj.pyeong?' ('+siteObj.pyeong+'평)':''));
     if(parts.length)info='<div style="font-size:12px;color:#4a4944;font-weight:600;margin-bottom:18px;line-height:2.1">'+parts.map(function(p){return '<div>'+p+'</div>';}).join('')+'</div>';
   }
-  var cal='<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>';
-  var gantt='<div style="font-size:14px;font-weight:800;color:#023a25;margin-bottom:8px">주차별 공정 현황</div>'
-    +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)">'+buildGanttHTML()+'</div>'
-      +buildNoiseTableHTML()
-      +buildDecisionTableHTML()
+  var cal=sxOn.cal?('<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>'):'';
+  var gantt=(sxOn.gantt?('<div style="font-size:14px;font-weight:800;color:#023a25;margin-bottom:8px">주차별 공정 현황</div>'
+    +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)">'+buildGanttHTML()+'</div>'):'')
+    +(sxOn.noise?buildNoiseTableHTML():'')
+    +(sxOn.dec?buildDecisionTableHTML():'')
+    +((((document.getElementById('sxMemoInp')||{}).value)||'').trim()?('<div style="margin-top:18px;padding:12px 14px;background:#fff;border-left:3px solid #023a25;border-radius:6px;font-size:12px;color:#4a4944;line-height:1.9;white-space:pre-wrap">'+String(document.getElementById('sxMemoInp').value).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'):'')
     +'<div style="text-align:right;font-size:10px;color:#9a998f;margin-top:14px">공간구오 · Space GUO · 나로부터 시작되는 완전한 공간</div>';
   wrap.innerHTML=head+info+cal+gantt;
   document.body.appendChild(wrap);
