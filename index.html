@@ -6658,7 +6658,13 @@ function buildNoiseNoticeText(){
   lines.push('일정은 현장 상황에 따라 변동될 수 있습니다.');
   lines.push('불편을 끼쳐 죄송합니다. 최대한 빠르게 마무리하겠습니다.');
   lines.push('');
-  lines.push('공간구오 드림');
+  var _co=(typeof noiseInfo!=='undefined'&&noiseInfo.company)?noiseInfo.company:'';
+  var _mg=(typeof noiseInfo!=='undefined'&&noiseInfo.manager)?noiseInfo.manager:'';
+  var _ph=(typeof noiseInfo!=='undefined'&&noiseInfo.phone)?noiseInfo.phone:'';
+  if(_co) lines.push(_co);
+  if(_mg) lines.push('현장 담당자: '+_mg);
+  if(_ph) lines.push('연락처: '+_ph);
+  if(!_co&&!_mg&&!_ph) lines.push('(회사명·담당자·연락처를 입력하면 여기에 들어갑니다)');
   return lines.join('\n');
 }
 var noiseInfo={company:'',manager:'',phone:''}, noiseInfoLoaded=false;
