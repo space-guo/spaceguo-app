@@ -1748,7 +1748,11 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         <div class="field-row">
           <div class="field-label">현장 정보 <span style="font-weight:500;color:var(--muted)">(고칠 수 있어요)</span></div>
           <input class="field-input" id="sxAddrInp" type="text" placeholder="현장 주소" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
-          <input class="field-input" id="sxPeriodInp" type="text" placeholder="공사 기간" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <input class="field-input" id="sxStartInp" type="date" oninput="sxDebounced()" style="flex:1;min-width:0">
+            <span style="color:var(--muted);font-size:12px">~</span>
+            <input class="field-input" id="sxEndInp" type="date" oninput="sxDebounced()" style="flex:1;min-width:0">
+          </div>
           <input class="field-input" id="sxAreaInp" type="text" placeholder="면적" lang="ko" oninput="sxDebounced()">
         </div>
         <div class="field-row">
@@ -7077,7 +7081,7 @@ function sxPrefill(){
     var addr=[s.address,s.apt].filter(Boolean).join(' ');
     if(s.dongho){ var dh=String(s.dongho).split('/'); addr+=(addr?' ':'')+(dh[0]?dh[0]+'동':'')+(dh[1]?' '+dh[1]+'호':''); }
     set('sxAddrInp', addr);
-    if(s.startDate||s.endDate) set('sxPeriodInp',(s.startDate||'')+' ~ '+(s.endDate||''));
+    set('sxStartInp', s.startDate||''); set('sxEndInp', s.endDate||'');
     if(s.sqm||s.pyeong) set('sxAreaInp',(s.sqm?s.sqm+'㎡':'')+(s.pyeong?(s.sqm?' / ':'')+s.pyeong+'평':''));
   }
   set('sxCoInp', noiseInfo.company); set('sxMgrInp', noiseInfo.manager);
@@ -7126,7 +7130,12 @@ function buildSchExportHTML(){
   var leftRows='', rightRows='';
   if(sxOn.info){
     if(v('sxAddrInp'))   leftRows+=cell('현장 주소', v('sxAddrInp'));
-    if(v('sxPeriodInp')) leftRows+=cell('공사 기간', v('sxPeriodInp'));
+    var _pd=function(){
+      var a=v('sxStartInp'), b=v('sxEndInp');
+      if(!a&&!b) return '';
+      return (a||'')+' ~ '+(b||'');
+    }();
+    if(_pd) leftRows+=cell('공사 기간', _pd);
     if(v('sxAreaInp'))   leftRows+=cell('면 적', v('sxAreaInp'));
   }
   if(sxOn.company){
