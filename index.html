@@ -6703,17 +6703,21 @@ function saveNoiseInfo(){
 }
 function shareNoiseNotice(){
   var days=noiseDaysOfMonth();
-    if(!days.length){ showToast((schMonth+1)+'월에 소음으로 표시된 공정이 없어요 · 달을 넘기거나 공정 일정에서 소음을 지정해 주세요',4000); return; }
-  loadNoiseInfo(function(){
+  if(!days.length){ showToast((schMonth+1)+'월에 소음으로 표시된 공정이 없어요 · 달을 넘기거나 공정 일정에서 소음을 지정해 주세요',4000); return; }
+  // 창을 먼저 띄우고, 저장된 정보는 들어오는 대로 채운다
+  var fill=function(){
     var c=document.getElementById('noiseCompanyInp'), m=document.getElementById('noiseManagerInp'), p=document.getElementById('noisePhoneInp');
-    if(c) c.value=noiseInfo.company||'';
-    if(m) m.value=noiseInfo.manager||'';
-    if(p) p.value=noiseInfo.phone||'';
+    if(c&&!c.value) c.value=noiseInfo.company||'';
+    if(m&&!m.value) m.value=noiseInfo.manager||'';
+    if(p&&!p.value) p.value=noiseInfo.phone||'';
     setNoiseLogo(noiseInfo.logo!==false);
-    rebuildNoiseText();
-    document.getElementById('noiseModal').classList.add('show');
-    modalStack.push('noiseModal');
-  });
+    var t=document.getElementById('noiseTextInp');
+    if(t) t.value=buildNoiseNoticeText();
+  };
+  fill();
+  document.getElementById('noiseModal').classList.add('show');
+  modalStack.push('noiseModal');
+  loadNoiseInfo(fill);
 }
 function closeNoiseModal(){
   saveNoiseInfo();
