@@ -6666,30 +6666,58 @@ function noticeCtx(){
   return {siteLabel:siteLabel, site:s, dongho:dongho, addr:addr, period:period};
 }
 // 공정별로 날짜를 묶은 소음 표
-function fmtDays(nums){
-  nums=nums.slice().sort(function(a,b){return a-b;});
-  var out=[], i=0;
-  while(i<nums.length){
-    var s=nums[i], p=i;
-    while(p+1<nums.length && nums[p+1]===nums[p]+1) p++;
-    out.push(s===nums[p] ? (s+'일') : (s+'~'+nums[p]+'일'));
-    i=p+1;
-  }
-  return (schMonth+1)+'월 '+out.join(', ');
+function noiseDaysAll(){
+  var list=schedules.filter(function(s){
+    if(!s.noise||!s.startDate||!s.endDate) return false;
+    var sn=(typeof s.site==='object')?s.site.name:s.site;
+    return (schSiteFilter==='전체')||sn===schSiteFilter;
+  });
+  var map={};
+  list.forEach(function(s){
+    var d=new Date(s.startDate+'T00:00:00'), end=new Date(s.endDate+'T00:00:00'), guard=0;
+    while(d<=end && guard++<400){
+      var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      if(!map[ds]) map[ds]={date:ds, level:s.noise, procs:[]};
+      if(noiseRank(s.noise)>noiseRank(map[ds].level)) map[ds].level=s.noise;
+      var p=s.procName||'공정';
+      if(map[ds].procs.indexOf(p)<0) map[ds].procs.push(p);
+      d.setDate(d.getDate()+1);
+    }
+  });
+  return Object.keys(map).sort().map(function(k){ return map[k]; });
+}
+function fmtDateRuns(dates){
+  var ds=dates.slice().sort();
+  var toN=function(s){ var p=s.split('-'); return Date.UTC(+p[0],+p[1]-1,+p[2])/86400000; };
+  var runs=[], cur=null;
+  ds.forEach(function(d){
+    if(cur && toN(d)===cur.endN+1){ cur.end=d; cur.endN=toN(d); }
+    else { cur={start:d,end:d,endN:toN(d)}; runs.push(cur); }
+  });
+  var lastM=0;
+  return runs.map(function(r){
+    var sp=r.start.split('-'), ep=r.end.split('-');
+    var sm=+sp[1], sd=+sp[2], em=+ep[1], ed=+ep[2];
+    var sTxt=(sm===lastM)?(sd+'일'):(sm+'월 '+sd+'일');
+    lastM=em;
+    if(r.start===r.end) return sTxt;
+    var eTxt=(em===sm)?(ed+'일'):(em+'월 '+ed+'일');
+    return sTxt+'~'+eTxt;
+  }).join(', ');
 }
 function noiseRowsGrouped(){
-  var days=noiseDaysOfMonth();
+  var days=noiseDaysAll();
   var map={}, order=[];
   days.forEach(function(d){
     d.procs.forEach(function(p){
-      if(!map[p]){ map[p]={proc:p, level:d.level, nums:[]}; order.push(p); }
+      if(!map[p]){ map[p]={proc:p, level:d.level, dates:[]}; order.push(p); }
       if(noiseRank(d.level)>noiseRank(map[p].level)) map[p].level=d.level;
-      if(map[p].nums.indexOf(d.day)<0) map[p].nums.push(d.day);
+      if(map[p].dates.indexOf(d.date)<0) map[p].dates.push(d.date);
     });
   });
   return order.map(function(k){
     var r=map[k];
-    return {proc:r.proc, level:r.level, nums:r.nums, days:[fmtDays(r.nums)]};
+    return {proc:r.proc, level:r.level, dates:r.dates, days:[fmtDateRuns(r.dates)]};
   });
 }
 function levelLabel(v){ return v==='상'?'강':v==='중'?'중':'약'; }
@@ -6745,8 +6773,8 @@ function saveNoiseInfo(){
   db.collection('settings').doc('noiseInfo').set(noiseInfo,{merge:true}).catch(function(){});
 }
 function shareNoiseNotice(){
-  var days=noiseDaysOfMonth();
-  if(!days.length){ showToast((schMonth+1)+'월에 소음으로 표시된 공정이 없어요 · 달을 넘기거나 공정 일정에서 소음을 지정해 주세요',4000); return; }
+  var days=noiseDaysAll();
+  if(!days.length){ showToast('소음으로 표시된 공정이 없어요 · 공정 일정에서 소음을 지정해 주세요',4000); return; }
   // 창을 먼저 띄우고, 저장된 정보는 들어오는 대로 채운다
   var fill=function(){
     var c=document.getElementById('noiseCompanyInp'), m=document.getElementById('noiseManagerInp'), p=document.getElementById('noisePhoneInp');
