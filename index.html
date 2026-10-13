@@ -1749,6 +1749,14 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
           <input class="field-input" id="noisePhoneInp" type="tel" placeholder="예: 010-0000-0000">
         </div>
         <div class="field-row">
+          <div class="field-label">업체 주소</div>
+          <input class="field-input" id="noiseAddrInp" type="text" placeholder="예: 서울시 광진구 뚝섬로52마길 49, 1층" lang="ko">
+        </div>
+        <div class="field-row">
+          <div class="field-label">홈페이지</div>
+          <input class="field-input" id="noiseWebInp" type="text" placeholder="예: www.spaceguo.com">
+        </div>
+        <div class="field-row">
           <div class="field-label">이미지 로고</div>
           <div class="vat-row-ui">
             <button type="button" class="vat-btn selected" id="noiseLogoYes" onclick="setNoiseLogo(true)">로고 넣기</button>
@@ -1757,15 +1765,15 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
           <div style="font-size:11px;color:var(--muted);margin-top:6px">이미지로 저장할 때 오른쪽 위에 들어갑니다</div>
         </div>
         <div class="field-row">
-          <div class="field-label">안내문 <span style="font-weight:500;color:var(--muted)">(자유롭게 고치세요)</span></div>
-          <textarea class="field-input" id="noiseTextInp" rows="16" style="resize:vertical;line-height:1.7;font-size:13px" lang="ko"></textarea>
+          <div class="field-label">인사말 <span style="font-weight:500;color:var(--muted)">(자유롭게 고치세요 · 공사정보와 소음표는 자동)</span></div>
+          <textarea class="field-input" id="noiseTextInp" rows="7" style="resize:vertical;line-height:1.8;font-size:13px" lang="ko"></textarea>
         </div>
-        <button class="site-share-btn" onclick="rebuildNoiseText()" style="margin-bottom:8px">↻ 안내문 다시 만들기</button>
+        <button class="site-share-btn" onclick="rebuildNoiseText()" style="margin-bottom:8px">↻ 인사말 기본값으로</button>
         <div class="share-grid">
           <button class="site-share-btn kakao" onclick="noiseShare()">💬 공유</button>
           <button class="site-share-btn copy" onclick="noiseCopy()">📋 복사</button>
         </div>
-        <button class="site-share-btn copy" onclick="noiseSaveImage()" style="margin-top:6px">🖼 이미지로 저장</button>
+        <button class="site-share-btn copy" onclick="noiseSaveImage()" style="margin-top:6px;background:var(--accent);border-color:var(--accent);color:#fff">🖼 안내문 이미지 저장</button>
       </div>
     </div>
 
@@ -6641,46 +6649,64 @@ function noiseDaysOfMonth(){
   }
   return out;
 }
-function buildNoiseNoticeText(){
-  var days=noiseDaysOfMonth();
-  if(!days.length) return '';
-  var dows=['일','월','화','수','목','금','토'];
-  var siteLabel = (schSiteFilter!=='전체') ? schSiteFilter : '';
-  var siteObj = siteLabel ? getSiteObj(siteLabel) : null;
-  var where='';
-  if(siteObj && typeof siteObj==='object'){
-    var dh=siteObj.dongho?String(siteObj.dongho).split('/'):[];
-    where=[siteObj.apt||siteObj.address||'', (dh[0]?dh[0]+'동 ':'')+(dh[1]?dh[1]+'호':'')].filter(Boolean).join(' ');
+// 현장/업체 정보 모으기
+function noticeCtx(){
+  var siteLabel=(schSiteFilter!=='전체')?schSiteFilter:'';
+  var s=siteLabel?getSiteObj(siteLabel):null;
+  var dongho='', addr='', period='';
+  if(s&&typeof s==='object'){
+    var dh=s.dongho?String(s.dongho).split('/'):[];
+    dongho=(dh[0]?dh[0]+'동 ':'')+(dh[1]?dh[1]+'호':'');
+    addr=dongho || [s.apt,s.address].filter(Boolean).join(' ');
+    if(s.startDate||s.endDate){
+      var f=function(d){ if(!d) return ''; var p=String(d).split('-'); return parseInt(p[1],10)+'월 '+parseInt(p[2],10)+'일'; };
+      period=f(s.startDate)+' ~ '+f(s.endDate);
+    }
   }
-  var lines=[];
-  lines.push('[인테리어 공사 소음 안내]');
-  lines.push('');
-  if(where) lines.push('공사 위치: '+where);
-  lines.push('안내 기간: '+schYear+'년 '+(schMonth+1)+'월');
-  lines.push('');
-  lines.push('아래 날짜에 소음이 발생할 예정입니다.');
-  lines.push('━━━━━━━━━━━━━━');
-  days.forEach(function(o){
-    var dt=new Date(o.date);
-    var mark=o.level==='상'?'●●●':o.level==='중'?'●●':'●';
-    lines.push((schMonth+1)+'/'+o.day+'('+dows[dt.getDay()]+')  '+mark+' '+o.level+'  '+o.procs.join(', '));
+  return {siteLabel:siteLabel, site:s, dongho:dongho, addr:addr, period:period};
+}
+// 공정별로 날짜를 묶은 소음 표
+function noiseRowsGrouped(){
+  var days=noiseDaysOfMonth();
+  var map={}, order=[];
+  days.forEach(function(d){
+    d.procs.forEach(function(p){
+      var key=p;
+      if(!map[key]){ map[key]={proc:p, level:d.level, days:[]}; order.push(key); }
+      if(noiseRank(d.level)>noiseRank(map[key].level)) map[key].level=d.level;
+      map[key].days.push((schMonth+1)+'월 '+d.day+'일');
+    });
   });
-  lines.push('━━━━━━━━━━━━━━');
+  return order.map(function(k){ return map[k]; });
+}
+function levelLabel(v){ return v==='상'?'강':v==='중'?'중':'약'; }
+function defaultGreeting(){
+  var c=noticeCtx();
+  var where=c.dongho||c.addr||'해당 세대';
+  return '안녕하세요.\n'+where+' 에서 인테리어 공사를 진행하게 되어 안내드립니다.\n'
+    +'공사 기간 동안 빠르고 안전하게 진행하여\n주민분들의 불편함을 최소화 하겠습니다.\n'
+    +'불편한 점 있으시면 위 담당자 연락처로 연락 주시면\n신속히 처리 하도록 노력하겠습니다.';
+}
+// 텍스트(카톡/메모) 버전
+function buildNoiseNoticeText(){
+  var c=noticeCtx();
+  var rows=noiseRowsGrouped();
+  var g=(document.getElementById('noiseTextInp')||{}).value||defaultGreeting();
+  var lines=['[공사 안내문]',''];
+  if(c.period) lines.push('공사 기간: '+c.period);
+  if(c.addr)   lines.push('현장 주소: '+c.addr);
+  if(noiseInfo.company) lines.push('상호: '+noiseInfo.company);
+  if(noiseInfo.manager||noiseInfo.phone) lines.push('담당자: '+[noiseInfo.manager,noiseInfo.phone].filter(Boolean).join(' '));
   lines.push('');
-  lines.push('작업 시간: 09:00 ~ 17:00 (점심 12:00~13:00 중단)');
-  lines.push('일정은 현장 상황에 따라 변동될 수 있습니다.');
-  lines.push('불편을 끼쳐 죄송합니다. 최대한 빠르게 마무리하겠습니다.');
-  lines.push('');
-  var _co=(typeof noiseInfo!=='undefined'&&noiseInfo.company)?noiseInfo.company:'';
-  var _mg=(typeof noiseInfo!=='undefined'&&noiseInfo.manager)?noiseInfo.manager:'';
-  var _ph=(typeof noiseInfo!=='undefined'&&noiseInfo.phone)?noiseInfo.phone:'';
-  if(_co) lines.push(_co);
-  if(_mg) lines.push('현장 담당자: '+_mg);
-  if(_ph) lines.push('연락처: '+_ph);
-  if(!_co&&!_mg&&!_ph) lines.push('(회사명·담당자·연락처를 입력하면 여기에 들어갑니다)');
+  lines.push(g);
+  if(rows.length){
+    lines.push('');
+    lines.push('── 소음 발생일 ──');
+    rows.forEach(function(r){ lines.push(r.days.join(', ')+'  '+r.proc+'  '+levelLabel(r.level)); });
+  }
   return lines.join('\n');
 }
-var noiseInfo={company:'',manager:'',phone:'',logo:true}, noiseInfoLoaded=false;
+var noiseInfo={company:'',manager:'',phone:'',addr:'',web:'',logo:true}, noiseInfoLoaded=false;
 function setNoiseLogo(on){
   noiseInfo.logo=!!on;
   var y=document.getElementById('noiseLogoYes'), n=document.getElementById('noiseLogoNo');
@@ -6698,6 +6724,8 @@ function saveNoiseInfo(){
     company:(document.getElementById('noiseCompanyInp')||{}).value||'',
     manager:(document.getElementById('noiseManagerInp')||{}).value||'',
     phone:(document.getElementById('noisePhoneInp')||{}).value||'',
+    addr:(document.getElementById('noiseAddrInp')||{}).value||'',
+    web:(document.getElementById('noiseWebInp')||{}).value||'',
     logo:(noiseInfo.logo!==false)
   };
   db.collection('settings').doc('noiseInfo').set(noiseInfo,{merge:true}).catch(function(){});
@@ -6711,9 +6739,12 @@ function shareNoiseNotice(){
     if(c&&!c.value) c.value=noiseInfo.company||'';
     if(m&&!m.value) m.value=noiseInfo.manager||'';
     if(p&&!p.value) p.value=noiseInfo.phone||'';
+    var a=document.getElementById('noiseAddrInp'), w=document.getElementById('noiseWebInp');
+    if(a&&!a.value) a.value=noiseInfo.addr||'';
+    if(w&&!w.value) w.value=noiseInfo.web||'';
     setNoiseLogo(noiseInfo.logo!==false);
     var t=document.getElementById('noiseTextInp');
-    if(t) t.value=buildNoiseNoticeText();
+    if(t && !t.value) t.value=defaultGreeting();
   };
   fill();
   var _nm=document.getElementById('noiseModal'); _nm.style.display='flex'; _nm.classList.add('show');
@@ -6727,54 +6758,97 @@ function closeNoiseModal(){
 }
 function rebuildNoiseText(){
   saveNoiseInfo();
-  var el=document.getElementById('noiseTextInp');
+  if(el) el.value=defaultGreeting();
   if(el) el.value=buildNoiseNoticeText();
 }
 function noiseCopy(){
-  var t=(document.getElementById('noiseTextInp')||{}).value||'';
+  var t=buildNoiseNoticeText();
   if(!t) return;
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(function(){showToast('✓ 복사됐어요');}).catch(function(){fallbackCopy(t);});
   } else fallbackCopy(t);
 }
 function noiseShare(){
-  var t=(document.getElementById('noiseTextInp')||{}).value||'';
+  var t=buildNoiseNoticeText();
   if(!t) return;
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(function(){});
   if(navigator.share){ navigator.share({text:t}).catch(function(e){ if(e.name!=='AbortError') showToast('📋 복사됐어요'); }); }
   else showToast('📋 복사됐어요');
 }
 function noiseSaveImage(){
-  var t=(document.getElementById('noiseTextInp')||{}).value||'';
-  if(!t){ showToast('내용이 없어요'); return; }
+  var c=noticeCtx();
+  var rows=noiseRowsGrouped();
+  var greet=(document.getElementById('noiseTextInp')||{}).value||defaultGreeting();
+  var esc=function(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+  var G='#023a25', LINE='#dcdbd4', MUT='#6b6a62';
+
+  var logo='';
+  if(noiseInfo.logo!==false){
+    var src=document.querySelector('.brand-logo');
+    if(src){ var cl=src.cloneNode(true); cl.removeAttribute('class');
+      cl.setAttribute('style','height:30px;width:auto;color:'+G+';display:block'); logo=cl.outerHTML; }
+  }
+  function sec(t){
+    return '<div style="display:flex;align-items:center;gap:10px;margin:26px 0 10px">'
+      +'<span style="font-size:16px;font-weight:800;color:'+G+'">'+t+'</span>'
+      +'<span style="flex:1;height:2px;background:'+G+';opacity:.25"></span></div>';
+  }
+  function cell(l,v){
+    return '<tr><td style="padding:9px 12px;border-bottom:1px solid '+LINE+';background:#f4f3ef;font-size:12px;font-weight:700;color:'+G+';white-space:nowrap;width:78px">'+l+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid '+LINE+';font-size:12.5px;color:#2b2a26">'+esc(v)+'</td></tr>';
+  }
+  var left='<table style="width:100%;border-collapse:collapse;border:1px solid '+LINE+'">'
+    +cell('공사 기간', c.period||'-')+cell('현장 주소', c.addr||'-')+'</table>';
+  var right='<table style="width:100%;border-collapse:collapse;border:1px solid '+LINE+'">'
+    +cell('상 호', noiseInfo.company||'-')
+    +cell('주 소', noiseInfo.addr||'-')
+    +cell('담당자', [noiseInfo.manager,noiseInfo.phone].filter(Boolean).join('  ')||'-')
+    +(noiseInfo.web?cell('홈페이지', noiseInfo.web):'')
+    +'</table>';
+
+  var noiseTbl='';
+  if(rows.length){
+    noiseTbl=sec('소음 발생일')
+      +'<table style="width:100%;border-collapse:collapse;border:1px solid '+LINE+'">'
+      +'<tr><th style="padding:9px 12px;background:'+G+';color:#f9f8f6;font-size:12px;font-weight:700;text-align:left;width:46%">일정</th>'
+      +'<th style="padding:9px 12px;background:'+G+';color:#f9f8f6;font-size:12px;font-weight:700;text-align:left">공정</th>'
+      +'<th style="padding:9px 12px;background:'+G+';color:#f9f8f6;font-size:12px;font-weight:700;text-align:center;width:88px">소음강도</th></tr>'
+      +rows.map(function(r,i){
+        var bg=i%2?'#faf9f6':'#fff';
+        var col=r.level==='상'?'#c2453f':r.level==='중'?'#b8860b':'#6b8f71';
+        return '<tr><td style="padding:9px 12px;border-bottom:1px solid '+LINE+';background:'+bg+';font-size:12.5px;color:#2b2a26">'+esc(r.days.join(', '))+'</td>'
+          +'<td style="padding:9px 12px;border-bottom:1px solid '+LINE+';background:'+bg+';font-size:12.5px;font-weight:700;color:#2b2a26">'+esc(r.proc)+'</td>'
+          +'<td style="padding:9px 12px;border-bottom:1px solid '+LINE+';background:'+bg+';font-size:12.5px;font-weight:800;color:'+col+';text-align:center">'+levelLabel(r.level)+'</td></tr>';
+      }).join('')+'</table>';
+  }
+
   showToast('이미지 만드는 중...',1500);
   var wrap=document.createElement('div');
-  wrap.style.cssText="position:fixed;left:-9999px;top:0;width:720px;background:#f9f8f6;padding:40px;font-family:'SUIT','Noto Sans KR',sans-serif";
-  var _logo='';
-  if(noiseInfo.logo!==false){
-    var _src=document.querySelector('.brand-logo');
-    if(_src){
-      var _c=_src.cloneNode(true);
-      _c.removeAttribute('class');
-      _c.setAttribute('style','height:26px;width:auto;color:#023a25;display:block');
-      _logo='<div style="display:flex;justify-content:flex-end;margin-bottom:18px">'+_c.outerHTML+'</div>';
-    }
-  }
-  wrap.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 10px rgba(2,58,37,.08)">'+_logo
-    +'<div style="white-space:pre-wrap;font-size:15px;line-height:1.9;color:#2b2a26">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'
-    +'</div>';
+  wrap.style.cssText="position:fixed;left:-9999px;top:0;width:760px;background:#fff;padding:44px 40px;font-family:'SUIT','Noto Sans KR',sans-serif;color:#2b2a26";
+  wrap.innerHTML=
+     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'
+    +'<div style="font-size:26px;font-weight:800;color:'+G+';letter-spacing:-.5px">공사 안내문</div>'+logo+'</div>'
+    +'<div style="height:3px;background:'+G+';margin-bottom:4px"></div>'
+    + sec('공사 정보')
+    +'<div style="display:flex;gap:14px"><div style="flex:1">'+left+'</div><div style="flex:1">'+right+'</div></div>'
+    + sec('안내 말씀')
+    +'<div style="font-size:13.5px;line-height:2;white-space:pre-wrap;padding:4px 2px">'+esc(greet)+'</div>'
+    + noiseTbl
+    +'<div style="margin-top:30px;padding-top:14px;border-top:1px solid '+LINE+';display:flex;justify-content:space-between;font-size:11px;color:'+MUT+'">'
+    +'<span>'+esc(noiseInfo.company||'')+(noiseInfo.phone?'  ·  '+esc(noiseInfo.phone):'')+'</span>'
+    +'<span>'+esc(noiseInfo.web||'')+'</span></div>';
   document.body.appendChild(wrap);
   (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){
-    return html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#f9f8f6'});
+    return html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
   }).then(function(canvas){
     document.body.removeChild(wrap);
     var a=document.createElement('a');
-    a.download='소음안내문_'+schYear+'-'+String(schMonth+1).padStart(2,'0')+'.png';
+    a.download='공사안내문_'+(c.siteLabel||'전체')+'_'+schYear+String(schMonth+1).padStart(2,'0')+'.png';
     a.href=canvas.toDataURL('image/png'); a.click();
     showToast('이미지 저장 완료!');
-  }).catch(function(e){
+  }).catch(function(err){
     if(wrap.parentNode) document.body.removeChild(wrap);
-    showToast('저장 실패: '+e.message,3000);
+    showToast('저장 실패: '+err.message,3000);
   });
 }
 function buildNoiseTableHTML(){
