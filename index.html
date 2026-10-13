@@ -1144,6 +1144,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <span class="sch-month-label" id="schMonthLabel"></span>
     <button class="sch-nav-btn" onclick="schCalMove(1)">›</button>
     <button class="sch-nav-btn" onclick="exportSchImage()" title="공정표 이미지 저장" style="font-size:16px;margin-left:4px">📷</button>
+        <button class="sch-nav-btn" onclick="shareNoiseNotice()" title="소음 발생일 안내문" style="font-size:16px;margin-left:2px">🔊</button>
   </div>
       <div class="site-status-bar" id="schStatusBar"></div>
   <div class="sch-site-filter" id="schSiteFilter"></div>
@@ -1753,6 +1754,16 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <div class="field-row">
       <div class="field-label">종료일</div>
       <input class="field-input" id="schEndInp" type="date">
+        <div class="field-row">
+          <div class="field-label">소음 발생</div>
+          <div class="vat-row-ui" id="schNoiseRow">
+            <button type="button" class="vat-btn selected" data-noise="" onclick="setSchNoise('')">없음</button>
+            <button type="button" class="vat-btn" data-noise="하" onclick="setSchNoise('하')">하</button>
+            <button type="button" class="vat-btn" data-noise="중" onclick="setSchNoise('중')">중</button>
+            <button type="button" class="vat-btn" data-noise="상" onclick="setSchNoise('상')">상</button>
+          </div>
+          <input type="hidden" id="schNoiseInp" value="">
+        </div>
     </div>
     <div class="field-row">
       <div class="field-label">진행 상태</div>
@@ -6547,6 +6558,103 @@ function getSchBarColor(s, si){
 function getSiteObj(name){
   return sites.find(function(s){return (typeof s==='object'?s.name:s)===name;});
 }
+// ── 소음 발생 ──
+var NOISE_KEYWORDS=[[/철거|할석|코어|타공|발파|해체/,'상'],[/미장|방통|설비|배관|전기|목공|석고|천장/,'중'],[/타일|도배|마루|도장|필름|가구|조명|실리콘/,'하']];
+function guessNoise(procName){
+  var n=String(procName||'');
+  for(var i=0;i<NOISE_KEYWORDS.length;i++){ if(NOISE_KEYWORDS[i][0].test(n)) return NOISE_KEYWORDS[i][1]; }
+  return '';
+}
+function setSchNoise(v){
+  v=v||'';
+  var inp=document.getElementById('schNoiseInp'); if(inp) inp.value=v;
+  document.querySelectorAll('#schNoiseRow .vat-btn').forEach(function(b){
+    b.classList.toggle('selected', (b.getAttribute('data-noise')||'')===v);
+  });
+}
+// 해당 날짜의 소음 공정들
+function noiseOnDate(dsv, list){
+  return (list||getFilteredSch()).filter(function(s){
+    return s.noise && s.startDate && s.endDate && dsv>=s.startDate && dsv<=s.endDate;
+  });
+}
+function noiseRank(v){ return v==='상'?3:v==='중'?2:v==='하'?1:0; }
+// 이번 달 소음 발생일 목록
+function noiseDaysOfMonth(){
+  var list=getFilteredSch().filter(function(s){return s.noise;});
+  var last=new Date(schYear,schMonth+1,0).getDate();
+  var out=[];
+  for(var d=1;d<=last;d++){
+    var dsv=schYear+'-'+String(schMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var hit=noiseOnDate(dsv,list);
+    if(hit.length){
+      hit.sort(function(a,b){return noiseRank(b.noise)-noiseRank(a.noise);});
+      out.push({date:dsv, day:d, level:hit[0].noise, procs:hit.map(function(s){return s.procName||'공정';})});
+    }
+  }
+  return out;
+}
+function buildNoiseNoticeText(){
+  var days=noiseDaysOfMonth();
+  if(!days.length) return '';
+  var dows=['일','월','화','수','목','금','토'];
+  var siteLabel = (schSiteFilter!=='전체') ? schSiteFilter : '';
+  var siteObj = siteLabel ? getSiteObj(siteLabel) : null;
+  var where='';
+  if(siteObj && typeof siteObj==='object'){
+    var dh=siteObj.dongho?String(siteObj.dongho).split('/'):[];
+    where=[siteObj.apt||siteObj.address||'', (dh[0]?dh[0]+'동 ':'')+(dh[1]?dh[1]+'호':'')].filter(Boolean).join(' ');
+  }
+  var lines=[];
+  lines.push('[인테리어 공사 소음 안내]');
+  lines.push('');
+  if(where) lines.push('공사 위치: '+where);
+  lines.push('안내 기간: '+schYear+'년 '+(schMonth+1)+'월');
+  lines.push('');
+  lines.push('아래 날짜에 소음이 발생할 예정입니다.');
+  lines.push('━━━━━━━━━━━━━━');
+  days.forEach(function(o){
+    var dt=new Date(o.date);
+    var mark=o.level==='상'?'●●●':o.level==='중'?'●●':'●';
+    lines.push((schMonth+1)+'/'+o.day+'('+dows[dt.getDay()]+')  '+mark+' '+o.level+'  '+o.procs.join(', '));
+  });
+  lines.push('━━━━━━━━━━━━━━');
+  lines.push('');
+  lines.push('작업 시간: 09:00 ~ 17:00 (점심 12:00~13:00 중단)');
+  lines.push('일정은 현장 상황에 따라 변동될 수 있습니다.');
+  lines.push('불편을 끼쳐 죄송합니다. 최대한 빠르게 마무리하겠습니다.');
+  lines.push('');
+  lines.push('공간구오 드림');
+  return lines.join('\n');
+}
+function shareNoiseNotice(){
+  var text=buildNoiseNoticeText();
+  if(!text){ showToast('이번 달에 소음 발생으로 표시된 공정이 없어요'); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).catch(function(){}); }
+  if(navigator.share){
+    navigator.share({text:text}).catch(function(e){ if(e.name!=='AbortError') showToast('📋 복사됐어요'); });
+  } else {
+    showToast('📋 소음 안내문이 복사됐어요');
+  }
+}
+function buildNoiseTableHTML(){
+  var days=noiseDaysOfMonth();
+  if(!days.length) return '';
+  var dows=['일','월','화','수','목','금','토'];
+  var rows=days.map(function(o){
+    var dt=new Date(o.date);
+    var col=o.level==='상'?'#c2453f':o.level==='중'?'#b8860b':'#6b8f71';
+    return '<tr>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;font-size:12px;font-weight:700;color:#2b2a26;white-space:nowrap">'+(schMonth+1)+'/'+o.day+'('+dows[dt.getDay()]+')</td>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;font-size:12px;font-weight:800;color:'+col+';white-space:nowrap">'+o.level+'</td>'
+      +'<td style="padding:7px 10px;border-bottom:1px solid #edece8;font-size:12px;color:#4a4944">'+o.procs.join(', ')+'</td>'
+      +'</tr>';
+  }).join('');
+  return '<div style="font-size:14px;font-weight:800;color:#023a25;margin:22px 0 8px">🔊 소음 발생 예정일</div>'
+    +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);background:#fff">'
+    +'<table style="width:100%;border-collapse:collapse">'+rows+'</table></div>';
+}
+
 function buildExportCalHTML(){
   var filtered=getFilteredSch();
   var firstDay=new Date(schYear,schMonth,1).getDay();
@@ -6581,7 +6689,7 @@ function buildExportCalHTML(){
           bars+='<div style="background:'+color+';color:#fff;font-size:9px;font-weight:700;padding:2px 4px;margin:1px 0;border-radius:'+rad+';white-space:nowrap;overflow:hidden">'+label+'</div>';
         }
       });
-      cell='<td style="border:1px solid #edece8;vertical-align:top;height:64px;padding:4px"><div style="font-size:11px;font-weight:700;color:'+numCol+';margin-bottom:2px">'+day+'</div>'+bars+'</td>';
+      cell='<td style="border:1px solid #edece8;vertical-align:top;height:64px;padding:4px"><div style="font-size:11px;font-weight:700;color:'+numCol+';margin-bottom:2px">'+day+(noiseOnDate(dsv,filtered).length?' <span style="color:#c2453f;font-size:9px">🔊</span>':'')+'</div>'+bars+'</td>';
     }
     row+=cell;
     if(i%7===6){html+='<tr>'+row+'</tr>';row='';}
@@ -6670,7 +6778,8 @@ function runExportSchImage(skipToast){
   var cal='<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>';
   var gantt='<div style="font-size:14px;font-weight:800;color:#023a25;margin-bottom:8px">주차별 공정 현황</div>'
     +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)">'+buildGanttHTML()+'</div>'
-    +buildDecisionTableHTML()
+      +buildNoiseTableHTML()
+      +buildDecisionTableHTML()
     +'<div style="text-align:right;font-size:10px;color:#9a998f;margin-top:14px">공간구오 · Space GUO · 나로부터 시작되는 완전한 공간</div>';
   wrap.innerHTML=head+info+cal+gantt;
   document.body.appendChild(wrap);
@@ -7537,7 +7646,7 @@ function openSchModal(){
     var dot=document.getElementById('procColorDot');
     if(dot){dot.style.background=psel.value?getProcColor(psel.value,0):'transparent';dot.style.border=psel.value?'none':'1px solid var(--border)';}
   }
-  psel.onchange=function(){_updateProcDot();initSchChecklist(this.value);renderVendorSelect(this.value);renderSchModalDecisions();};
+    psel.onchange=function(){_updateProcDot();initSchChecklist(this.value);renderVendorSelect(this.value);renderSchModalDecisions();setSchNoise(guessNoise(this.value));};
   sel.onchange=function(){refreshSchModalDecisions();};
   document.getElementById('schStartInp').onchange=function(){renderSchModalDecisions();};
   schModalDecSite='';schModalDecData={};
@@ -7546,7 +7655,8 @@ function openSchModal(){
 
   var today=new Date().toISOString().slice(0,10);
   document.getElementById('schStartInp').value=today;
-  document.getElementById('schEndInp').value=today;
+    document.getElementById('schEndInp').value=today;
+    setSchNoise('');
   setSchStatus(0);
   document.getElementById('schMemoInp').value='';
   document.getElementById('schCheckNewInp').value='';
@@ -7586,7 +7696,8 @@ function openSchModalEdit(id){
   renderVendorSelect(s.procName||'');
   document.getElementById('schWorkerInp').value=s.workerId||'';
   document.getElementById('schStartInp').value=s.startDate||'';
-  document.getElementById('schEndInp').value=s.endDate||'';
+    document.getElementById('schEndInp').value=s.endDate||'';
+    setSchNoise(s.noise||'');
   var pct=parseInt(s.progress||0);
   setSchStatus(pct>=100?100:0);
   document.getElementById('schMemoInp').value=s.memo||'';
@@ -7625,6 +7736,7 @@ function saveSchModal(){
     startDate:startDate, endDate:endDate,
     progress:parseInt(document.getElementById('schPctInp').value)||0,
     memo:document.getElementById('schMemoInp').value.trim(),
+    noise:(document.getElementById('schNoiseInp')||{}).value||'',
     ts:firebase.firestore.FieldValue.serverTimestamp()
   };
 
