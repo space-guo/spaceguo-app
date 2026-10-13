@@ -337,6 +337,7 @@ body{font-family:'SUIT','Noto Sans KR',sans-serif;background:var(--bg);color:var
 
 /* ── EDIT RECORD MODAL ── */
 .edit-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
 .edit-modal-overlay.show{display:flex}
 .edit-modal-inner{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
 .edit-modal-title{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
@@ -6715,13 +6716,13 @@ function shareNoiseNotice(){
     if(t) t.value=buildNoiseNoticeText();
   };
   fill();
-  document.getElementById('noiseModal').classList.add('show');
+  var _nm=document.getElementById('noiseModal'); _nm.style.display='flex'; _nm.classList.add('show');
   modalStack.push('noiseModal');
   loadNoiseInfo(fill);
 }
 function closeNoiseModal(){
   saveNoiseInfo();
-  document.getElementById('noiseModal').classList.remove('show');
+  var _nm2=document.getElementById('noiseModal'); _nm2.style.display='none'; _nm2.classList.remove('show');
   var i=modalStack.lastIndexOf('noiseModal'); if(i>-1) modalStack.splice(i,1);
 }
 function rebuildNoiseText(){
