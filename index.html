@@ -1143,8 +1143,10 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
     <button class="sch-nav-btn" onclick="schCalMove(-1)">‹</button>
     <span class="sch-month-label" id="schMonthLabel"></span>
     <button class="sch-nav-btn" onclick="schCalMove(1)">›</button>
-    <button class="sch-nav-btn" onclick="exportSchImage()" title="공정표 이미지 저장" style="font-size:16px;margin-left:4px">📷</button>
-        <button class="sch-nav-btn" onclick="shareNoiseNotice()" title="소음 발생일 안내문" style="font-size:16px;margin-left:2px">🔊</button>
+        <div style="display:flex;gap:6px;margin-left:4px">
+          <button class="sch-nav-btn" onclick="exportSchImage()" title="공정표 이미지 저장" style="font-size:16px">📷</button>
+          <button class="sch-nav-btn" onclick="shareNoiseNotice()" title="소음 발생일 안내문" style="font-size:16px">🔊</button>
+        </div>
   </div>
       <div class="site-status-bar" id="schStatusBar"></div>
   <div class="sch-site-filter" id="schSiteFilter"></div>
