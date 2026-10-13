@@ -2505,7 +2505,7 @@ function applyPending(id, amount, vendor, dateStr, cardnum){
   }
   if(matched){
     selectedPayMethod=matched.name;
-    selectedPayType=matchedType;
+    selectedPayType=matchedType; try{refreshPayDependentRows();}catch(e){}
     renderCardChips();
     if(typeof renderAccountChips==='function')renderAccountChips();
     if(matchedType==='transfer'){
@@ -2734,6 +2734,7 @@ function selectCat(btn,cat){
 // ── PAYMENT ──
 var selectedInout='out';   // 계좌이체 거래 구분: out(지출) | in(매출)
 function refreshInoutRow(){
+  try{ refreshPayDependentRows(); }catch(e){}
   var row=document.getElementById('inoutRow');
   if(!row)return;
   var show=(selectedPayType==='transfer');
@@ -4510,7 +4511,7 @@ function applySmsResult(amount, vendor, bank){
   if(bank){
     var matched=cards.find(function(c){return c.issuer&&c.issuer.indexOf(bank.replace('은행','').replace('카드',''))>=0;});
     if(matched){
-      selectedPayMethod=matched.name;selectedPayType='card';
+      selectedPayMethod=matched.name;selectedPayType='card'; try{refreshPayDependentRows();}catch(e){}
       renderCardChips();
     }
   }
