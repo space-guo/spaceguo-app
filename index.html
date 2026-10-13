@@ -1728,6 +1728,38 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
   </div>
 </div>
 <!-- SCHEDULE MODAL -->
+    <!-- NOISE NOTICE MODAL -->
+    <div class="modal-overlay" id="noiseModal" style="z-index:320" onclick="if(event.target===this)closeNoiseModal()">
+      <div class="modal-inner" style="max-height:90vh;overflow-y:auto">
+        <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--surface);z-index:3;padding:2px 0 8px;margin-bottom:10px">
+          <span>🔊 소음 발생일 안내문</span>
+          <button class="edit-modal-close" onclick="closeNoiseModal()" title="닫기">✕</button>
+        </div>
+        <div class="field-row">
+          <div class="field-label">회사명</div>
+          <input class="field-input" id="noiseCompanyInp" type="text" placeholder="예: 공간구오" lang="ko">
+        </div>
+        <div class="field-row">
+          <div class="field-label">현장 담당자</div>
+          <input class="field-input" id="noiseManagerInp" type="text" placeholder="예: 구자천" lang="ko">
+        </div>
+        <div class="field-row">
+          <div class="field-label">연락처</div>
+          <input class="field-input" id="noisePhoneInp" type="tel" placeholder="예: 010-0000-0000">
+        </div>
+        <div class="field-row">
+          <div class="field-label">안내문 <span style="font-weight:500;color:var(--muted)">(자유롭게 고치세요)</span></div>
+          <textarea class="field-input" id="noiseTextInp" rows="16" style="resize:vertical;line-height:1.7;font-size:13px" lang="ko"></textarea>
+        </div>
+        <button class="site-share-btn" onclick="rebuildNoiseText()" style="margin-bottom:8px">↻ 안내문 다시 만들기</button>
+        <div class="share-grid">
+          <button class="site-share-btn kakao" onclick="noiseShare()">💬 공유</button>
+          <button class="site-share-btn copy" onclick="noiseCopy()">📋 복사</button>
+        </div>
+        <button class="site-share-btn copy" onclick="noiseSaveImage()" style="margin-top:6px">🖼 이미지로 저장</button>
+      </div>
+    </div>
+
 <div class="modal-overlay" id="schModal">
   <div class="modal-inner" style="max-height:80vh;overflow-y:auto">
     <div class="modal-title" id="schModalTitle">공정 일정 추가</div>
@@ -6629,15 +6661,80 @@ function buildNoiseNoticeText(){
   lines.push('공간구오 드림');
   return lines.join('\n');
 }
+var noiseInfo={company:'',manager:'',phone:''}, noiseInfoLoaded=false;
+function loadNoiseInfo(cb){
+  if(noiseInfoLoaded){ cb&&cb(); return; }
+  db.collection('settings').doc('noiseInfo').get().then(function(s){
+    if(s.exists) noiseInfo=Object.assign(noiseInfo, s.data());
+  }).catch(function(){}).then(function(){ noiseInfoLoaded=true; cb&&cb(); });
+}
+function saveNoiseInfo(){
+  noiseInfo={
+    company:(document.getElementById('noiseCompanyInp')||{}).value||'',
+    manager:(document.getElementById('noiseManagerInp')||{}).value||'',
+    phone:(document.getElementById('noisePhoneInp')||{}).value||''
+  };
+  db.collection('settings').doc('noiseInfo').set(noiseInfo,{merge:true}).catch(function(){});
+}
 function shareNoiseNotice(){
-  var text=buildNoiseNoticeText();
-  if(!text){ showToast('이번 달에 소음 발생으로 표시된 공정이 없어요'); return; }
-  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).catch(function(){}); }
-  if(navigator.share){
-    navigator.share({text:text}).catch(function(e){ if(e.name!=='AbortError') showToast('📋 복사됐어요'); });
-  } else {
-    showToast('📋 소음 안내문이 복사됐어요');
-  }
+  var days=noiseDaysOfMonth();
+  if(!days.length){ showToast('이번 달에 소음 발생으로 표시된 공정이 없어요'); return; }
+  loadNoiseInfo(function(){
+    var c=document.getElementById('noiseCompanyInp'), m=document.getElementById('noiseManagerInp'), p=document.getElementById('noisePhoneInp');
+    if(c) c.value=noiseInfo.company||'';
+    if(m) m.value=noiseInfo.manager||'';
+    if(p) p.value=noiseInfo.phone||'';
+    rebuildNoiseText();
+    document.getElementById('noiseModal').classList.add('show');
+    modalStack.push('noiseModal');
+  });
+}
+function closeNoiseModal(){
+  saveNoiseInfo();
+  document.getElementById('noiseModal').classList.remove('show');
+  var i=modalStack.lastIndexOf('noiseModal'); if(i>-1) modalStack.splice(i,1);
+}
+function rebuildNoiseText(){
+  saveNoiseInfo();
+  var el=document.getElementById('noiseTextInp');
+  if(el) el.value=buildNoiseNoticeText();
+}
+function noiseCopy(){
+  var t=(document.getElementById('noiseTextInp')||{}).value||'';
+  if(!t) return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){showToast('✓ 복사됐어요');}).catch(function(){fallbackCopy(t);});
+  } else fallbackCopy(t);
+}
+function noiseShare(){
+  var t=(document.getElementById('noiseTextInp')||{}).value||'';
+  if(!t) return;
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(function(){});
+  if(navigator.share){ navigator.share({text:t}).catch(function(e){ if(e.name!=='AbortError') showToast('📋 복사됐어요'); }); }
+  else showToast('📋 복사됐어요');
+}
+function noiseSaveImage(){
+  var t=(document.getElementById('noiseTextInp')||{}).value||'';
+  if(!t){ showToast('내용이 없어요'); return; }
+  showToast('이미지 만드는 중...',1500);
+  var wrap=document.createElement('div');
+  wrap.style.cssText="position:fixed;left:-9999px;top:0;width:720px;background:#f9f8f6;padding:40px;font-family:'SUIT','Noto Sans KR',sans-serif";
+  wrap.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 10px rgba(2,58,37,.08)">'
+    +'<div style="white-space:pre-wrap;font-size:15px;line-height:1.9;color:#2b2a26">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'
+    +'</div>';
+  document.body.appendChild(wrap);
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){
+    return html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#f9f8f6'});
+  }).then(function(canvas){
+    document.body.removeChild(wrap);
+    var a=document.createElement('a');
+    a.download='소음안내문_'+schYear+'-'+String(schMonth+1).padStart(2,'0')+'.png';
+    a.href=canvas.toDataURL('image/png'); a.click();
+    showToast('이미지 저장 완료!');
+  }).catch(function(e){
+    if(wrap.parentNode) document.body.removeChild(wrap);
+    showToast('저장 실패: '+e.message,3000);
+  });
 }
 function buildNoiseTableHTML(){
   var days=noiseDaysOfMonth();
