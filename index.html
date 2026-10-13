@@ -1748,6 +1748,14 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
           <input class="field-input" id="noisePhoneInp" type="tel" placeholder="예: 010-0000-0000">
         </div>
         <div class="field-row">
+          <div class="field-label">이미지 로고</div>
+          <div class="vat-row-ui">
+            <button type="button" class="vat-btn selected" id="noiseLogoYes" onclick="setNoiseLogo(true)">로고 넣기</button>
+            <button type="button" class="vat-btn" id="noiseLogoNo" onclick="setNoiseLogo(false)">안 넣기</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">이미지로 저장할 때 오른쪽 위에 들어갑니다</div>
+        </div>
+        <div class="field-row">
           <div class="field-label">안내문 <span style="font-weight:500;color:var(--muted)">(자유롭게 고치세요)</span></div>
           <textarea class="field-input" id="noiseTextInp" rows="16" style="resize:vertical;line-height:1.7;font-size:13px" lang="ko"></textarea>
         </div>
@@ -6671,7 +6679,13 @@ function buildNoiseNoticeText(){
   if(!_co&&!_mg&&!_ph) lines.push('(회사명·담당자·연락처를 입력하면 여기에 들어갑니다)');
   return lines.join('\n');
 }
-var noiseInfo={company:'',manager:'',phone:''}, noiseInfoLoaded=false;
+var noiseInfo={company:'',manager:'',phone:'',logo:true}, noiseInfoLoaded=false;
+function setNoiseLogo(on){
+  noiseInfo.logo=!!on;
+  var y=document.getElementById('noiseLogoYes'), n=document.getElementById('noiseLogoNo');
+  if(y) y.classList.toggle('selected', !!on);
+  if(n) n.classList.toggle('selected', !on);
+}
 function loadNoiseInfo(cb){
   if(noiseInfoLoaded){ cb&&cb(); return; }
   db.collection('settings').doc('noiseInfo').get().then(function(s){
@@ -6682,7 +6696,8 @@ function saveNoiseInfo(){
   noiseInfo={
     company:(document.getElementById('noiseCompanyInp')||{}).value||'',
     manager:(document.getElementById('noiseManagerInp')||{}).value||'',
-    phone:(document.getElementById('noisePhoneInp')||{}).value||''
+    phone:(document.getElementById('noisePhoneInp')||{}).value||'',
+    logo:(noiseInfo.logo!==false)
   };
   db.collection('settings').doc('noiseInfo').set(noiseInfo,{merge:true}).catch(function(){});
 }
@@ -6694,6 +6709,7 @@ function shareNoiseNotice(){
     if(c) c.value=noiseInfo.company||'';
     if(m) m.value=noiseInfo.manager||'';
     if(p) p.value=noiseInfo.phone||'';
+    setNoiseLogo(noiseInfo.logo!==false);
     rebuildNoiseText();
     document.getElementById('noiseModal').classList.add('show');
     modalStack.push('noiseModal');
@@ -6729,7 +6745,17 @@ function noiseSaveImage(){
   showToast('이미지 만드는 중...',1500);
   var wrap=document.createElement('div');
   wrap.style.cssText="position:fixed;left:-9999px;top:0;width:720px;background:#f9f8f6;padding:40px;font-family:'SUIT','Noto Sans KR',sans-serif";
-  wrap.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 10px rgba(2,58,37,.08)">'
+  var _logo='';
+  if(noiseInfo.logo!==false){
+    var _src=document.querySelector('.brand-logo');
+    if(_src){
+      var _c=_src.cloneNode(true);
+      _c.removeAttribute('class');
+      _c.setAttribute('style','height:26px;width:auto;color:#023a25;display:block');
+      _logo='<div style="display:flex;justify-content:flex-end;margin-bottom:18px">'+_c.outerHTML+'</div>';
+    }
+  }
+  wrap.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 10px rgba(2,58,37,.08)">'+_logo
     +'<div style="white-space:pre-wrap;font-size:15px;line-height:1.9;color:#2b2a26">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'
     +'</div>';
   document.body.appendChild(wrap);
