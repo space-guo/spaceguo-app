@@ -7041,9 +7041,9 @@ function buildGanttHTML(){
 }
 var SX_OPTS=[
   ['info','현장 정보'],['cal','달력'],['gantt','주차별 공정'],
-  ['noise','소음 발생일'],['dec','고객 결정 항목'],['logo','로고']
+  ['noise','소음 발생일'],['dec','고객 결정 항목'],['logo','상단 로고'],['foot','하단 문구']
 ];
-var sxOn={info:true,cal:true,gantt:true,noise:true,dec:true,logo:true};
+var sxOn={info:true,cal:true,gantt:true,noise:true,dec:true,logo:true,foot:true};
 function renderSxOpts(){
   var el=document.getElementById('sxOptRow'); if(!el) return;
   el.innerHTML=SX_OPTS.map(function(o){
@@ -7094,7 +7094,7 @@ function buildSchExportHTML(){
     +(sxOn.noise?buildNoiseTableHTML():'')
     +(sxOn.dec?buildDecisionTableHTML():'')
     +(memo?('<div style="margin-top:18px;padding:12px 14px;background:#fff;border-left:3px solid #023a25;border-radius:6px;font-size:12px;color:#4a4944;line-height:1.9;white-space:pre-wrap">'+memo.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'):'')
-    +'<div style="text-align:right;font-size:10px;color:#9a998f;margin-top:14px">공간구오 · Space GUO · 나로부터 시작되는 완전한 공간</div>';
+    +(sxOn.foot?'<div style="text-align:right;font-size:10px;color:#9a998f;margin-top:14px">공간구오 · Space GUO · 나로부터 시작되는 완전한 공간</div>':'');
   return head+info+cal+gantt;
 }
 var _sxT=null;
