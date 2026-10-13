@@ -6666,18 +6666,31 @@ function noticeCtx(){
   return {siteLabel:siteLabel, site:s, dongho:dongho, addr:addr, period:period};
 }
 // 공정별로 날짜를 묶은 소음 표
+function fmtDays(nums){
+  nums=nums.slice().sort(function(a,b){return a-b;});
+  var out=[], i=0;
+  while(i<nums.length){
+    var s=nums[i], p=i;
+    while(p+1<nums.length && nums[p+1]===nums[p]+1) p++;
+    out.push(s===nums[p] ? (s+'일') : (s+'~'+nums[p]+'일'));
+    i=p+1;
+  }
+  return (schMonth+1)+'월 '+out.join(', ');
+}
 function noiseRowsGrouped(){
   var days=noiseDaysOfMonth();
   var map={}, order=[];
   days.forEach(function(d){
     d.procs.forEach(function(p){
-      var key=p;
-      if(!map[key]){ map[key]={proc:p, level:d.level, days:[]}; order.push(key); }
-      if(noiseRank(d.level)>noiseRank(map[key].level)) map[key].level=d.level;
-      map[key].days.push((schMonth+1)+'월 '+d.day+'일');
+      if(!map[p]){ map[p]={proc:p, level:d.level, nums:[]}; order.push(p); }
+      if(noiseRank(d.level)>noiseRank(map[p].level)) map[p].level=d.level;
+      if(map[p].nums.indexOf(d.day)<0) map[p].nums.push(d.day);
     });
   });
-  return order.map(function(k){ return map[k]; });
+  return order.map(function(k){
+    var r=map[k];
+    return {proc:r.proc, level:r.level, nums:r.nums, days:[fmtDays(r.nums)]};
+  });
 }
 function levelLabel(v){ return v==='상'?'강':v==='중'?'중':'약'; }
 function defaultGreeting(){
@@ -6689,6 +6702,7 @@ function defaultGreeting(){
 }
 // 텍스트(카톡/메모) 버전
 function buildNoiseNoticeText(){
+  saveNoiseInfo();
   var c=noticeCtx();
   var rows=noiseRowsGrouped();
   var g=(document.getElementById('noiseTextInp')||{}).value||defaultGreeting();
@@ -6762,6 +6776,7 @@ function rebuildNoiseText(){
   if(el) el.value=buildNoiseNoticeText();
 }
 function noiseCopy(){
+  saveNoiseInfo();
   var t=buildNoiseNoticeText();
   if(!t) return;
   if(navigator.clipboard&&navigator.clipboard.writeText){
@@ -6769,6 +6784,7 @@ function noiseCopy(){
   } else fallbackCopy(t);
 }
 function noiseShare(){
+  saveNoiseInfo();
   var t=buildNoiseNoticeText();
   if(!t) return;
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(function(){});
@@ -6776,6 +6792,7 @@ function noiseShare(){
   else showToast('📋 복사됐어요');
 }
 function noiseSaveImage(){
+  saveNoiseInfo();
   var c=noticeCtx();
   var rows=noiseRowsGrouped();
   var greet=(document.getElementById('noiseTextInp')||{}).value||defaultGreeting();
