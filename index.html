@@ -6615,7 +6615,11 @@ function noiseOnDate(dsv, list){
 function noiseRank(v){ return v==='상'?3:v==='중'?2:v==='하'?1:0; }
 // 이번 달 소음 발생일 목록
 function noiseDaysOfMonth(){
-  var list=getFilteredSch().filter(function(s){return s.noise;});
+  var list=schedules.filter(function(s){
+    if(!s.noise) return false;
+    var sn=(typeof s.site==='object')?s.site.name:s.site;
+    return (schSiteFilter==='전체') || sn===schSiteFilter;
+  });
   var last=new Date(schYear,schMonth+1,0).getDate();
   var out=[];
   for(var d=1;d<=last;d++){
@@ -6684,7 +6688,7 @@ function saveNoiseInfo(){
 }
 function shareNoiseNotice(){
   var days=noiseDaysOfMonth();
-  if(!days.length){ showToast('이번 달에 소음 발생으로 표시된 공정이 없어요'); return; }
+    if(!days.length){ showToast((schMonth+1)+'월에 소음으로 표시된 공정이 없어요 · 달을 넘기거나 공정 일정에서 소음을 지정해 주세요',4000); return; }
   loadNoiseInfo(function(){
     var c=document.getElementById('noiseCompanyInp'), m=document.getElementById('noiseManagerInp'), p=document.getElementById('noisePhoneInp');
     if(c) c.value=noiseInfo.company||'';
