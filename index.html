@@ -1746,6 +1746,20 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
           <div id="sxOptRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
         </div>
         <div class="field-row">
+          <div class="field-label">현장 정보 <span style="font-weight:500;color:var(--muted)">(고칠 수 있어요)</span></div>
+          <input class="field-input" id="sxAddrInp" type="text" placeholder="현장 주소" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
+          <input class="field-input" id="sxPeriodInp" type="text" placeholder="공사 기간" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
+          <input class="field-input" id="sxAreaInp" type="text" placeholder="면적" lang="ko" oninput="sxDebounced()">
+        </div>
+        <div class="field-row">
+          <div class="field-label">업체 정보 <span style="font-weight:500;color:var(--muted)">(안내문과 같이 저장됩니다)</span></div>
+          <input class="field-input" id="sxCoInp" type="text" placeholder="회사명" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
+          <input class="field-input" id="sxMgrInp" type="text" placeholder="현장 담당자" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
+          <input class="field-input" id="sxTelInp" type="tel" placeholder="연락처" oninput="sxDebounced()" style="margin-bottom:6px">
+          <input class="field-input" id="sxCoAddrInp" type="text" placeholder="업체 주소" lang="ko" oninput="sxDebounced()" style="margin-bottom:6px">
+          <input class="field-input" id="sxWebInp" type="text" placeholder="홈페이지" oninput="sxDebounced()">
+        </div>
+        <div class="field-row">
           <div class="field-label">하단 비고 <span style="font-weight:500;color:var(--muted)">(선택)</span></div>
           <textarea class="field-input" id="sxMemoInp" rows="3" style="resize:vertical;line-height:1.7;font-size:13px" placeholder="예: 일정은 현장 상황에 따라 변경될 수 있습니다." lang="ko" oninput="sxDebounced()"></textarea>
         </div>
@@ -7041,9 +7055,9 @@ function buildGanttHTML(){
 }
 var SX_OPTS=[
   ['info','현장 정보'],['cal','달력'],['gantt','주차별 공정'],
-  ['noise','소음 발생일'],['dec','고객 결정 항목'],['logo','상단 로고'],['foot','하단 문구']
+  ['noise','소음 발생일'],['dec','고객 결정 항목'],['company','업체 정보'],['logo','상단 로고'],['foot','하단 문구']
 ];
-var sxOn={info:true,cal:true,gantt:true,noise:true,dec:true,logo:true,foot:true};
+var sxOn={info:true,cal:true,gantt:true,noise:true,dec:true,company:true,logo:true,foot:true};
 function renderSxOpts(){
   var el=document.getElementById('sxOptRow'); if(!el) return;
   el.innerHTML=SX_OPTS.map(function(o){
@@ -7056,6 +7070,27 @@ function closeSchExportModal(){
   m.style.display='none'; m.classList.remove('show');
   var i=modalStack.lastIndexOf('schExportModal'); if(i>-1) modalStack.splice(i,1);
 }
+function sxPrefill(){
+  var s=(schSiteFilter!=='전체')?getSiteObj(schSiteFilter):null;
+  var set=function(id,val){ var el=document.getElementById(id); if(el && !el.value) el.value=val||''; };
+  if(s && typeof s==='object'){
+    var addr=[s.address,s.apt].filter(Boolean).join(' ');
+    if(s.dongho){ var dh=String(s.dongho).split('/'); addr+=(addr?' ':'')+(dh[0]?dh[0]+'동':'')+(dh[1]?' '+dh[1]+'호':''); }
+    set('sxAddrInp', addr);
+    if(s.startDate||s.endDate) set('sxPeriodInp',(s.startDate||'')+' ~ '+(s.endDate||''));
+    if(s.sqm||s.pyeong) set('sxAreaInp',(s.sqm?s.sqm+'㎡':'')+(s.pyeong?(s.sqm?' / ':'')+s.pyeong+'평':''));
+  }
+  set('sxCoInp', noiseInfo.company); set('sxMgrInp', noiseInfo.manager);
+  set('sxTelInp', noiseInfo.phone);  set('sxCoAddrInp', noiseInfo.addr); set('sxWebInp', noiseInfo.web);
+}
+function sxSaveCompany(){
+  noiseInfo.company=(document.getElementById('sxCoInp')||{}).value||noiseInfo.company;
+  noiseInfo.manager=(document.getElementById('sxMgrInp')||{}).value||noiseInfo.manager;
+  noiseInfo.phone=(document.getElementById('sxTelInp')||{}).value||noiseInfo.phone;
+  noiseInfo.addr=(document.getElementById('sxCoAddrInp')||{}).value||noiseInfo.addr;
+  noiseInfo.web=(document.getElementById('sxWebInp')||{}).value||noiseInfo.web;
+  try{ db.collection('settings').doc('noiseInfo').set(noiseInfo,{merge:true}); }catch(e){}
+}
 function exportSchImage(){
   var t=document.getElementById('sxTitleInp');
   if(t && !t.value) t.value=schYear+'년 '+(schMonth+1)+'월 공정표';
@@ -7063,11 +7098,14 @@ function exportSchImage(){
   var m=document.getElementById('schExportModal');
   m.style.display='flex'; m.classList.add('show');
   modalStack.push('schExportModal');
-  var go=function(){ renderSxPreview(); };
-  if(schSiteFilter!=='전체'){ try{ loadSiteDecisions(schSiteFilter, go); }catch(err){ go(); } }
-  else go();
+  var go=function(){ sxPrefill(); renderSxPreview(); };
+  loadNoiseInfo(function(){
+    if(schSiteFilter!=='전체'){ try{ loadSiteDecisions(schSiteFilter, go); }catch(err){ go(); } }
+    else go();
+  });
 }
 function runSchExport(){
+  sxSaveCompany();
   runExportSchImage(false);
   closeSchExportModal();
 }
@@ -7078,14 +7116,29 @@ function buildSchExportHTML(){
     +'<div style="font-size:22px;font-weight:800;color:#023a25">'+title+(schSiteFilter!=='전체'?' <span style="font-weight:700">— '+schSiteFilter+'</span>':'')+'</div>'
     +(sxOn.logo?'<div style="font-size:11px;font-weight:700;color:#023a25;letter-spacing:2px">SPACE GUO</div>':'')+'</div>';
   var info='';
-  if(sxOn.info && siteObj && typeof siteObj==='object'){
-    var parts=[];
-    var addr=[siteObj.address,siteObj.apt].filter(Boolean).join(' ');
-    if(siteObj.dongho){var dh=String(siteObj.dongho).split('/');addr+=(addr?' ':'')+(dh[0]?dh[0]+'동':'')+(dh[1]?' '+dh[1]+'호':'');}
-    if(addr)parts.push('📍 '+addr);
-    if(siteObj.startDate||siteObj.endDate)parts.push('🗓 공사기간 '+(siteObj.startDate||'')+' ~ '+(siteObj.endDate||''));
-    if(siteObj.sqm||siteObj.pyeong)parts.push('📐 면적 '+(siteObj.sqm?siteObj.sqm+'㎡':'')+(siteObj.pyeong?' ('+siteObj.pyeong+'평)':''));
-    if(parts.length)info='<div style="font-size:12px;color:#4a4944;font-weight:600;margin-bottom:18px;line-height:2.1">'+parts.map(function(p){return '<div>'+p+'</div>';}).join('')+'</div>';
+  var v=function(id){ var el=document.getElementById(id); return el?String(el.value||'').trim():''; };
+  var esc=function(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+  var LN='#dcdbd4';
+  var cell=function(l,x){
+    return '<tr><td style="padding:8px 11px;border-bottom:1px solid '+LN+';background:#f4f3ef;font-size:11.5px;font-weight:700;color:#023a25;white-space:nowrap;width:74px">'+l+'</td>'
+      +'<td style="padding:8px 11px;border-bottom:1px solid '+LN+';font-size:12px;color:#2b2a26">'+esc(x)+'</td></tr>';
+  };
+  var leftRows='', rightRows='';
+  if(sxOn.info){
+    if(v('sxAddrInp'))   leftRows+=cell('현장 주소', v('sxAddrInp'));
+    if(v('sxPeriodInp')) leftRows+=cell('공사 기간', v('sxPeriodInp'));
+    if(v('sxAreaInp'))   leftRows+=cell('면 적', v('sxAreaInp'));
+  }
+  if(sxOn.company){
+    if(v('sxCoInp'))     rightRows+=cell('상 호', v('sxCoInp'));
+    if(v('sxCoAddrInp')) rightRows+=cell('주 소', v('sxCoAddrInp'));
+    if(v('sxMgrInp')||v('sxTelInp')) rightRows+=cell('담당자', [v('sxMgrInp'),v('sxTelInp')].filter(Boolean).join('  '));
+    if(v('sxWebInp'))    rightRows+=cell('홈페이지', v('sxWebInp'));
+  }
+  var tbl=function(rows){ return rows?('<table style="width:100%;border-collapse:collapse;border:1px solid '+LN+'">'+rows+'</table>'):''; };
+  if(leftRows||rightRows){
+    info='<div style="display:flex;gap:14px;margin-bottom:20px;align-items:flex-start">'
+      +'<div style="flex:1">'+tbl(leftRows)+'</div><div style="flex:1">'+tbl(rightRows)+'</div></div>';
   }
   var cal=sxOn.cal?('<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>'):'';
   var memo=(((document.getElementById('sxMemoInp')||{}).value)||'').trim();
