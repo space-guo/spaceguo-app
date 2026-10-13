@@ -1739,7 +1739,7 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         </div>
         <div class="field-row">
           <div class="field-label">제목</div>
-          <input class="field-input" id="sxTitleInp" type="text" lang="ko">
+          <input class="field-input" id="sxTitleInp" type="text" lang="ko" oninput="sxDebounced()">
         </div>
         <div class="field-row">
           <div class="field-label">포함할 내용</div>
@@ -1747,8 +1747,17 @@ textarea.auto-resize{resize:none;overflow:hidden;min-height:80px}
         </div>
         <div class="field-row">
           <div class="field-label">하단 비고 <span style="font-weight:500;color:var(--muted)">(선택)</span></div>
-          <textarea class="field-input" id="sxMemoInp" rows="3" style="resize:vertical;line-height:1.7;font-size:13px" placeholder="예: 일정은 현장 상황에 따라 변경될 수 있습니다." lang="ko"></textarea>
+          <textarea class="field-input" id="sxMemoInp" rows="3" style="resize:vertical;line-height:1.7;font-size:13px" placeholder="예: 일정은 현장 상황에 따라 변경될 수 있습니다." lang="ko" oninput="sxDebounced()"></textarea>
         </div>
+        <div class="field-row">
+          <div class="field-label">미리보기 <span style="font-weight:500;color:var(--muted)">(글자를 직접 눌러 고칠 수 있어요)</span></div>
+          <div id="sxPreviewWrap" style="margin-top:6px;border:1px solid var(--border);border-radius:10px;background:#f9f8f6;overflow:hidden">
+            <div id="sxPreviewScale" style="transform-origin:top left">
+              <div id="sxPreview" contenteditable="true" spellcheck="false" style="width:840px;background:#f9f8f6;padding:32px;font-family:'SUIT','Noto Sans KR',sans-serif;outline:none"></div>
+            </div>
+          </div>
+        </div>
+        <button class="site-share-btn" onclick="renderSxPreview()" style="margin-bottom:8px">↻ 미리보기 새로 만들기 <span style="font-weight:500;color:var(--muted)">(수정한 내용은 사라져요)</span></button>
         <button class="site-share-btn copy" onclick="runSchExport()" style="margin-top:4px;background:var(--accent);border-color:var(--accent);color:#fff">🖼 이미지 저장</button>
       </div>
     </div>
@@ -7041,7 +7050,7 @@ function renderSxOpts(){
     return '<button type="button" class="chip'+(sxOn[o[0]]?' selected':'')+'" onclick="toggleSx(\''+o[0]+'\')">'+o[1]+'</button>';
   }).join('');
 }
-function toggleSx(k){ sxOn[k]=!sxOn[k]; renderSxOpts(); }
+function toggleSx(k){ sxOn[k]=!sxOn[k]; renderSxOpts(); renderSxPreview(); }
 function closeSchExportModal(){
   var m=document.getElementById('schExportModal');
   m.style.display='none'; m.classList.remove('show');
@@ -7054,27 +7063,22 @@ function exportSchImage(){
   var m=document.getElementById('schExportModal');
   m.style.display='flex'; m.classList.add('show');
   modalStack.push('schExportModal');
+  var go=function(){ renderSxPreview(); };
+  if(schSiteFilter!=='전체'){ try{ loadSiteDecisions(schSiteFilter, go); }catch(err){ go(); } }
+  else go();
 }
 function runSchExport(){
-  closeSchExportModal();
-  if(schSiteFilter!=='전체'){
-    showToast('이미지 생성 중...',2000);
-    loadSiteDecisions(schSiteFilter,function(){runExportSchImage(true);});
-    return;
-  }
   runExportSchImage(false);
+  closeSchExportModal();
 }
-function runExportSchImage(skipToast){
-  if(!skipToast)showToast('이미지 생성 중...', 2000);
-  var wrap=document.createElement('div');
-  wrap.style.cssText="position:fixed;left:-9999px;top:0;width:840px;background:#f9f8f6;padding:32px;font-family:'SUIT','Noto Sans KR',sans-serif;z-index:-1";
+function buildSchExportHTML(){
   var title=((document.getElementById('sxTitleInp')||{}).value||'').trim() || (schYear+'년 '+(schMonth+1)+'월 공정표');
   var siteObj=schSiteFilter!=='전체'?getSiteObj(schSiteFilter):null;
   var head='<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #023a25;padding-bottom:12px;margin-bottom:14px">'
     +'<div style="font-size:22px;font-weight:800;color:#023a25">'+title+(schSiteFilter!=='전체'?' <span style="font-weight:700">— '+schSiteFilter+'</span>':'')+'</div>'
     +(sxOn.logo?'<div style="font-size:11px;font-weight:700;color:#023a25;letter-spacing:2px">SPACE GUO</div>':'')+'</div>';
   var info='';
-  if(sxOn.info && siteObj&&typeof siteObj==='object'){
+  if(sxOn.info && siteObj && typeof siteObj==='object'){
     var parts=[];
     var addr=[siteObj.address,siteObj.apt].filter(Boolean).join(' ');
     if(siteObj.dongho){var dh=String(siteObj.dongho).split('/');addr+=(addr?' ':'')+(dh[0]?dh[0]+'동':'')+(dh[1]?' '+dh[1]+'호':'');}
@@ -7084,13 +7088,38 @@ function runExportSchImage(skipToast){
     if(parts.length)info='<div style="font-size:12px;color:#4a4944;font-weight:600;margin-bottom:18px;line-height:2.1">'+parts.map(function(p){return '<div>'+p+'</div>';}).join('')+'</div>';
   }
   var cal=sxOn.cal?('<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08);margin-bottom:24px">'+buildExportCalHTML()+'</div>'):'';
+  var memo=(((document.getElementById('sxMemoInp')||{}).value)||'').trim();
   var gantt=(sxOn.gantt?('<div style="font-size:14px;font-weight:800;color:#023a25;margin-bottom:8px">주차별 공정 현황</div>'
     +'<div style="border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(2,58,37,.08)">'+buildGanttHTML()+'</div>'):'')
     +(sxOn.noise?buildNoiseTableHTML():'')
     +(sxOn.dec?buildDecisionTableHTML():'')
-    +((((document.getElementById('sxMemoInp')||{}).value)||'').trim()?('<div style="margin-top:18px;padding:12px 14px;background:#fff;border-left:3px solid #023a25;border-radius:6px;font-size:12px;color:#4a4944;line-height:1.9;white-space:pre-wrap">'+String(document.getElementById('sxMemoInp').value).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'):'')
+    +(memo?('<div style="margin-top:18px;padding:12px 14px;background:#fff;border-left:3px solid #023a25;border-radius:6px;font-size:12px;color:#4a4944;line-height:1.9;white-space:pre-wrap">'+memo.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>'):'')
     +'<div style="text-align:right;font-size:10px;color:#9a998f;margin-top:14px">공간구오 · Space GUO · 나로부터 시작되는 완전한 공간</div>';
-  wrap.innerHTML=head+info+cal+gantt;
+  return head+info+cal+gantt;
+}
+var _sxT=null;
+function sxDebounced(){ clearTimeout(_sxT); _sxT=setTimeout(renderSxPreview,400); }
+function renderSxPreview(){
+  var pv=document.getElementById('sxPreview');
+  if(!pv) return;
+  pv.innerHTML=buildSchExportHTML();
+  setTimeout(fitSxPreview,30);
+}
+function fitSxPreview(){
+  var wrap=document.getElementById('sxPreviewWrap'), sc=document.getElementById('sxPreviewScale'), pv=document.getElementById('sxPreview');
+  if(!wrap||!sc||!pv) return;
+  var k=Math.min(1,(wrap.clientWidth)/904);
+  sc.style.transform='scale('+k+')';
+  wrap.style.height=Math.round(pv.scrollHeight*k)+'px';
+}
+function runExportSchImage(skipToast){
+  var pv=document.getElementById('sxPreview');
+  if(!pv || !pv.innerHTML) { renderSxPreview(); pv=document.getElementById('sxPreview'); }
+  if(!skipToast)showToast('이미지 생성 중...', 2000);
+  var title=((document.getElementById('sxTitleInp')||{}).value||'').trim() || (schYear+'년 '+(schMonth+1)+'월 공정표');
+  var wrap=document.createElement('div');
+  wrap.style.cssText="position:fixed;left:-9999px;top:0;width:904px;background:#f9f8f6;padding:32px;font-family:'SUIT','Noto Sans KR',sans-serif;z-index:-1";
+  wrap.innerHTML=pv.innerHTML;
   document.body.appendChild(wrap);
   (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){
     return html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#f9f8f6'});
